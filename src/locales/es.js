@@ -1,0 +1,15 @@
+const es = {
+  nav: { home: 'Inicio', pokedex: 'Pokédex', competitive: 'Competitivo', guide: 'Guía', ai: 'Próximamente', aria: 'Navegación principal', homeAria: 'PokéGuide, inicio' },
+  hero: { eyebrow: 'Tu guía para entender el mundo Pokémon', title: 'Conoce Pokémon.', titleAccent: 'Entiende', titleEnd: 'el competitivo.', subtitle: 'Una guía interactiva para descubrir Pokémon, aprender sus mecánicas y entender cómo funcionan en combate.', hint: 'Empieza por un Pokémon, tipo, movimiento o habilidad' },
+  search: { placeholder: 'Busca un Pokémon...', aria: 'Busca un Pokémon', button: 'Buscar', loading: 'Buscando...', suggestions: 'Sugerencias de Pokémon', indexError: 'No pudimos cargar las sugerencias.' },
+  categories: { eyebrow: 'NAVEGA POR EL CONOCIMIENTO', title: 'Todo lo que necesitas,', accent: 'en un solo lugar.', intro: 'Una forma más clara de aprender. Elige un tema y empieza a explorar.', items: { pokedex: ['Pokédex', 'Descubre cada especie'], competitive: ['Competitivo', 'Piensa como un estratega'], learn: ['Aprende', 'Las bases, sin complicaciones'], items: ['Objetos', 'Todo tiene un propósito'], moves: ['Movimientos', 'Elige tu próximo movimiento'] } },
+  featured: { eyebrow: 'PARA EMPEZAR', title: 'Pokémon', accent: 'destacados.', link: 'Ver toda la Pokédex' },
+  detail: { pokedex: 'POKÉDEX', description: 'Una mirada rápida a sus características, habilidades y estadísticas base.', height: 'ALTURA', weight: 'PESO', traits: 'RASGOS DESTACADOS', abilities: 'Habilidades', combat: 'PERFIL DE COMBATE', stats: 'Estadísticas base', back: 'Volver a explorar', loadingEyebrow: 'CONSULTANDO LA POKÉDEX', loadingTitle: 'Buscando', loadingAccent: 'conocimiento.', loadingText: 'Estamos trayendo los datos desde PokéAPI.', errorEyebrow: 'NO HAY RESULTADOS', errorTitle: 'No encontramos', errorAccent: 'ese Pokémon.', backHome: 'Volver al inicio', statLabels: { hp: 'PS', attack: 'Ataque', defense: 'Defensa', 'special-attack': 'At. especial', 'special-defense': 'Def. especial', speed: 'Velocidad' } },
+  itemDetail: { eyebrow: 'OBJETO', cost: 'COSTO', noEffect: 'Este objeto no tiene una descripción disponible.', loadingEyebrow: 'CONSULTANDO LOS OBJETOS', loadingTitle: 'Buscando', loadingAccent: 'un objeto.', loadingText: 'Estamos trayendo los datos desde PokéAPI.', errorEyebrow: 'NO HAY RESULTADOS', errorTitle: 'No encontramos', errorAccent: 'ese objeto.' },
+  errors: { empty: 'Escribe un nombre o número de Pokédex para buscar.', network: 'No pudimos conectar con PokéAPI. Comprueba tu conexión e inténtalo de nuevo.', notFound: 'No encontramos ningún Pokémon llamado “{query}”.', api: 'PokéAPI no está disponible en este momento. Inténtalo de nuevo.', invalid: 'Recibimos una respuesta inválida de PokéAPI.' },
+  footer: { tagline: 'Aprende. Explora. Juega mejor.', note: 'Una guía hecha por y para entrenadores curiosos.' },
+  languages: { es: 'Español', 'es-419': 'Español Latino', en: 'English' },
+  types: { grass: 'Planta', poison: 'Veneno', fire: 'Fuego', water: 'Agua', electric: 'Eléctrico' },
+}
+
+export default es
