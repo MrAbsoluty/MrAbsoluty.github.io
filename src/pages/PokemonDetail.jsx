@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
 import EvolutionChain from '../components/EvolutionChain'
+import PokemonStats from '../components/PokemonStats'
+import PokemonTypeAffinities from '../components/PokemonTypeAffinities'
+import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import { getMegaForms } from '../services/pokeapi'
-import megaSymbol from '../assets/mega-symbol.png'
-import PokemonCryButton from '../components/PokemonCryButton'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
 import { playButtonSound } from '../utils/audio'
@@ -16,15 +17,6 @@ const typeColors = {
 function formatName(name) {
   if (!name) return ''
   return name.charAt(0).toUpperCase() + name.slice(1)
-}
-
-function RevertIcon() {
-  return (
-    <svg className="revert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 14L4 9l5-5" />
-      <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
-    </svg>
-  )
 }
 
 function PokemonDetail({
@@ -42,19 +34,21 @@ function PokemonDetail({
   const [megaForms, setMegaForms] = useState([])
   const [isLoadingMegas, setIsLoadingMegas] = useState(false)
   const [activeForm, setActiveForm] = useState(null)
-  const [isMegaExpanded, setIsMegaExpanded] = useState(false)
   const [prevPokemonId, setPrevPokemonId] = useState(pokemon?.id)
   const [isTransforming, setIsTransforming] = useState(false)
   const [transformStage, setTransformStage] = useState('idle')
   const [statsBump, setStatsBump] = useState(false)
+  const [isShiny, setIsShiny] = useState(false)
+  const [isFocusMode, setIsFocusMode] = useState(false)
 
   // Reset active form during render when pokemon prop changes
   if (pokemon?.id !== prevPokemonId) {
     setPrevPokemonId(pokemon?.id)
     setActiveForm(null)
-    setIsMegaExpanded(false)
     setMegaForms([])
     setIsLoadingMegas(true)
+    setIsShiny(false)
+    setIsFocusMode(false)
   }
 
   // Fetch mega forms in background
@@ -101,7 +95,6 @@ function PokemonDetail({
 
     // Revert to base form
     if (!targetForm || (activeForm && activeForm.id === targetForm.id)) {
-      setIsMegaExpanded(false)
       setIsTransforming(true)
       setTransformStage('charging')
 
@@ -120,7 +113,6 @@ function PokemonDetail({
     }
 
     // Transform to target Mega form
-    setIsMegaExpanded(true)
     setIsTransforming(true)
     setTransformStage('charging')
 
@@ -177,7 +169,11 @@ function PokemonDetail({
 
   const currentData = activeForm || pokemon
   const currentName = activeForm?.localizedName || pokemon?.localizedName || formatName(pokemon?.name || '')
-  const currentImage = currentData?.image || pokemon?.image
+  const currentImage =
+    isShiny && currentData?.shinyImage
+      ? currentData.shinyImage
+      : (currentData?.image || pokemon?.image)
+  const hasShiny = Boolean(currentData?.shinyImage || pokemon?.shinyImage)
   const currentTypes = currentData?.types || []
   const currentTypeLabels = currentData?.typeLabels || {}
   const currentAbilities = currentData?.abilities || []
@@ -191,8 +187,6 @@ function PokemonDetail({
     : (pokemon?.pokedexDescription || null)
 
   const hasMegas = megaForms.length > 0
-  const hasMultipleMegas = megaForms.length > 1
-  const isDrawerOpen = isMegaExpanded && hasMultipleMegas
 
   const nameLength = currentName.length
   const titleLengthClass =
@@ -214,7 +208,7 @@ function PokemonDetail({
           <div className="detail-copy">
             <p className="eyebrow">
               {t.detail.pokedex} #{String(pokemon.id).padStart(3, '0')}
-              {activeForm && <span className="mega-indicator-eyebrow">✦ {activeForm.megaVariant?.toUpperCase()}</span>}
+              {activeForm && " ✦ " + activeForm.megaVariant?.toUpperCase()}
             </p>
             <h1 className={`detail-title ${titleLengthClass}`.trim()}>
               {currentName}
@@ -240,19 +234,39 @@ function PokemonDetail({
             </div>
           </div>
 
-          <div className="detail-art">
-            <div className="art-stage">
+          <div className={`detail-art ${isFocusMode ? 'has-focus-active' : ''}`}>
+            <div
+              className={`art-stage is-interactive ${isFocusMode ? 'is-focused' : ''}`}
+              onClick={() => setIsFocusMode((prev) => !prev)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setIsFocusMode((prev) => !prev)
+                }
+              }}
+              title={isFocusMode ? t.detail.bubbleClose : t.detail.interactHint}
+              aria-label={isFocusMode ? t.detail.bubbleClose : `${pokemon.name}, ${t.detail.interactHint}`}
+            >
               <div className={`art-ring ${activeForm ? 'is-mega' : ''}`} />
 
               {/* Transformation energy shockwave aura */}
               <div className={`mega-energy-ring ${transformStage !== 'idle' ? transformStage : ''}`} aria-hidden="true" />
 
               <img
-                key={activeForm ? activeForm.name : pokemon.name}
+                key={`${activeForm ? activeForm.name : pokemon.name}-${isShiny ? 'shiny' : 'regular'}`}
                 className={`detail-art-image ${transformStage === 'charging' ? 'sprite-charging' : ''} ${transformStage === 'impact' ? 'sprite-impact' : ''}`}
                 src={currentImage}
                 alt={currentName}
               />
+
+              {/* Subtle hover interact pill hint in normal state */}
+              {!isFocusMode && (
+                <div className="pokemon-interact-pill" aria-hidden="true">
+                  <span className="interact-pill-sparkle">✦</span> {t.detail.interactHint}
+                </div>
+              )}
 
               {/* Background loading indicator for Mega forms */}
               {isLoadingMegas && !hasMegas && (
@@ -260,68 +274,29 @@ function PokemonDetail({
               )}
             </div>
 
-            {/* Interactive controls: Mega Evolution + Cry Audio (Outside the circle on the lateral right) */}
-            {(hasMegas || currentCry) && (
-              <div className="interactive-controls" role="region" aria-label={t.detail.combat}>
-                {hasMegas && (
-                  <div className="mega-control-dock">
-                    <button
-                      type="button"
-                      className={`mega-btn ${activeForm ? 'is-active' : ''}`}
-                      onClick={() => handleTransform(activeForm ? null : megaForms[0])}
-                      disabled={isTransforming}
-                      title={activeForm ? t.detail.megaRevert : t.detail.megaButton}
-                      aria-pressed={!!activeForm}
-                    >
-                      {activeForm ? (
-                        <RevertIcon />
-                      ) : (
-                        <img
-                          src={megaSymbol}
-                          alt={t.detail.megaButton}
-                          className="mega-symbol-img"
-                        />
-                      )}
-                    </button>
-
-                    {hasMultipleMegas && (
-                      <div
-                        className={`mega-variants-drawer ${isDrawerOpen ? 'is-expanded' : 'is-collapsed'}`}
-                        role="group"
-                        aria-label={t.detail.megaSelect}
-                        aria-hidden={!isDrawerOpen}
-                      >
-                        {megaForms.map((form) => {
-                          const variantLetter = form.megaVariant?.replace('mega-', '').toUpperCase() || 'M'
-                          const isThisActive = activeForm?.id === form.id
-                          return (
-                            <button
-                              key={form.name}
-                              type="button"
-                              className={`mega-variant-pill ${isThisActive ? 'is-active' : ''}`}
-                              onClick={() => handleTransform(isThisActive ? null : form)}
-                              disabled={isTransforming}
-                              title={form.localizedName}
-                              aria-pressed={isThisActive}
-                              tabIndex={isDrawerOpen ? 0 : -1}
-                            >
-                              {variantLetter}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <PokemonCryButton
-                  cry={currentCry}
-                  pokemonName={currentName}
-                  title={t.detail.playCry}
-                  ariaLabel={t.detail.playCry}
-                />
-              </div>
-            )}
+            {/* Bubble Menu Focus Mode */}
+            <PokemonFocusMenu
+              isOpen={isFocusMode}
+              onClose={() => setIsFocusMode(false)}
+              isShiny={isShiny}
+              onToggleShiny={() => setIsShiny((prev) => !prev)}
+              hasShiny={hasShiny}
+              currentCry={currentCry}
+              pokemonName={currentName}
+              hasMegas={hasMegas}
+              megaForms={megaForms}
+              activeForm={activeForm}
+              onTransform={handleTransform}
+              isTransforming={isTransforming}
+              onScrollToStats={() => {
+                setIsFocusMode(false)
+                setTimeout(() => {
+                  const target = document.querySelector('.detail-info') || document.querySelector('.pokemon-stats-container')
+                  target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }, 100)
+              }}
+              t={t}
+            />
           </div>
         </section>
 
@@ -353,17 +328,13 @@ function PokemonDetail({
           <div className="stats-column">
             <p className="eyebrow">{t.detail.combat}</p>
             <h2>{t.detail.stats}</h2>
-            <div className="stats-list">
-              {currentStats.map((stat) => (
-                <div className="stat-row" key={stat.name}>
-                  <span>{t.detail.statLabels[stat.name] || formatName(stat.name)}</span>
-                  <strong className={statsBump ? 'stat-animating' : ''}>{stat.value}</strong>
-                  <div className="stat-track">
-                    <i style={{ width: `${Math.min((stat.value / 255) * 100, 100)}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PokemonStats
+              stats={currentStats}
+              t={t}
+              statsBump={statsBump}
+              pokemonName={currentName}
+              locale={locale}
+            />
           </div>
         </section>
 
@@ -377,6 +348,13 @@ function PokemonDetail({
             t={t}
           />
         )}
+
+        <PokemonTypeAffinities
+          types={currentTypes}
+          pokemonName={currentName}
+          t={t}
+          locale={locale}
+        />
       </main>
       <Footer t={t} />
     </div>

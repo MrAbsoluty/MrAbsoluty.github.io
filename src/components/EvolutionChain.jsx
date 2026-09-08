@@ -188,7 +188,7 @@ function EvolutionChain({ pokemonId, speciesUrl, currentPokemonName, onPokemonCl
       <div className="section-heading">
         <div>
           <p className="eyebrow">
-            <span className="eyebrow-icon" aria-hidden="true">🧬</span> {t.detail?.evolutionEyebrow || 'LÍNEA EVOLUTIVA'}
+            <span className="eyebrow-icon" aria-hidden="true"></span> {t.detail?.evolutionEyebrow || 'LÍNEA EVOLUTIVA'}
           </p>
           <h2>
             {t.detail?.evolutionTitle || 'Cadena'} <em>{t.detail?.evolutionTitleAccent || 'evolutiva.'}</em>
