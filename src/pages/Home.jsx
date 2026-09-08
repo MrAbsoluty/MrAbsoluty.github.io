@@ -15,9 +15,81 @@ const featuredItems = [
   { name: 'poke-ball', localizedName: 'Poké Ball', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png' }, { name: 'rare-candy', localizedName: 'Caramelo Raro', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png' }, { name: 'leftovers', localizedName: 'Restos', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/leftovers.png' }, { name: 'master-ball', localizedName: 'Master Ball', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png' },
 ]
 
-function Home({ onSearch, onItemClick, isLoading, t, locale, onLocaleChange }) {
+function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onPokedexClick, isLoading, t, locale, onLocaleChange }) {
   const categoryKeys = ['pokedex', 'competitive', 'learn', 'items', 'moves']
-  return <div className="page-shell"><Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} /><main><Hero onSearch={onSearch} isLoading={isLoading} t={t} locale={locale} /><section className="content-section categories-section" id="categories"><div className="section-heading"><div><p className="eyebrow">{t.categories.eyebrow}</p><h2>{t.categories.title}<br /><em>{t.categories.accent}</em></h2></div><p className="section-intro">{t.categories.intro}</p></div><div className="category-grid">{categories.map((category, index) => { const [title, description] = t.categories.items[categoryKeys[index]]; return <CategoryCard key={title} {...category} title={title} description={description} /> })}</div></section><section className="content-section featured-section" id="featured"><div className="section-heading compact-heading"><div><p className="eyebrow">{t.featured.eyebrow}</p><h2>{t.featured.title} <em>{t.featured.accent}</em></h2></div><a className="text-link" href="#categories">{t.featured.link} <span aria-hidden="true">↗</span></a></div><div className="pokemon-grid">{featuredPokemon.map((pokemon) => <PokemonCard key={pokemon.number} {...pokemon} type={pokemon.typeKeys.map((type) => t.types[type]).join(' · ')} />)}</div></section><section className="content-section featured-section" id="items"><div className="section-heading compact-heading"><div><p className="eyebrow">{t.itemDetail.eyebrow}</p><h2>{t.categories.items.items[0]}</h2></div></div><div className="pokemon-grid">{featuredItems.map((item) => <ItemCard key={item.name} {...item} category={t.itemDetail.eyebrow} onClick={() => onItemClick(item.name)} />)}</div></section></main><Footer t={t} /></div>
+  return (
+    <div className="page-shell">
+      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} activeNav="home" />
+      <main>
+        <Hero onSearch={onSearch} onPokemonClick={onPokemonClick} isLoading={isLoading} t={t} locale={locale} />
+        <section className="content-section categories-section" id="categories">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{t.categories.eyebrow}</p>
+              <h2>{t.categories.title}<br /><em>{t.categories.accent}</em></h2>
+            </div>
+            <p className="section-intro">{t.categories.intro}</p>
+          </div>
+          <div className="category-grid">
+            {categories.map((category, index) => {
+              const [title, description] = t.categories.items[categoryKeys[index]]
+              const isItems = categoryKeys[index] === 'items'
+              const isPokedex = categoryKeys[index] === 'pokedex'
+              return (
+                <CategoryCard
+                  key={title}
+                  {...category}
+                  title={title}
+                  description={description}
+                  href={isItems ? '#items' : isPokedex ? '#pokedex' : '#featured'}
+                  onClick={isItems ? onItemsClick : isPokedex ? onPokedexClick : undefined}
+                />
+              )
+            })}
+          </div>
+        </section>
+        <section className="content-section featured-section" id="featured">
+          <div className="section-heading compact-heading">
+            <div>
+              <p className="eyebrow">{t.featured.eyebrow}</p>
+              <h2>{t.featured.title} <em>{t.featured.accent}</em></h2>
+            </div>
+            <a
+              className="text-link"
+              href="#pokedex"
+              onClick={(e) => {
+                if (onPokedexClick) {
+                  e.preventDefault()
+                  onPokedexClick()
+                }
+              }}
+            >
+              {t.featured.link} <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+          <div className="pokemon-grid">
+            {featuredPokemon.map((pokemon) => (
+              <PokemonCard key={pokemon.number} {...pokemon} type={pokemon.typeKeys.map((type) => t.types[type]).join(' · ')} />
+            ))}
+          </div>
+        </section>
+        <section className="content-section featured-section" id="items">
+          <div className="section-heading compact-heading">
+            <div>
+              <p className="eyebrow">{t.itemDetail.eyebrow}</p>
+              <h2>{t.categories.items.items[0]}</h2>
+            </div>
+          </div>
+          <div className="pokemon-grid">
+            {featuredItems.map((item) => (
+              <ItemCard key={item.name} {...item} category={t.itemDetail.eyebrow} onClick={() => onItemClick(item.name)} />
+            ))}
+          </div>
+        </section>
+      </main>
+      <Footer t={t} />
+    </div>
+  )
 }
 
 export default Home
