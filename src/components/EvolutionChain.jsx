@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getEvolutionChain } from '../services/pokeapi'
-import { playButtonSound } from '../utils/audio'
+import { playClickSound } from '../utils/audio'
 
 const typeColors = {
   bug: '#65a47b', dark: '#59636b', dragon: '#7d77a9', electric: '#ddb431', fairy: '#c875a6', fighting: '#c87545', fire: '#e5764f', flying: '#7f9db2', ghost: '#756d9a', grass: '#65a47b', ground: '#b18a62', ice: '#70afae', normal: '#929a98', poison: '#a46f9a', psychic: '#dd7181', rock: '#a29468', steel: '#77858e', water: '#5d98b4',
@@ -18,7 +18,7 @@ function ArrowIcon() {
 function EvolutionCard({ node, isCurrent, onPokemonClick, t }) {
   const handleClick = () => {
     if (isCurrent) return
-    playButtonSound()
+    playClickSound()
     onPokemonClick?.(node.name)
   }
 

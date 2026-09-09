@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import megaSymbol from '../assets/mega-symbol.png'
-import { playButtonSound } from '../utils/audio'
+import { playButtonSound, playBubbleSound, playHoverBubbleSound } from '../utils/audio'
 
 function SparklesIcon() {
   return (
@@ -83,6 +83,15 @@ function PokemonFocusMenu({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  // Play bubble deploy sound when options bubbles deploy
+  useEffect(() => {
+    if (!isOpen) return
+    const timer = setTimeout(() => {
+      playBubbleSound()
+    }, 60)
+    return () => clearTimeout(timer)
+  }, [isOpen])
+
   // Stop sound when focus menu closes or unmounts
   useEffect(() => {
     return () => {
@@ -138,7 +147,10 @@ function PokemonFocusMenu({
         // Revert directly if already transformed
         onTransform?.(null)
       } else {
-        setShowVariantsDrawer((prev) => !prev)
+        setShowVariantsDrawer((prev) => {
+          if (!prev) playBubbleSound()
+          return !prev
+        })
       }
     } else {
       // Single Mega form: toggle between Mega and Base
@@ -196,6 +208,7 @@ function PokemonFocusMenu({
               type="button"
               className={`focus-bubble bubble-shiny ${isShiny ? 'is-active' : ''}`}
               onClick={handleShinyClick}
+              onMouseEnter={playHoverBubbleSound}
               title={isShiny ? 'Forma normal' : t.detail.bubbleShiny || 'Shiny'}
               aria-pressed={isShiny}
             >
@@ -216,6 +229,7 @@ function PokemonFocusMenu({
                 type="button"
                 className={`focus-bubble bubble-mega ${activeForm ? 'is-active' : ''}`}
                 onClick={handleMegaClick}
+                onMouseEnter={playHoverBubbleSound}
                 disabled={isTransforming}
                 title={activeForm ? t.detail.megaRevert : t.detail.megaButton}
                 aria-pressed={!!activeForm}
@@ -250,6 +264,7 @@ function PokemonFocusMenu({
                         type="button"
                         className={`focus-variant-pill ${isThisActive ? 'is-active' : ''}`}
                         onClick={(e) => handleVariantSelect(e, isThisActive ? null : form)}
+                        onMouseEnter={playHoverBubbleSound}
                         disabled={isTransforming}
                         title={form.localizedName || form.name}
                       >
@@ -262,6 +277,7 @@ function PokemonFocusMenu({
                       type="button"
                       className="focus-variant-pill pill-base"
                       onClick={(e) => handleVariantSelect(e, null)}
+                      onMouseEnter={playHoverBubbleSound}
                       disabled={isTransforming}
                       title={t.detail.baseForm || 'Normal'}
                     >
@@ -281,6 +297,7 @@ function PokemonFocusMenu({
               type="button"
               className={`focus-bubble bubble-cry ${isPlayingCry ? 'is-playing' : ''}`}
               onClick={handlePlayCry}
+              onMouseEnter={playHoverBubbleSound}
               title={isPlayingCry ? t.detail.playingCry : t.detail.playCry}
               aria-pressed={isPlayingCry}
             >
@@ -304,6 +321,7 @@ function PokemonFocusMenu({
             type="button"
             className="focus-bubble bubble-stats"
             onClick={handleStatsClick}
+            onMouseEnter={playHoverBubbleSound}
             title={t.detail.stats}
           >
             <span className="bubble-icon-wrap">
@@ -323,6 +341,7 @@ function PokemonFocusMenu({
               playButtonSound()
               onClose?.()
             }}
+            onMouseEnter={playHoverBubbleSound}
             title={t.detail.bubbleClose || 'Cerrar'}
             aria-label={t.detail.bubbleClose || 'Cerrar'}
           >

@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { playClickSound } from '../utils/audio'
 
 const typeColors = {
   bug: '#65a47b',
@@ -45,7 +46,10 @@ function PokedexCard({
       type="button"
       className="pokemon-card pokedex-interactive-card"
       style={{ '--card-accent': cardAccent }}
-      onClick={() => onClick?.(apiName || String(id))}
+      onClick={() => {
+        playClickSound()
+        onClick?.(apiName || String(id))
+      }}
       aria-label={`${name} #${formattedId} - ${typesText}`}
     >
       <div className="pokemon-meta">

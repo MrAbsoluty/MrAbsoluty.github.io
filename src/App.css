@@ -1285,6 +1285,210 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
 }
 
 /* ==========================================================================
+   SHINY TRANSFORMATION SPECIAL EFFECTS
+   ========================================================================== */
+
+.shiny-transform-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* Circular Expanding Energy Shockwave */
+.shiny-energy-shockwave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.2);
+  border: 3px solid rgba(251, 191, 36, 0.95);
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.4) 0%, rgba(245, 158, 11, 0.2) 45%, transparent 72%);
+  box-shadow: 0 0 50px rgba(245, 158, 11, 0.8), inset 0 0 25px rgba(255, 255, 255, 0.85);
+  animation: shiny-shockwave-pulse 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shiny-shockwave-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(0.65);
+    opacity: 1;
+  }
+  65% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0.75;
+    border-color: rgba(254, 240, 138, 0.9);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.75);
+    opacity: 0;
+    border-color: transparent;
+  }
+}
+
+/* Soft Golden Radial Aura Burst */
+.shiny-aura-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 251, 235, 0.6) 0%, rgba(251, 191, 36, 0.35) 42%, rgba(245, 158, 11, 0.15) 65%, transparent 80%);
+  animation: shiny-aura-expand 0.9s ease-out forwards;
+}
+
+@keyframes shiny-aura-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.95;
+    filter: blur(2px);
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(1.28);
+    opacity: 0.45;
+    filter: blur(8px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.48);
+    opacity: 0;
+    filter: blur(14px);
+  }
+}
+
+/* Brief Elegant Transformation Light Flash */
+.shiny-light-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(254, 243, 199, 0.65) 30%, rgba(251, 191, 36, 0.25) 55%, transparent 75%);
+  animation: shiny-flash-burst 0.5s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes shiny-flash-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 0;
+  }
+}
+
+/* Floating Shiny Stars / Particles */
+.shiny-particles-cluster {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.shiny-star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: clamp(18px, 2.2vw, 26px);
+  line-height: 1;
+  color: #fffbeb;
+  text-shadow: 0 0 10px #f59e0b, 0 0 20px #fbbf24, 0 0 35px rgba(245, 158, 11, 0.8), 0 0 4px #ffffff;
+  pointer-events: none;
+  user-select: none;
+  animation: shiny-star-flight 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shiny-star-flight {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--star-x) * 0.45), calc(-50% + var(--star-y) * 0.45)) scale(calc(var(--star-scale, 1) * 1.35)) rotate(50deg);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--star-x) * 0.9), calc(-50% + var(--star-y) * 0.9)) scale(var(--star-scale, 1)) rotate(100deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--star-x) * 1.15), calc(-50% + var(--star-y) * 1.15)) scale(0.35) rotate(160deg);
+  }
+}
+
+.shiny-star.star-1 { --star-x: 0px; --star-y: -130px; --star-scale: 1.25; animation-delay: 0.16s; }
+.shiny-star.star-2 { --star-x: 95px; --star-y: -95px; --star-scale: 0.95; animation-delay: 0.2s; }
+.shiny-star.star-3 { --star-x: 135px; --star-y: -10px; --star-scale: 1.2; animation-delay: 0.18s; }
+.shiny-star.star-4 { --star-x: 95px; --star-y: 85px; --star-scale: 0.9; animation-delay: 0.24s; }
+.shiny-star.star-5 { --star-x: 0px; --star-y: 125px; --star-scale: 1.1; animation-delay: 0.22s; }
+.shiny-star.star-6 { --star-x: -95px; --star-y: 85px; --star-scale: 1; animation-delay: 0.17s; }
+.shiny-star.star-7 { --star-x: -135px; --star-y: -15px; --star-scale: 1.2; animation-delay: 0.19s; }
+.shiny-star.star-8 { --star-x: -95px; --star-y: -95px; --star-scale: 0.85; animation-delay: 0.25s; }
+
+/* Subtle Golden Shimmer on Pokemon Sprite during Shiny Transformation */
+.detail-art-image.shiny-sprite-charging {
+  animation: shiny-sprite-charge 0.22s ease-in forwards;
+}
+
+.detail-art-image.shiny-sprite-flash {
+  animation: shiny-sprite-reveal 0.48s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.detail-art-image.shiny-sprite-sparkling {
+  transition: filter 0.65s ease;
+  filter: drop-shadow(12px 18px 12px rgba(23,39,51,.16)) drop-shadow(0 0 16px rgba(245, 158, 11, 0.35));
+}
+
+@keyframes shiny-sprite-charge {
+  0% {
+    filter: drop-shadow(12px 18px 12px rgba(23,39,51,.16));
+  }
+  100% {
+    filter: brightness(1.22) drop-shadow(0 0 26px rgba(245, 158, 11, 0.75));
+  }
+}
+
+@keyframes shiny-sprite-reveal {
+  0% {
+    transform: scale(1.06);
+    filter: brightness(1.55) drop-shadow(0 0 42px rgba(245, 158, 11, 0.95));
+  }
+  60% {
+    transform: scale(0.98);
+    filter: brightness(1.18) drop-shadow(0 0 26px rgba(245, 158, 11, 0.65));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(12px 18px 12px rgba(23,39,51,.16)) drop-shadow(0 0 20px rgba(245, 158, 11, 0.45));
+  }
+}
+
+/* ==========================================================================
    POKEMON FOCUS MODE & BUBBLE MENU
    ========================================================================== */
 

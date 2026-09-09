@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import SearchBar from './SearchBar'
+import { playClickSound } from '../utils/audio'
 
 const pokemonOrbitPool = [
   { id: 25, name: 'pikachu', label: 'Pikachu', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png' },
@@ -37,6 +38,7 @@ function Hero({ onSearch, onPokemonClick, isLoading, t, locale }) {
   const [selectedPokemon, setSelectedPokemon] = useState(null)
 
   function handlePokemonClick(name) {
+    playClickSound()
     setSelectedPokemon(name)
     onPokemonClick(name)
   }

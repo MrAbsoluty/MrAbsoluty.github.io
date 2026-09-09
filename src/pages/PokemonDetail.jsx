@@ -8,7 +8,7 @@ import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import { getMegaForms } from '../services/pokeapi'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
-import { playButtonSound } from '../utils/audio'
+import { playButtonSound, playClickSound, playShinySound } from '../utils/audio'
 
 const typeColors = {
   bug: '#65a47b', dark: '#59636b', dragon: '#7d77a9', electric: '#ddb431', fairy: '#c875a6', fighting: '#c87545', fire: '#e5764f', flying: '#7f9db2', ghost: '#756d9a', grass: '#65a47b', ground: '#b18a62', ice: '#70afae', normal: '#929a98', poison: '#a46f9a', psychic: '#dd7181', rock: '#a29468', steel: '#77858e', water: '#5d98b4',
@@ -39,6 +39,8 @@ function PokemonDetail({
   const [transformStage, setTransformStage] = useState('idle')
   const [statsBump, setStatsBump] = useState(false)
   const [isShiny, setIsShiny] = useState(false)
+  const [isShinyAnimating, setIsShinyAnimating] = useState(false)
+  const [shinyStage, setShinyStage] = useState('idle')
   const [isFocusMode, setIsFocusMode] = useState(false)
 
   // Reset active form during render when pokemon prop changes
@@ -48,6 +50,8 @@ function PokemonDetail({
     setMegaForms([])
     setIsLoadingMegas(true)
     setIsShiny(false)
+    setIsShinyAnimating(false)
+    setShinyStage('idle')
     setIsFocusMode(false)
   }
 
@@ -127,6 +131,38 @@ function PokemonDetail({
         setStatsBump(false)
       }, 450)
     }, 350)
+  }
+
+  function handleToggleShiny() {
+    if (!hasShiny || isShinyAnimating) return
+
+    const nextShiny = !isShiny
+
+    if (nextShiny) {
+      setIsShinyAnimating(true)
+      setShinyStage('charging')
+
+      // Momento clímax (220ms): se reproduce sonido, flash luminoso y cambio de sprite
+      setTimeout(() => {
+        playShinySound()
+        setShinyStage('flash')
+        setIsShiny(true)
+      }, 220)
+
+      // Transición a estrellas y partículas doradas (460ms)
+      setTimeout(() => {
+        setShinyStage('sparkling')
+      }, 460)
+
+      // Conclusión suave y retorno a reposo (1150ms)
+      setTimeout(() => {
+        setIsShinyAnimating(false)
+        setShinyStage('idle')
+      }, 1150)
+    } else {
+      // Regreso a forma regular
+      setIsShiny(false)
+    }
   }
 
   function handleBackClick() {
@@ -237,12 +273,16 @@ function PokemonDetail({
           <div className={`detail-art ${isFocusMode ? 'has-focus-active' : ''}`}>
             <div
               className={`art-stage is-interactive ${isFocusMode ? 'is-focused' : ''}`}
-              onClick={() => setIsFocusMode((prev) => !prev)}
+              onClick={() => {
+                playClickSound()
+                setIsFocusMode((prev) => !prev)
+              }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
+                  playClickSound()
                   setIsFocusMode((prev) => !prev)
                 }
               }}
@@ -254,9 +294,28 @@ function PokemonDetail({
               {/* Transformation energy shockwave aura */}
               <div className={`mega-energy-ring ${transformStage !== 'idle' ? transformStage : ''}`} aria-hidden="true" />
 
+              {/* Shiny transformation energy & particle effects */}
+              {isShinyAnimating && (
+                <div className={`shiny-transform-overlay stage-${shinyStage}`} aria-hidden="true">
+                  <div className="shiny-energy-shockwave" />
+                  <div className="shiny-aura-burst" />
+                  <div className="shiny-light-flash" />
+                  <div className="shiny-particles-cluster">
+                    <span className="shiny-star star-1">✦</span>
+                    <span className="shiny-star star-2">✦</span>
+                    <span className="shiny-star star-3">✦</span>
+                    <span className="shiny-star star-4">✦</span>
+                    <span className="shiny-star star-5">✦</span>
+                    <span className="shiny-star star-6">✦</span>
+                    <span className="shiny-star star-7">✦</span>
+                    <span className="shiny-star star-8">✦</span>
+                  </div>
+                </div>
+              )}
+
               <img
                 key={`${activeForm ? activeForm.name : pokemon.name}-${isShiny ? 'shiny' : 'regular'}`}
-                className={`detail-art-image ${transformStage === 'charging' ? 'sprite-charging' : ''} ${transformStage === 'impact' ? 'sprite-impact' : ''}`}
+                className={`detail-art-image ${transformStage === 'charging' ? 'sprite-charging' : ''} ${transformStage === 'impact' ? 'sprite-impact' : ''} ${isShinyAnimating ? `shiny-sprite-${shinyStage}` : ''}`}
                 src={currentImage}
                 alt={currentName}
               />
@@ -279,7 +338,7 @@ function PokemonDetail({
               isOpen={isFocusMode}
               onClose={() => setIsFocusMode(false)}
               isShiny={isShiny}
-              onToggleShiny={() => setIsShiny((prev) => !prev)}
+              onToggleShiny={handleToggleShiny}
               hasShiny={hasShiny}
               currentCry={currentCry}
               pokemonName={currentName}
