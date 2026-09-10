@@ -429,7 +429,9 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
         ),
     )
 
-    if (match) normalizedQuery = match.apiName
+    if (match) {
+      normalizedQuery = match.id ? String(match.id) : match.apiName
+    }
   }
 
   let response
@@ -443,6 +445,30 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
       getErrorMessage('network', query, messages),
       'network',
     )
+  }
+
+  if (response.status === 404) {
+    // Si el endpoint /pokemon/ da 404, verificar si es una especie cuya forma por defecto tiene sufijo (ej: landorus -> landorus-incarnate, deoxys -> deoxys-normal)
+    try {
+      const fallbackQuery = normalizePokemonQuery(query)
+      const speciesResponse = await fetch(
+        `https://pokeapi.co/api/v2/pokemon-species/${encodeURIComponent(fallbackQuery)}`,
+      )
+      if (speciesResponse.ok) {
+        const speciesData = await speciesResponse.json()
+        const defaultVariety =
+          speciesData.varieties?.find((v) => v.is_default) ||
+          speciesData.varieties?.[0]
+
+        if (defaultVariety?.pokemon?.url) {
+          response = await fetch(defaultVariety.pokemon.url)
+        } else if (speciesData.id) {
+          response = await fetch(`${API_URL}${speciesData.id}`)
+        }
+      }
+    } catch {
+      // Ignorar error del fallback y continuar al manejo de 404
+    }
   }
 
   if (response.status === 404) {
