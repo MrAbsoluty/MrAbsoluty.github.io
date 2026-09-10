@@ -1,6 +1,5 @@
 import { localeOptions } from '../locales'
 import { useFavorites } from '../context/FavoritesContext'
-import { playFavoritoSound } from '../utils/audio'
 
 function Navbar({
   t,
@@ -30,7 +29,6 @@ function Navbar({
   function handleFavoritesNavClick(event) {
     if (onFavoritesClick) {
       event.preventDefault()
-      playFavoritoSound()
       onFavoritesClick()
     }
   }
@@ -62,7 +60,7 @@ function Navbar({
           onClick={handleFavoritesNavClick}
         >
           {t?.nav?.favorites || 'Favoritos'}
-          {favoritesCount > 0 && (
+          {favoritesCount > 0 && activeNav !== 'favorites' && (
             <span className="nav-fav-badge" aria-label={`${favoritesCount} favoritos`}>
               {favoritesCount}
             </span>
