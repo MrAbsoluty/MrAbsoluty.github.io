@@ -317,21 +317,39 @@
   flex-shrink: 0;
 }
 
-/* Navbar Favorites Badge */
+/* Navbar Favorites Badge (Notice / Aviso de nuevos favoritos) */
 .nav-fav-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 17px;
   height: 17px;
-  padding: 0 5px;
+  padding: 0 4px;
   margin-left: 5px;
-  font: 700 10px var(--display);
-  background: var(--coral);
+  font: 700 10px var(--display, system-ui, sans-serif);
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
   color: #ffffff;
-  border-radius: 10px;
+  border-radius: 999px;
   line-height: 1;
-  vertical-align: middle;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.45);
+  animation: fav-badge-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  letter-spacing: -0.02em;
+  transform-origin: center;
+  flex-shrink: 0;
+}
+
+@keyframes fav-badge-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* ==========================================================================

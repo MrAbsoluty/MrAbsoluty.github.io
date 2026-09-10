@@ -10,7 +10,7 @@ function Navbar({
   onFavoritesClick,
   activeNav = 'home',
 }) {
-  const { favoritesCount } = useFavorites()
+  const { unseenCount, markFavoritesAsSeen } = useFavorites()
 
   function handleBrandClick(event) {
     if (onHomeClick) {
@@ -27,6 +27,7 @@ function Navbar({
   }
 
   function handleFavoritesNavClick(event) {
+    markFavoritesAsSeen?.()
     if (onFavoritesClick) {
       event.preventDefault()
       onFavoritesClick()
@@ -60,9 +61,9 @@ function Navbar({
           onClick={handleFavoritesNavClick}
         >
           {t?.nav?.favorites || 'Favoritos'}
-          {favoritesCount > 0 && activeNav !== 'favorites' && (
-            <span className="nav-fav-badge" aria-label={`${favoritesCount} favoritos`}>
-              {favoritesCount}
+          {unseenCount > 0 && activeNav !== 'favorites' && (
+            <span className="nav-fav-badge" aria-label={`${unseenCount} nuevos favoritos`}>
+              {unseenCount}
             </span>
           )}
         </a>

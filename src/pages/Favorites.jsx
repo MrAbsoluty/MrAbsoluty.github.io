@@ -15,9 +15,14 @@ function Favorites({
   locale,
   onLocaleChange,
 }) {
-  const { favorites, favoritesCount } = useFavorites()
+  const { favorites, favoritesCount, markFavoritesAsSeen } = useFavorites()
   const [cards, setCards] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+
+  // Marcar automáticamente como vistos al entrar a la página de favoritos
+  useEffect(() => {
+    markFavoritesAsSeen?.()
+  }, [markFavoritesAsSeen, favorites.length])
 
   function handleBackClick() {
     playButtonSound()

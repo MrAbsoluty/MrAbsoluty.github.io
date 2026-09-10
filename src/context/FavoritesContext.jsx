@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 const FAVORITES_STORAGE_KEY = 'pokeguide-favorites'
+const LAST_VIEWED_KEY = 'pokeguide-favorites-last-viewed'
 
 export const FavoritesContext = createContext(null)
 
@@ -62,7 +63,7 @@ function loadInitialFavorites() {
         .map((item) => ({
           id: item.id || null,
           name: (item.name || '').toLowerCase(),
-          addedAt: item.addedAt || Date.now(),
+          addedAt: typeof item.addedAt === 'number' ? item.addedAt : 0,
         }))
     }
     return []
@@ -72,14 +73,34 @@ function loadInitialFavorites() {
   }
 }
 
+function loadInitialLastViewed() {
+  if (typeof window === 'undefined' || !window.localStorage) return Date.now()
+  try {
+    const raw = window.localStorage.getItem(LAST_VIEWED_KEY)
+    if (raw) {
+      const parsed = parseInt(raw, 10)
+      if (!Number.isNaN(parsed) && parsed > 0) return parsed
+    }
+    const now = Date.now()
+    window.localStorage.setItem(LAST_VIEWED_KEY, String(now))
+    return now
+  } catch {
+    return Date.now()
+  }
+}
+
 export function FavoritesProvider({ children }) {
   const [favorites, setFavorites] = useState(loadInitialFavorites)
+  const [lastViewedTime, setLastViewedTime] = useState(loadInitialLastViewed)
 
   // Sincronizar con eventos de almacenamiento externo (otras pestañas)
   useEffect(() => {
     function handleStorage(e) {
       if (e.key === FAVORITES_STORAGE_KEY) {
         setFavorites(loadInitialFavorites())
+      }
+      if (e.key === LAST_VIEWED_KEY) {
+        setLastViewedTime(loadInitialLastViewed())
       }
     }
 
@@ -98,6 +119,16 @@ export function FavoritesProvider({ children }) {
       console.error('Error guardando favoritos en localStorage:', err)
     }
   }
+
+  const markFavoritesAsSeen = useCallback(() => {
+    const now = Date.now()
+    setLastViewedTime(now)
+    try {
+      window.localStorage.setItem(LAST_VIEWED_KEY, String(now))
+    } catch (err) {
+      console.error('Error guardando timestamp de favoritos vistos:', err)
+    }
+  }, [])
 
   function isFavorite(pokemonOrId) {
     const target = normalizePokemonForFavorite(pokemonOrId)
@@ -148,9 +179,15 @@ export function FavoritesProvider({ children }) {
     }
   }
 
+  const unseenCount = favorites.filter(
+    (f) => typeof f.addedAt === 'number' && f.addedAt > lastViewedTime,
+  ).length
+
   const value = {
     favorites,
     favoritesCount: favorites.length,
+    unseenCount,
+    markFavoritesAsSeen,
     isFavorite,
     addFavorite,
     removeFavorite,
