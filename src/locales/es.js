@@ -86,6 +86,21 @@ const es = {
     multiplierLabel: 'Multiplicador resultante',
     breakdownLabel: 'Desglose por tipo',
   },
+  music: {
+    nowPlaying: 'Estás escuchando',
+    previous: 'Anterior',
+    play: 'Reproducir',
+    pause: 'Pausa',
+    next: 'Siguiente',
+    volume: 'Volumen',
+    close: 'Cerrar reproductor',
+    open: 'Abrir reproductor',
+    musicOff: 'Música desactivada',
+    musicOn: 'Música activada',
+    turnOn: 'Activar música',
+    turnOff: 'Pausar música',
+    radio: 'PokeGuide Radio',
+  },
 }
 
 export default es

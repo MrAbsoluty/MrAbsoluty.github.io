@@ -45,9 +45,16 @@ function PokemonCryButton({ cry, pokemonName, title, ariaLabel }) {
 
   function handlePlay() {
     try {
-      if (!audioRef.current) {
+      if (!audioRef.current || audioRef.current._crySrc !== cry) {
+        if (audioRef.current) {
+          audioRef.current.pause()
+          audioRef.current.currentTime = 0
+          audioRef.current = null
+        }
         const audio = new Audio(cry)
+        audio._crySrc = cry
         audio.preload = 'auto'
+        audio.volume = 0.35
 
         audio.onplay = () => setIsPlaying(true)
         audio.onended = () => setIsPlaying(false)
@@ -58,6 +65,7 @@ function PokemonCryButton({ cry, pokemonName, title, ariaLabel }) {
       } else {
         // If already exists or currently playing, restart from beginning
         audioRef.current.currentTime = 0
+        audioRef.current.volume = 0.35
       }
 
       const playPromise = audioRef.current.play()

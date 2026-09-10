@@ -86,6 +86,21 @@ const en = {
     multiplierLabel: 'Resulting multiplier',
     breakdownLabel: 'Type breakdown',
   },
+  music: {
+    nowPlaying: 'Now Playing',
+    previous: 'Previous',
+    play: 'Play',
+    pause: 'Pause',
+    next: 'Next',
+    volume: 'Volume',
+    close: 'Close player',
+    open: 'Open player',
+    musicOff: 'Music off',
+    musicOn: 'Music on',
+    turnOn: 'Enable music',
+    turnOff: 'Pause music',
+    radio: 'PokeGuide Radio',
+  },
 }
 
 export default en

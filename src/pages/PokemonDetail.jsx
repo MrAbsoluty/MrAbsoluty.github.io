@@ -8,6 +8,9 @@ import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import { getMegaForms, getRegionalForms } from '../services/pokeapi'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
+import alolaFormSound from '../audio/alolaform.mp3'
+import galarFormSound from '../audio/galarform.mp3'
+import hisuiFormSound from '../audio/hisuiform.mp3'
 import { playButtonSound, playClickSound, playShinySound, playShinylessSound } from '../utils/audio'
 
 const typeColors = {
@@ -186,9 +189,25 @@ function PokemonDetail({
     const isReverting =
       !targetForm || (activeRegionalForm && activeRegionalForm.id === targetForm.id)
     const region = isReverting ? 'reverting' : (targetForm.region || 'alola')
+    const normalizedRegion = (targetForm?.region || targetForm?.formName || '').toLowerCase()
 
-    const audio = new Audio(isReverting ? megaRevertSound : megaSound)
+    let soundToPlay = megaSound
+    let soundVolume = 0.85
+
+    if (isReverting) {
+      soundToPlay = megaRevertSound
+    } else if (normalizedRegion.includes('alola')) {
+      soundToPlay = alolaFormSound
+    } else if (normalizedRegion.includes('galar')) {
+      soundToPlay = galarFormSound
+      soundVolume = 0.45
+    } else if (normalizedRegion.includes('hisui')) {
+      soundToPlay = hisuiFormSound
+    }
+
+    const audio = new Audio(soundToPlay)
     audio.currentTime = 0
+    audio.volume = soundVolume
     audio.play().catch(() => { })
 
     // Clear active mega form if transforming into a regional form

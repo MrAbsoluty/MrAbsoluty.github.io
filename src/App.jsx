@@ -6,6 +6,7 @@ import Pokedex from './pages/Pokedex'
 import PokemonDetail from './pages/PokemonDetail'
 import { defaultLocale, getTranslations } from './locales'
 import { getItem, getPokemon } from './services/pokeapi'
+import MusicPlayer from './components/MusicPlayer'
 import './App.css'
 
 function getInitialLocale() {
@@ -172,8 +173,10 @@ function App() {
     handleItemClick(name)
   }
 
+  let currentView = null
+
   if (view === 'pokedex') {
-    return (
+    currentView = (
       <Pokedex
         onPokemonClick={handlePokemonFromPokedex}
         onBack={handleBack}
@@ -183,18 +186,12 @@ function App() {
         onLocaleChange={handleLocaleChange}
       />
     )
-  }
-
-  if (view === 'items') {
-    return <Items onItemClick={handleItemFromItems} onBack={handleBack} t={t} locale={locale} onLocaleChange={handleLocaleChange} />
-  }
-
-  if (view === 'item-detail') {
-    return <ItemDetail item={item} error={error} isLoading={isLoading} onBack={handleBack} t={t} locale={locale} onLocaleChange={handleLocaleChange} />
-  }
-
-  if (view === 'detail') {
-    return (
+  } else if (view === 'items') {
+    currentView = <Items onItemClick={handleItemFromItems} onBack={handleBack} t={t} locale={locale} onLocaleChange={handleLocaleChange} />
+  } else if (view === 'item-detail') {
+    currentView = <ItemDetail item={item} error={error} isLoading={isLoading} onBack={handleBack} t={t} locale={locale} onLocaleChange={handleLocaleChange} />
+  } else if (view === 'detail') {
+    currentView = (
       <PokemonDetail
         pokemon={pokemon}
         error={error}
@@ -208,9 +205,28 @@ function App() {
         onLocaleChange={handleLocaleChange}
       />
     )
+  } else {
+    currentView = (
+      <Home
+        onSearch={handlePokemonFromHome}
+        onPokemonClick={handlePokemonFromHome}
+        onItemClick={handleItemClick}
+        onItemsClick={handleItemsOpen}
+        onPokedexClick={handlePokedexOpen}
+        isLoading={isLoading}
+        t={t}
+        locale={locale}
+        onLocaleChange={handleLocaleChange}
+      />
+    )
   }
 
-  return <Home onSearch={handlePokemonFromHome} onPokemonClick={handlePokemonFromHome} onItemClick={handleItemClick} onItemsClick={handleItemsOpen} onPokedexClick={handlePokedexOpen} isLoading={isLoading} t={t} locale={locale} onLocaleChange={handleLocaleChange} />
+  return (
+    <>
+      {currentView}
+      <MusicPlayer locale={locale} t={t} />
+    </>
+  )
 }
 
 export default App

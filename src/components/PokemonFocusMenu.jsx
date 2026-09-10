@@ -117,16 +117,15 @@ function PokemonFocusMenu({
     return () => clearTimeout(timer)
   }, [isOpen])
 
-  // Stop sound when focus menu closes or unmounts
+  // Stop sound when focus menu closes, unmounts, or when cry changes
   useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current.currentTime = 0
-        audioRef.current = null
-      }
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      audioRef.current = null
+      setIsPlayingCry(false)
     }
-  }, [isOpen])
+  }, [currentCry, isOpen])
 
   if (!isOpen) return null
 
@@ -135,9 +134,16 @@ function PokemonFocusMenu({
     if (!currentCry || isPlayingCry) return
 
     try {
-      if (!audioRef.current) {
+      if (!audioRef.current || audioRef.current._crySrc !== currentCry) {
+        if (audioRef.current) {
+          audioRef.current.pause()
+          audioRef.current.currentTime = 0
+          audioRef.current = null
+        }
         const audio = new Audio(currentCry)
+        audio._crySrc = currentCry
         audio.preload = 'auto'
+        audio.volume = 0.35
         audio.onplay = () => setIsPlayingCry(true)
         audio.onended = () => setIsPlayingCry(false)
         audio.onpause = () => setIsPlayingCry(false)
@@ -145,6 +151,7 @@ function PokemonFocusMenu({
         audioRef.current = audio
       } else {
         audioRef.current.currentTime = 0
+        audioRef.current.volume = 0.35
       }
 
       const playPromise = audioRef.current.play()
