@@ -2594,42 +2594,65 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
 
 /* Mobile & Small Screens (< 600px) Responsive Geometry */
 @media (max-width: 600px) {
+  .detail-art.has-focus-active {
+    margin-top: 24px;
+    margin-bottom: 20px;
+  }
+  .art-stage.is-focused .detail-art-image {
+    transform: scale(1.03);
+  }
   .focus-bubble-container {
-    --orbit-x: 104px;
-    --orbit-y: 110px;
+    --orbit-x: clamp(138px, 38vw, 170px);
+    --orbit-y: clamp(126px, 34vw, 156px);
   }
   .focus-bubble {
-    width: 52px;
-    height: 52px;
+    width: 50px;
+    height: 50px;
   }
   .bubble-icon-wrap {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
   .bubble-icon {
-    width: 17px;
-    height: 17px;
-  }
-  .bubble-label {
-    font-size: 8.5px;
-  }
-  .bubble-mega-img {
     width: 18px;
     height: 18px;
   }
+  .bubble-label {
+    font-size: 8px;
+    letter-spacing: 0.02em;
+  }
+  .bubble-mega-img {
+    width: 17px;
+    height: 17px;
+  }
   .focus-bubble-container.has-both-modes .slot-mega {
-    --bx: calc(-1 * var(--orbit-x) * 1.15);
-    --by: calc(var(--orbit-y) * 0.12);
+    --bx: calc(-1 * var(--orbit-x) * 1.08);
+    --by: calc(var(--orbit-y) * 0.15);
   }
   .focus-bubble-container.has-both-modes .slot-forms {
     --bx: calc(-1 * var(--orbit-x) * 0.9);
     --by: calc(var(--orbit-y) * 0.95);
   }
   .focus-regional-drawer {
-    min-width: 185px;
-    max-width: 245px;
-    bottom: 64px;
+    min-width: 190px;
+    max-width: 250px;
+    bottom: 62px;
+    left: 50%;
+    transform: translateX(-25%) translateY(8px) scale(0.92);
     padding: 8px;
+    z-index: 1050;
+  }
+  .focus-regional-drawer.is-open {
+    transform: translateX(-25%) translateY(0) scale(1);
+  }
+  .focus-mega-drawer {
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-35%) translateY(-4px) scale(0.9);
+    z-index: 1050;
+  }
+  .focus-mega-drawer.is-open {
+    transform: translateX(-35%) translateY(0) scale(1);
   }
   .focus-regional-option {
     padding: 6px 8px;
@@ -2640,7 +2663,7 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   }
   .slot-close {
     --bx: 0px;
-    --by: -152px;
+    --by: calc(-1 * var(--orbit-y) * 1.25);
   }
   .pokemon-focus-header {
     top: 14px;
