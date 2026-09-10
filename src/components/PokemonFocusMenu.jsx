@@ -49,6 +49,16 @@ function RevertIcon() {
   )
 }
 
+function GlobeIcon() {
+  return (
+    <svg className="bubble-icon globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  )
+}
+
 function PokemonFocusMenu({
   isOpen,
   onClose,
@@ -57,16 +67,23 @@ function PokemonFocusMenu({
   hasShiny = true,
   currentCry,
   pokemonName,
+  basePokemonName,
   hasMegas,
   megaForms = [],
   activeForm,
   onTransform,
   isTransforming,
+  hasRegionalForms,
+  regionalForms = [],
+  activeRegionalForm,
+  onSelectRegionalForm,
+  isRegionalTransforming,
   onScrollToStats,
   t,
 }) {
   const [isPlayingCry, setIsPlayingCry] = useState(false)
   const [showVariantsDrawer, setShowVariantsDrawer] = useState(false)
+  const [showRegionalDrawer, setShowRegionalDrawer] = useState(false)
   const audioRef = useRef(null)
 
   // Listen to Escape key to close Focus Mode
@@ -82,6 +99,14 @@ function PokemonFocusMenu({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
+
+  // Reset drawer submenus when closing
+  useEffect(() => {
+    if (!isOpen) {
+      setShowVariantsDrawer(false)
+      setShowRegionalDrawer(false)
+    }
+  }, [isOpen])
 
   // Play bubble deploy sound when options bubbles deploy
   useEffect(() => {
@@ -139,7 +164,8 @@ function PokemonFocusMenu({
 
   const handleMegaClick = (e) => {
     e.stopPropagation()
-    if (isTransforming) return
+    if (isTransforming || isRegionalTransforming) return
+    setShowRegionalDrawer(false)
 
     // If there are multiple mega forms (e.g. Charizard X & Y), toggle the variant selection drawer
     if (megaForms.length > 1) {
@@ -147,10 +173,8 @@ function PokemonFocusMenu({
         // Revert directly if already transformed
         onTransform?.(null)
       } else {
-        setShowVariantsDrawer((prev) => {
-          if (!prev) playBubbleSound()
-          return !prev
-        })
+        playButtonSound()
+        setShowVariantsDrawer((prev) => !prev)
       }
     } else {
       // Single Mega form: toggle between Mega and Base
@@ -160,9 +184,25 @@ function PokemonFocusMenu({
 
   const handleVariantSelect = (e, form) => {
     e.stopPropagation()
-    if (isTransforming) return
+    if (isTransforming || isRegionalTransforming) return
     onTransform?.(form)
     setShowVariantsDrawer(false)
+  }
+
+  const handleFormsClick = (e) => {
+    e.stopPropagation()
+    if (isTransforming || isRegionalTransforming) return
+    playButtonSound()
+    setShowVariantsDrawer(false)
+    setShowRegionalDrawer((prev) => !prev)
+  }
+
+  const handleRegionalOptionClick = (e, form) => {
+    e.stopPropagation()
+    if (isTransforming || isRegionalTransforming) return
+    playButtonSound()
+    setShowRegionalDrawer(false)
+    onSelectRegionalForm?.(form)
   }
 
   const handleStatsClick = (e) => {
@@ -173,12 +213,21 @@ function PokemonFocusMenu({
 
   const hasMultipleMegas = hasMegas && megaForms.length > 1
 
+  const handleBackdropClick = () => {
+    if (showRegionalDrawer || showVariantsDrawer) {
+      setShowRegionalDrawer(false)
+      setShowVariantsDrawer(false)
+      return
+    }
+    onClose?.()
+  }
+
   return (
     <>
       {/* Darkened blur backdrop covering page */}
       <div
         className="pokemon-focus-backdrop"
-        onClick={onClose}
+        onClick={handleBackdropClick}
         role="presentation"
         aria-hidden="true"
       />
@@ -195,7 +244,7 @@ function PokemonFocusMenu({
 
       {/* Orbital Bubble Menu surrounding Pokémon */}
       <div
-        className={`focus-bubble-container ${hasMegas ? 'has-mega' : 'no-mega'}`}
+        className={`focus-bubble-container ${hasMegas ? 'has-mega' : 'no-mega'} ${hasRegionalForms ? 'has-regional' : 'no-regional'} ${hasMegas && hasRegionalForms ? 'has-both-modes' : ''} ${showRegionalDrawer || showVariantsDrawer ? 'has-drawer-open' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={`${t.detail.focusMode || 'Interacción'} ${pokemonName}`}
@@ -221,21 +270,21 @@ function PokemonFocusMenu({
           </div>
         )}
 
-        {/* 2. 🔄 FORMA / MEGA BUBBLE */}
+        {/* 2. 🔄 FORMA / MEGA BUBBLE (Only if Pokémon has Mega forms) */}
         {hasMegas && (
-          <div className="focus-bubble-slot slot-mega">
+          <div className={`focus-bubble-slot slot-mega ${showVariantsDrawer ? 'is-active-slot' : ''}`}>
             <div className="mega-bubble-group">
               <button
                 type="button"
-                className={`focus-bubble bubble-mega ${activeForm ? 'is-active' : ''}`}
+                className={`focus-bubble bubble-mega ${activeForm && !activeRegionalForm ? 'is-active' : ''}`}
                 onClick={handleMegaClick}
                 onMouseEnter={playHoverBubbleSound}
-                disabled={isTransforming}
+                disabled={isTransforming || isRegionalTransforming}
                 title={activeForm ? t.detail.megaRevert : t.detail.megaButton}
                 aria-pressed={!!activeForm}
               >
                 <span className="bubble-icon-wrap">
-                  {activeForm ? (
+                  {activeForm && !activeRegionalForm ? (
                     <RevertIcon />
                   ) : (
                     <img
@@ -246,7 +295,7 @@ function PokemonFocusMenu({
                   )}
                 </span>
                 <span className="bubble-label">
-                  {activeForm
+                  {activeForm && !activeRegionalForm
                     ? (activeForm.megaVariant?.replace('mega-', '').toUpperCase() || (t.detail.megaActive || 'Mega'))
                     : (t.detail.bubbleMega || 'Mega')}
                 </span>
@@ -254,7 +303,7 @@ function PokemonFocusMenu({
 
               {/* Multi-Mega variant choices (e.g. Charizard X / Y) */}
               {hasMultipleMegas && (
-                <div className={`focus-mega-drawer ${showVariantsDrawer || activeForm ? 'is-open' : ''}`}>
+                <div className={`focus-mega-drawer ${showVariantsDrawer || (activeForm && !activeRegionalForm) ? 'is-open' : ''}`}>
                   {megaForms.map((form) => {
                     const variantLetter = form.megaVariant?.replace('mega-', '').toUpperCase() || 'M'
                     const isThisActive = activeForm?.id === form.id
@@ -265,20 +314,20 @@ function PokemonFocusMenu({
                         className={`focus-variant-pill ${isThisActive ? 'is-active' : ''}`}
                         onClick={(e) => handleVariantSelect(e, isThisActive ? null : form)}
                         onMouseEnter={playHoverBubbleSound}
-                        disabled={isTransforming}
+                        disabled={isTransforming || isRegionalTransforming}
                         title={form.localizedName || form.name}
                       >
                         {variantLetter}
                       </button>
                     )
                   })}
-                  {activeForm && (
+                  {activeForm && !activeRegionalForm && (
                     <button
                       type="button"
                       className="focus-variant-pill pill-base"
                       onClick={(e) => handleVariantSelect(e, null)}
                       onMouseEnter={playHoverBubbleSound}
-                      disabled={isTransforming}
+                      disabled={isTransforming || isRegionalTransforming}
                       title={t.detail.baseForm || 'Normal'}
                     >
                       {t.detail.baseForm || 'Normal'}
@@ -290,7 +339,87 @@ function PokemonFocusMenu({
           </div>
         )}
 
-        {/* 3. 🔊 SONIDO (CRY) BUBBLE */}
+        {/* 3. 🌎 FORMAS REGIONALES BUBBLE (Rendered ONLY if Pokémon has actual Regional Forms) */}
+        {hasRegionalForms && (
+          <div className={`focus-bubble-slot slot-forms ${showRegionalDrawer ? 'is-active-slot' : ''}`}>
+            <div className="forms-bubble-group">
+              <button
+                type="button"
+                className={`focus-bubble bubble-forms ${activeRegionalForm ? 'is-active' : ''}`}
+                onClick={handleFormsClick}
+                onMouseEnter={playHoverBubbleSound}
+                disabled={isTransforming || isRegionalTransforming}
+                title={t.detail.formsButton || 'Formas'}
+                aria-pressed={!!activeRegionalForm}
+              >
+                <span className="bubble-icon-wrap">
+                  <GlobeIcon />
+                </span>
+                <span className="bubble-label">
+                  {activeRegionalForm
+                    ? (activeRegionalForm.region?.toUpperCase() || (t.detail.bubbleForms || 'Formas'))
+                    : (t.detail.bubbleForms || 'Formas')}
+                </span>
+                {activeRegionalForm && <span className="bubble-active-glow" aria-hidden="true" />}
+              </button>
+
+              {/* Regional Forms Selection Drawer */}
+              <div className={`focus-regional-drawer ${showRegionalDrawer ? 'is-open' : ''}`}>
+                <div className="regional-drawer-header">
+                  <span>{t.detail.formsSelect || 'Formas'}</span>
+                </div>
+
+                {/* Base / Normal form option */}
+                <button
+                  type="button"
+                  className={`focus-regional-option ${!activeRegionalForm ? 'is-selected' : ''}`}
+                  onClick={(e) => handleRegionalOptionClick(e, null)}
+                  onMouseEnter={playHoverBubbleSound}
+                  disabled={isTransforming || isRegionalTransforming}
+                >
+                  <span className="regional-radio-circle" aria-hidden="true">
+                    <span className="regional-radio-fill" />
+                  </span>
+                  <span className="regional-option-label">
+                    {basePokemonName || t.detail.baseForm || 'Normal'}
+                  </span>
+                  {!activeRegionalForm && (
+                    <span className="regional-tag tag-base">
+                      {t.detail.baseForm || 'Normal'}
+                    </span>
+                  )}
+                </button>
+
+                {/* Regional form options */}
+                {regionalForms.map((rForm) => {
+                  const isSelected = activeRegionalForm?.id === rForm.id
+                  return (
+                    <button
+                      key={rForm.id || rForm.name}
+                      type="button"
+                      className={`focus-regional-option ${isSelected ? 'is-selected' : ''}`}
+                      onClick={(e) => handleRegionalOptionClick(e, isSelected ? null : rForm)}
+                      onMouseEnter={playHoverBubbleSound}
+                      disabled={isTransforming || isRegionalTransforming}
+                    >
+                      <span className="regional-radio-circle" aria-hidden="true">
+                        <span className="regional-radio-fill" />
+                      </span>
+                      <span className="regional-option-label">
+                        {rForm.localizedName}
+                      </span>
+                      <span className={`regional-tag region-${rForm.region}`}>
+                        {rForm.region.toUpperCase()}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. 🔊 SONIDO (CRY) BUBBLE */}
         {currentCry && (
           <div className="focus-bubble-slot slot-cry">
             <button
@@ -315,7 +444,7 @@ function PokemonFocusMenu({
           </div>
         )}
 
-        {/* 4. 📊 ESTADÍSTICAS BUBBLE */}
+        {/* 5. 📊 ESTADÍSTICAS BUBBLE */}
         <div className="focus-bubble-slot slot-stats">
           <button
             type="button"
@@ -331,7 +460,7 @@ function PokemonFocusMenu({
           </button>
         </div>
 
-        {/* 5. ✕ CERRAR BUBBLE */}
+        {/* 6. ✕ CERRAR BUBBLE */}
         <div className="focus-bubble-slot slot-close">
           <button
             type="button"

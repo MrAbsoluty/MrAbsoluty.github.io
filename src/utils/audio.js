@@ -4,6 +4,7 @@ import clickSoundUrl from '../audio/click.mp3'
 import bubbleSoundUrl from '../audio/bubble.mp3'
 import hoverBubbleSoundUrl from '../audio/hover-bubble.mp3'
 import shinySoundUrl from '../audio/shiny.mp3'
+import shinylessSoundUrl from '../audio/shinyless.mp3'
 
 let lastBuscarTime = 0
 export function playBuscarSound() {
@@ -95,4 +96,21 @@ export function playShinySound() {
     // Ignore playback restrictions/errors
   }
 }
+
+let lastShinylessTime = 0
+export function playShinylessSound() {
+  const now = Date.now()
+  if (now - lastShinylessTime < 300) return
+  lastShinylessTime = now
+
+  try {
+    const audio = new Audio(shinylessSoundUrl)
+    audio.currentTime = 0
+    audio.volume = 0.85
+    audio.play().catch(() => {})
+  } catch {
+    // Ignore playback restrictions/errors
+  }
+}
+
 

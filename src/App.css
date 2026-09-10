@@ -124,6 +124,9 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   flex-shrink: 0;
   z-index: 1;
 }
+.detail-art.has-focus-active {
+  z-index: 1000;
+}
 .art-stage {
   align-items: center;
   display: flex;
@@ -230,7 +233,8 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   font-size: 11px;
 }
 .art-stage.is-focused {
-  z-index: 1002;
+  z-index: 1003;
+  pointer-events: none;
 }
 .art-stage.is-focused .art-ring {
   border-color: rgba(255, 255, 255, 0.65);
@@ -239,6 +243,7 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
 .art-stage.is-focused .detail-art-image {
   transform: scale(1.06);
   filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.45));
+  pointer-events: auto;
 }
 .pokedex-entry {
   background: rgba(255, 255, 255, 0.75);
@@ -1489,6 +1494,542 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
 }
 
 /* ==========================================================================
+   SHINYLESS (REVERT TO REGULAR) SPECIAL EFFECTS
+   ========================================================================== */
+
+/* Shinyless Energy Inward Wave / Dissolution */
+.shiny-transform-overlay.is-shinyless .shiny-energy-shockwave {
+  width: 270px;
+  height: 270px;
+  border: 2.5px solid rgba(224, 242, 254, 0.9);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, rgba(186, 230, 253, 0.25) 45%, transparent 72%);
+  box-shadow: 0 0 45px rgba(186, 230, 253, 0.7), inset 0 0 20px rgba(255, 255, 255, 0.85);
+  animation: shinyless-shockwave-collapse 0.82s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shinyless-shockwave-collapse {
+  0% {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.95;
+    border-color: rgba(255, 255, 255, 0.95);
+  }
+  65% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.55;
+    border-color: rgba(186, 230, 253, 0.6);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+    border-color: transparent;
+  }
+}
+
+/* Shinyless Soft Dispersing Aura */
+.shiny-transform-overlay.is-shinyless .shiny-aura-burst {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.65) 0%, rgba(224, 242, 254, 0.35) 40%, rgba(254, 240, 138, 0.12) 65%, transparent 80%);
+  animation: shinyless-aura-disperse 0.85s ease-out forwards;
+}
+
+@keyframes shinyless-aura-disperse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.9;
+    filter: blur(2px);
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.6;
+    filter: blur(6px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 0;
+    filter: blur(14px);
+  }
+}
+
+/* Shinyless Light Flash (Softer, crystalline white/silver) */
+.shiny-transform-overlay.is-shinyless .shiny-light-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(224, 242, 254, 0.65) 32%, rgba(186, 230, 253, 0.25) 55%, transparent 75%);
+  animation: shinyless-flash-burst 0.45s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes shinyless-flash-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.85;
+  }
+  65% {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Shinyless Particles: Upward drifting & dissolving stardust */
+.shiny-transform-overlay.is-shinyless .shiny-star {
+  color: #f8fafc;
+  text-shadow: 0 0 10px #94a3b8, 0 0 20px #cbd5e1, 0 0 30px rgba(186, 230, 253, 0.75), 0 0 4px #ffffff;
+  animation: shinyless-star-drift 0.78s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shinyless-star-drift {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--star-x) * 0.75), calc(-50% + var(--star-y) * 0.75)) scale(0.4) rotate(0deg);
+  }
+  25% {
+    opacity: 0.95;
+    transform: translate(calc(-50% + var(--star-x) * 0.78), calc(-50% + var(--star-y) * 0.78 - 12px)) scale(calc(var(--star-scale, 1) * 1.1)) rotate(40deg);
+  }
+  65% {
+    opacity: 0.6;
+    transform: translate(calc(-50% + var(--star-x) * 0.82), calc(-50% + var(--star-y) * 0.82 - 28px)) scale(var(--star-scale, 1)) rotate(85deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--star-x) * 0.86), calc(-50% + var(--star-y) * 0.86 - 44px)) scale(0.2) rotate(130deg);
+    filter: blur(2px);
+  }
+}
+
+/* Shinyless Sprite Transitions */
+.detail-art-image.shiny-sprite-reverting-charging {
+  animation: shinyless-sprite-charge 0.2s ease-in forwards;
+}
+
+.detail-art-image.shiny-sprite-reverting-flash {
+  animation: shinyless-sprite-reveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.detail-art-image.shiny-sprite-reverting-fade {
+  transition: filter 0.55s ease, transform 0.4s ease;
+  filter: drop-shadow(12px 18px 12px rgba(23,39,51,.16));
+}
+
+@keyframes shinyless-sprite-charge {
+  0% {
+    filter: drop-shadow(12px 18px 12px rgba(23,39,51,.16)) drop-shadow(0 0 18px rgba(245, 158, 11, 0.4));
+  }
+  100% {
+    filter: brightness(1.25) drop-shadow(0 0 28px rgba(224, 242, 254, 0.85));
+  }
+}
+
+@keyframes shinyless-sprite-reveal {
+  0% {
+    transform: scale(1.04);
+    filter: brightness(1.4) drop-shadow(0 0 35px rgba(255, 255, 255, 0.95));
+  }
+  50% {
+    transform: scale(0.99);
+    filter: brightness(1.1) drop-shadow(0 0 16px rgba(186, 230, 253, 0.5));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(12px 18px 12px rgba(23,39,51,.16));
+  }
+}
+
+/* ==========================================================================
+   REGIONAL TRANSFORMATION SPECIAL EFFECTS
+   ========================================================================== */
+
+.regional-transform-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.regional-aura-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 290px;
+  height: 290px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.regional-energy-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.regional-light-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.regional-particles-cluster {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.regional-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   1. ALOLA REGION (Tropical / Natural / Warm Sun & Sea)
+   -------------------------------------------------------------------------- */
+.regional-transform-overlay.region-alola .regional-aura-burst {
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.65) 0%, rgba(46, 196, 182, 0.38) 42%, rgba(14, 165, 233, 0.16) 68%, transparent 84%);
+  animation: alola-aura-flow 0.84s ease-out forwards;
+}
+
+@keyframes alola-aura-flow {
+  0% { transform: translate(-50%, -50%) scale(0.35); opacity: 0; filter: blur(4px); }
+  35% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.92; filter: blur(2px); }
+  70% { transform: translate(-50%, -50%) scale(1.24); opacity: 0.45; filter: blur(8px); }
+  100% { transform: translate(-50%, -50%) scale(1.42); opacity: 0; filter: blur(14px); }
+}
+
+.regional-transform-overlay.region-alola .regional-energy-wave {
+  border: 3px solid rgba(46, 196, 182, 0.9);
+  background: radial-gradient(circle, rgba(46, 196, 182, 0.25) 0%, rgba(14, 165, 233, 0.12) 55%, transparent 74%);
+  box-shadow: 0 0 45px rgba(46, 196, 182, 0.75), inset 0 0 20px rgba(254, 243, 199, 0.85);
+  animation: alola-wave-expand 0.88s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes alola-wave-expand {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  25% { transform: translate(-50%, -50%) scale(0.7); opacity: 1; }
+  65% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(1.68); opacity: 0; }
+}
+
+.regional-transform-overlay.region-alola .regional-light-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(254, 243, 199, 0.6) 28%, rgba(46, 196, 182, 0.25) 55%, transparent 75%);
+  animation: alola-sun-flash 0.52s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes alola-sun-flash {
+  0% { transform: translate(-50%, -50%) scale(0.25); opacity: 0; }
+  28% { transform: translate(-50%, -50%) scale(1.02); opacity: 0.92; }
+  65% { transform: translate(-50%, -50%) scale(1.22); opacity: 0.35; }
+  100% { transform: translate(-50%, -50%) scale(1.45); opacity: 0; }
+}
+
+.regional-transform-overlay.region-alola .regional-particle {
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle, #ffffff 10%, #2ec4b6 60%, transparent 100%);
+  box-shadow: 0 0 14px #2ec4b6;
+  animation: alola-spark-drift 0.8s ease-out forwards;
+}
+
+@keyframes alola-spark-drift {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  30% { opacity: 1; transform: translate(calc(-50% + var(--dx) * 0.4), calc(-50% + var(--dy) * 0.4)) scale(1.1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4); }
+}
+
+/* --------------------------------------------------------------------------
+   2. GALAR REGION (Energetic / Dynamax Power / Neon Glow)
+   -------------------------------------------------------------------------- */
+.regional-transform-overlay.region-galar .regional-aura-burst {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(230, 0, 103, 0.52) 38%, rgba(99, 102, 241, 0.25) 65%, transparent 84%);
+  animation: galar-aura-surge 0.82s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes galar-aura-surge {
+  0% { transform: translate(-50%, -50%) scale(0.28); opacity: 0; filter: blur(3px); }
+  30% { transform: translate(-50%, -50%) scale(1.12); opacity: 0.96; filter: blur(1px); }
+  65% { transform: translate(-50%, -50%) scale(1.28); opacity: 0.5; filter: blur(6px); }
+  100% { transform: translate(-50%, -50%) scale(1.45); opacity: 0; filter: blur(12px); }
+}
+
+.regional-transform-overlay.region-galar .regional-energy-wave {
+  border: 3.5px solid rgba(230, 0, 103, 0.95);
+  background: radial-gradient(circle, rgba(230, 0, 103, 0.22) 0%, rgba(0, 240, 255, 0.1) 50%, transparent 72%);
+  box-shadow: 0 0 50px rgba(230, 0, 103, 0.85), inset 0 0 25px rgba(0, 240, 255, 0.7);
+  animation: galar-wave-impact 0.84s cubic-bezier(0.08, 0.9, 0.25, 1) forwards;
+}
+
+@keyframes galar-wave-impact {
+  0% { transform: translate(-50%, -50%) scale(0.15); opacity: 0; }
+  22% { transform: translate(-50%, -50%) scale(0.65); opacity: 1; }
+  60% { transform: translate(-50%, -50%) scale(1.32); opacity: 0.75; }
+  100% { transform: translate(-50%, -50%) scale(1.72); opacity: 0; }
+}
+
+.regional-transform-overlay.region-galar .regional-light-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(230, 0, 103, 0.65) 25%, rgba(0, 240, 255, 0.28) 52%, transparent 74%);
+  animation: galar-neon-flash 0.48s cubic-bezier(0.1, 0.85, 0.25, 1) forwards;
+}
+
+@keyframes galar-neon-flash {
+  0% { transform: translate(-50%, -50%) scale(0.28); opacity: 0; }
+  26% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.95; }
+  60% { transform: translate(-50%, -50%) scale(1.24); opacity: 0.4; }
+  100% { transform: translate(-50%, -50%) scale(1.48); opacity: 0; }
+}
+
+.regional-transform-overlay.region-galar .regional-particle {
+  width: 12px;
+  height: 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ff3388, #00f0ff);
+  box-shadow: 0 0 16px rgba(255, 51, 136, 0.85);
+  animation: galar-streak-dash 0.76s cubic-bezier(0.12, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes galar-streak-dash {
+  0% { transform: translate(-50%, -50%) rotate(var(--rot)) scale(0.2); opacity: 0; }
+  25% { opacity: 1; transform: translate(calc(-50% + var(--dx) * 0.45), calc(-50% + var(--dy) * 0.45)) rotate(var(--rot)) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.3); }
+}
+
+/* --------------------------------------------------------------------------
+   3. HISUI REGION (Ancestral / Primordial / Spiritual Embers)
+   -------------------------------------------------------------------------- */
+.regional-transform-overlay.region-hisui .regional-aura-burst {
+  background: radial-gradient(circle, rgba(254, 215, 170, 0.75) 0%, rgba(226, 135, 67, 0.45) 40%, rgba(71, 85, 105, 0.22) 68%, transparent 85%);
+  animation: hisui-ancient-aura 0.92s ease-out forwards;
+}
+
+@keyframes hisui-ancient-aura {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; filter: blur(5px); }
+  32% { transform: translate(-50%, -50%) scale(1.02); opacity: 0.92; filter: blur(2px); }
+  70% { transform: translate(-50%, -50%) scale(1.22); opacity: 0.45; filter: blur(8px); }
+  100% { transform: translate(-50%, -50%) scale(1.38); opacity: 0; filter: blur(14px); }
+}
+
+.regional-transform-overlay.region-hisui .regional-energy-wave {
+  border: 3px solid rgba(226, 135, 67, 0.9);
+  background: radial-gradient(circle, rgba(226, 135, 67, 0.24) 0%, rgba(180, 83, 9, 0.12) 52%, transparent 75%);
+  box-shadow: 0 0 42px rgba(226, 135, 67, 0.75), inset 0 0 22px rgba(254, 215, 170, 0.8);
+  animation: hisui-wave-slow 0.9s ease-out forwards;
+}
+
+@keyframes hisui-wave-slow {
+  0% { transform: translate(-50%, -50%) scale(0.22); opacity: 0; }
+  30% { transform: translate(-50%, -50%) scale(0.72); opacity: 0.95; }
+  70% { transform: translate(-50%, -50%) scale(1.28); opacity: 0.65; }
+  100% { transform: translate(-50%, -50%) scale(1.62); opacity: 0; }
+}
+
+.regional-transform-overlay.region-hisui .regional-light-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(254, 215, 170, 0.62) 30%, rgba(226, 135, 67, 0.25) 55%, transparent 75%);
+  animation: hisui-fire-flash 0.54s ease-out forwards;
+}
+
+@keyframes hisui-fire-flash {
+  0% { transform: translate(-50%, -50%) scale(0.25); opacity: 0; }
+  26% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+  62% { transform: translate(-50%, -50%) scale(1.18); opacity: 0.35; }
+  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+}
+
+.regional-transform-overlay.region-hisui .regional-particle {
+  width: 9px;
+  height: 9px;
+  background: radial-gradient(circle, #fef08a 15%, #f97316 65%, transparent 100%);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.85);
+  animation: hisui-ember-rise 0.84s ease-out forwards;
+}
+
+@keyframes hisui-ember-rise {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  28% { opacity: 1; transform: translate(calc(-50% + var(--dx) * 0.4), calc(-50% + var(--dy) * 0.4 - 10px)) scale(1.1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) - 30px)) scale(0.35); }
+}
+
+/* --------------------------------------------------------------------------
+   4. PALDEA REGION (Crystalline / Facets / Prismatic Refraction)
+   -------------------------------------------------------------------------- */
+.regional-transform-overlay.region-paldea .regional-aura-burst {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(56, 189, 248, 0.45) 35%, rgba(192, 132, 252, 0.25) 62%, transparent 82%);
+  animation: paldea-crystal-aura 0.85s ease-out forwards;
+}
+
+@keyframes paldea-crystal-aura {
+  0% { transform: translate(-50%, -50%) scale(0.32); opacity: 0; filter: blur(3px); }
+  32% { transform: translate(-50%, -50%) scale(1.06); opacity: 0.95; filter: blur(1px); }
+  68% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.48; filter: blur(6px); }
+  100% { transform: translate(-50%, -50%) scale(1.44); opacity: 0; filter: blur(12px); }
+}
+
+.regional-transform-overlay.region-paldea .regional-energy-wave {
+  border: 3px solid rgba(56, 189, 248, 0.92);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(192, 132, 252, 0.14) 52%, transparent 74%);
+  box-shadow: 0 0 45px rgba(56, 189, 248, 0.8), inset 0 0 22px rgba(255, 255, 255, 0.9);
+  animation: paldea-wave-prism 0.86s cubic-bezier(0.14, 0.9, 0.28, 1) forwards;
+}
+
+@keyframes paldea-wave-prism {
+  0% { transform: translate(-50%, -50%) scale(0.18); opacity: 0; }
+  24% { transform: translate(-50%, -50%) scale(0.68); opacity: 1; }
+  64% { transform: translate(-50%, -50%) scale(1.32); opacity: 0.72; }
+  100% { transform: translate(-50%, -50%) scale(1.68); opacity: 0; }
+}
+
+.regional-transform-overlay.region-paldea .regional-light-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(56, 189, 248, 0.6) 26%, rgba(192, 132, 252, 0.26) 54%, transparent 75%);
+  animation: paldea-diamond-flash 0.5s cubic-bezier(0.1, 0.85, 0.3, 1) forwards;
+}
+
+@keyframes paldea-diamond-flash {
+  0% { transform: translate(-50%, -50%) scale(0.28); opacity: 0; }
+  28% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.96; }
+  62% { transform: translate(-50%, -50%) scale(1.22); opacity: 0.38; }
+  100% { transform: translate(-50%, -50%) scale(1.46); opacity: 0; }
+}
+
+.regional-transform-overlay.region-paldea .regional-particle {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #ffffff 0%, #38bdf8 50%, #c084fc 100%);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+  animation: paldea-crystal-spark 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes paldea-crystal-spark {
+  0% { transform: translate(-50%, -50%) rotate(0deg) scale(0.2); opacity: 0; }
+  28% { opacity: 1; transform: translate(calc(-50% + var(--dx) * 0.45), calc(-50% + var(--dy) * 0.45)) rotate(90deg) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(220deg) scale(0.25); }
+}
+
+/* --------------------------------------------------------------------------
+   5. REVERTING TO NORMAL FORM (Soft Inward Implosion & Neutral Dissolve)
+   -------------------------------------------------------------------------- */
+.regional-transform-overlay.region-reverting .regional-aura-burst {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(203, 213, 225, 0.35) 45%, transparent 75%);
+  animation: regional-revert-aura 0.8s ease-out forwards;
+}
+
+@keyframes regional-revert-aura {
+  0% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+  60% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.4; }
+  100% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+}
+
+.regional-transform-overlay.region-reverting .regional-energy-wave {
+  border: 3px solid rgba(226, 232, 240, 0.9);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+  box-shadow: 0 0 35px rgba(226, 232, 240, 0.7);
+  animation: regional-revert-wave 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes regional-revert-wave {
+  0% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
+  25% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.85; }
+  70% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+}
+
+.regional-transform-overlay.region-reverting .regional-light-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(226, 232, 240, 0.5) 35%, transparent 70%);
+  animation: regional-revert-flash 0.48s ease-out forwards;
+}
+
+@keyframes regional-revert-flash {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  30% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+}
+
+.regional-transform-overlay.region-reverting .regional-particle {
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  animation: regional-revert-particles 0.75s ease-out forwards;
+}
+
+@keyframes regional-revert-particles {
+  0% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+}
+
+/* Individual Particle Geometric Offsets */
+.regional-particle.p-1 { --dx: 0px; --dy: -105px; --rot: 0deg; }
+.regional-particle.p-2 { --dx: 74px; --dy: -74px; --rot: 45deg; }
+.regional-particle.p-3 { --dx: 105px; --dy: 0px; --rot: 90deg; }
+.regional-particle.p-4 { --dx: 74px; --dy: 74px; --rot: 135deg; }
+.regional-particle.p-5 { --dx: 0px; --dy: 105px; --rot: 180deg; }
+.regional-particle.p-6 { --dx: -74px; --dy: 74px; --rot: 225deg; }
+.regional-particle.p-7 { --dx: -105px; --dy: 0px; --rot: 270deg; }
+.regional-particle.p-8 { --dx: -74px; --dy: -74px; --rot: 315deg; }
+
+/* Sprite Animation Classes during Regional Transform */
+.regional-sprite-charging {
+  filter: brightness(1.16) drop-shadow(0 0 18px rgba(255, 255, 255, 0.4));
+  transform: scale(1.02);
+  transition: transform 0.32s ease, filter 0.32s ease;
+}
+
+.regional-sprite-flash {
+  filter: brightness(1.42) drop-shadow(0 0 35px rgba(255, 255, 255, 0.95));
+  transform: scale(1.06);
+  transition: transform 0.22s ease, filter 0.22s ease;
+}
+
+.regional-sprite-fade {
+  transform: scale(1);
+  filter: drop-shadow(12px 18px 12px rgba(23, 39, 51, 0.16));
+  transition: all 0.4s ease;
+}
+
+/* Art ring subtle styling for active regional forms */
+.art-ring.is-regional.region-alola {
+  box-shadow: 0 0 28px rgba(46, 196, 182, 0.35);
+  border-color: rgba(46, 196, 182, 0.45);
+}
+
+.art-ring.is-regional.region-galar {
+  box-shadow: 0 0 28px rgba(230, 0, 103, 0.35);
+  border-color: rgba(230, 0, 103, 0.45);
+}
+
+.art-ring.is-regional.region-hisui {
+  box-shadow: 0 0 28px rgba(226, 135, 67, 0.35);
+  border-color: rgba(226, 135, 67, 0.45);
+}
+
+.art-ring.is-regional.region-paldea {
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.35);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+/* ==========================================================================
    POKEMON FOCUS MODE & BUBBLE MENU
    ========================================================================== */
 
@@ -1555,17 +2096,23 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   letter-spacing: 0.02em;
 }
 
-/* Orbital Bubble Container (Anchored at Pokémon center) */
+/* Orbital Bubble Container (Anchored at Pokémon center, behind the Pokémon) */
 .focus-bubble-container {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 0;
   height: 0;
-  z-index: 1003;
+  z-index: 1001;
   pointer-events: none;
   --orbit-x: clamp(165px, 17vw, 205px);
   --orbit-y: clamp(130px, 14vw, 165px);
+}
+
+/* Elevate container and slots in front of the Pokémon stage when a submenu drawer is open */
+.focus-bubble-container.has-drawer-open,
+.focus-bubble-container:has(.is-open) {
+  z-index: 1010;
 }
 
 /* Individual Orbital Bubble Slots */
@@ -1574,6 +2121,16 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   pointer-events: auto;
   transform: translate(-50%, -50%) translate(var(--bx), var(--by));
   animation: bubble-pop-in 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.focus-bubble-slot.slot-forms,
+.focus-bubble-slot.slot-mega {
+  z-index: 10;
+}
+
+.focus-bubble-slot:has(.is-open),
+.focus-bubble-slot.is-active-slot {
+  z-index: 60;
 }
 
 @keyframes bubble-pop-in {
@@ -1603,6 +2160,12 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   animation-delay: 0.08s;
 }
 
+.slot-forms {
+  --bx: calc(-1 * var(--orbit-x) * 0.98);
+  --by: calc(var(--orbit-y) * 0.74);
+  animation-delay: 0.08s;
+}
+
 .slot-cry {
   --bx: calc(var(--orbit-x) * 0.95);
   --by: calc(-1 * var(--orbit-y) * 0.88);
@@ -1621,13 +2184,24 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   animation-delay: 0.12s;
 }
 
-/* Layout for Pokemon without Mega forms: 4 bubbles balanced */
-.focus-bubble-container.no-mega .slot-stats {
+/* When Pokemon has BOTH Mega and Regional Forms (e.g. Slowbro) */
+.focus-bubble-container.has-both-modes .slot-mega {
+  --bx: calc(-1 * var(--orbit-x) * 1.14);
+  --by: calc(var(--orbit-y) * 0.16);
+}
+
+.focus-bubble-container.has-both-modes .slot-forms {
+  --bx: calc(-1 * var(--orbit-x) * 0.88);
+  --by: calc(var(--orbit-y) * 0.96);
+}
+
+/* Layout for Pokemon without Mega nor Regional forms: 4 bubbles balanced */
+.focus-bubble-container.no-mega.no-regional .slot-stats {
   --bx: calc(var(--orbit-x) * 0.85);
   --by: calc(var(--orbit-y) * 0.78);
 }
 
-.focus-bubble-container.no-mega .slot-close {
+.focus-bubble-container.no-mega.no-regional .slot-close {
   --bx: 0px;
   --by: calc(-1 * var(--orbit-y) * 1.34);
 }
@@ -1766,7 +2340,7 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   left: 50%;
   transform: translateX(-50%) translateY(-6px) scale(0.9);
   white-space: nowrap;
-  z-index: 10;
+  z-index: 1050;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1809,6 +2383,183 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
 .focus-variant-pill.pill-base {
   font-size: 9.5px;
   color: var(--muted);
+}
+
+/* Forms Bubble & Group */
+.forms-bubble-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bubble-forms {
+  color: #0284c7;
+}
+
+.bubble-forms:hover {
+  border-color: #0284c7;
+  color: #0284c7;
+  box-shadow: 0 14px 34px rgba(2, 132, 199, 0.4), inset 0 2px 4px #ffffff;
+}
+
+.bubble-forms.is-active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+}
+
+.bubble-forms.is-active .globe-icon {
+  animation: globe-spin-subtle 7s linear infinite;
+}
+
+@keyframes globe-spin-subtle {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Regional Forms Drawer Dropdown */
+.focus-regional-drawer {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-60%) translateY(10px) scale(0.92);
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: 10px;
+  min-width: 215px;
+  max-width: 290px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.4);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.focus-regional-drawer.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-60%) translateY(0) scale(1);
+}
+
+.regional-drawer-header {
+  font: 700 10px var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.focus-regional-option {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.focus-regional-option:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateX(2px);
+}
+
+.focus-regional-option.is-selected {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.regional-radio-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.focus-regional-option.is-selected .regional-radio-circle {
+  border-color: #38bdf8;
+}
+
+.regional-radio-fill {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.focus-regional-option.is-selected .regional-radio-fill {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.regional-option-label {
+  flex: 1;
+  font: 600 12px var(--display);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.regional-tag {
+  font: 700 9px var(--display);
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.regional-tag.tag-base {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+.regional-tag.region-alola {
+  background: rgba(46, 196, 182, 0.25);
+  color: #2ec4b6;
+  border: 1px solid rgba(46, 196, 182, 0.45);
+}
+
+.regional-tag.region-galar {
+  background: rgba(230, 0, 103, 0.25);
+  color: #ff3388;
+  border: 1px solid rgba(230, 0, 103, 0.45);
+}
+
+.regional-tag.region-hisui {
+  background: rgba(226, 135, 67, 0.25);
+  color: #f4a261;
+  border: 1px solid rgba(226, 135, 67, 0.45);
+}
+
+.regional-tag.region-paldea {
+  background: rgba(76, 201, 240, 0.25);
+  color: #38bdf8;
+  border: 1px solid rgba(76, 201, 240, 0.45);
 }
 
 /* Sound Cry Bubble */
@@ -1865,6 +2616,27 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   .bubble-mega-img {
     width: 18px;
     height: 18px;
+  }
+  .focus-bubble-container.has-both-modes .slot-mega {
+    --bx: calc(-1 * var(--orbit-x) * 1.15);
+    --by: calc(var(--orbit-y) * 0.12);
+  }
+  .focus-bubble-container.has-both-modes .slot-forms {
+    --bx: calc(-1 * var(--orbit-x) * 0.9);
+    --by: calc(var(--orbit-y) * 0.95);
+  }
+  .focus-regional-drawer {
+    min-width: 185px;
+    max-width: 245px;
+    bottom: 64px;
+    padding: 8px;
+  }
+  .focus-regional-option {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  .regional-option-label {
+    font-size: 11px;
   }
   .slot-close {
     --bx: 0px;

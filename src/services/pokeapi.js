@@ -7,6 +7,7 @@ import {
   getGen9DescriptionEs,
   translateEnglishPokedexToSpanish,
 } from '../locales/pokedexGen9Es.js'
+import { getRegionalDescriptionEs } from '../locales/regionalDescriptions.js'
 
 const API_URL = 'https://pokeapi.co/api/v2/pokemon/'
 const SPECIES_LIST_URL = 'https://pokeapi.co/api/v2/pokemon-species?limit=2000'
@@ -201,6 +202,97 @@ export function resolveFormPokedexDescription(
   }
 
   return null
+}
+
+export function resolveRegionalPokedexDescription(
+  formData,
+  speciesData,
+  region,
+  locale = 'es',
+  baseFallbackDescription = null,
+) {
+  const isSpanish = locale.startsWith('es')
+  const formKey = formData?.name?.toLowerCase() || ''
+
+  // 1. If Spanish is requested, check dedicated regional Spanish catalog first
+  // (official canonical game translations from Pokémon Sol/Luna, Espada/Escudo, Arceus)
+  if (isSpanish) {
+    const regionalEs =
+      getRegionalDescriptionEs(formKey) ||
+      (region && speciesData?.name ? getRegionalDescriptionEs(`${speciesData.name}-${region}`) : null)
+    if (regionalEs) return regionalEs
+  }
+
+  // 2. Check form flavor_text_entries in PokeAPI (e.g. all 18 Alola forms in PokéAPI)
+  const formEntries = Array.isArray(formData?.flavor_text_entries) ? formData.flavor_text_entries : []
+  if (formEntries.length > 0) {
+    if (isSpanish) {
+      const esMatch = formEntries.find((e) => e?.language?.name === 'es' || e?.language?.name === 'es-419')
+      if (esMatch?.flavor_text) {
+        const cleaned = cleanFlavorText(esMatch.flavor_text)
+        if (cleaned) return cleaned
+      }
+      const enMatch = formEntries.find((e) => e?.language?.name === 'en') || formEntries[0]
+      if (enMatch?.flavor_text) {
+        const cleaned = cleanFlavorText(enMatch.flavor_text)
+        const translated = translateEnglishPokedexToSpanish(cleaned)
+        return translated || cleaned
+      }
+    } else {
+      let matched = formEntries.find((e) => e?.language?.name === locale)
+      if (!matched) matched = formEntries.find((e) => e?.language?.name === 'en') || formEntries[0]
+      if (matched?.flavor_text) {
+        const cleaned = cleanFlavorText(matched.flavor_text)
+        if (cleaned) return cleaned
+      }
+    }
+  }
+
+  // 3. Check species flavor_text_entries for region-specific version (e.g. Legends Arceus for Hisui)
+  const speciesEntries = Array.isArray(speciesData?.flavor_text_entries) ? speciesData.flavor_text_entries : []
+  if (speciesEntries.length > 0) {
+    if (region === 'hisui') {
+      const arceusEntries = speciesEntries.filter((e) => e?.version?.name === 'legends-arceus')
+      if (arceusEntries.length > 0) {
+        if (isSpanish) {
+          const esMatch = arceusEntries.find((e) => e?.language?.name === 'es' || e?.language?.name === 'es-419')
+          if (esMatch?.flavor_text) return cleanFlavorText(esMatch.flavor_text)
+          const enMatch = arceusEntries.find((e) => e?.language?.name === 'en') || arceusEntries[0]
+          if (enMatch?.flavor_text) {
+            const cleaned = cleanFlavorText(enMatch.flavor_text)
+            const translated = translateEnglishPokedexToSpanish(cleaned)
+            return translated || cleaned
+          }
+        } else {
+          let matched =
+            arceusEntries.find((e) => e?.language?.name === locale) ||
+            arceusEntries.find((e) => e?.language?.name === 'en') ||
+            arceusEntries[0]
+          if (matched?.flavor_text) return cleanFlavorText(matched.flavor_text)
+        }
+      }
+    }
+
+    // Check version entries that explicitly mention the regional form (e.g. Galar mentions in Sword/Shield)
+    if (region === 'galar') {
+      const galarEntries = speciesEntries.filter((e) => {
+        const v = e?.version?.name
+        return (v === 'sword' || v === 'shield') && e?.flavor_text?.toLowerCase().includes('galar')
+      })
+      if (galarEntries.length > 0) {
+        if (isSpanish) {
+          const esMatch = galarEntries.find((e) => e?.language?.name === 'es' || e?.language?.name === 'es-419')
+          if (esMatch?.flavor_text) return cleanFlavorText(esMatch.flavor_text)
+        } else {
+          const enMatch = galarEntries.find((e) => e?.language?.name === locale || e?.language?.name === 'en')
+          if (enMatch?.flavor_text) return cleanFlavorText(enMatch.flavor_text)
+        }
+      }
+    }
+  }
+
+  // 4. Safe fallback: maintain base species description if PokeAPI does not provide a specific one
+  return baseFallbackDescription || null
 }
 
 function getCachedIndex() {
@@ -549,6 +641,69 @@ function resolveMegaVariant(formName, name) {
   return null
 }
 
+export function detectRegionalVariant(formName = '', pokemonName = '') {
+  const normalized = `${formName || ''} ${pokemonName || ''}`.toLowerCase()
+
+  // Strict exclusions (Megas, Gigantamax, Dominant Totem, Costumes/Caps)
+  if (
+    normalized.includes('mega') ||
+    normalized.includes('gmax') ||
+    normalized.includes('totem') ||
+    normalized.includes('cap') ||
+    normalized.includes('cosplay') ||
+    normalized.includes('starter')
+  ) {
+    return null
+  }
+
+  if (normalized.includes('alola')) return 'alola'
+  if (normalized.includes('galar')) return 'galar'
+  if (normalized.includes('hisui')) return 'hisui'
+  if (normalized.includes('paldea')) return 'paldea'
+
+  return null
+}
+
+export function resolveRegionalLocalizedName(
+  formData,
+  pokemonData,
+  baseLocalizedName,
+  region,
+  locale = 'es',
+) {
+  const isSpanish = String(locale).startsWith('es')
+  const pName = (pokemonData?.name || '').toLowerCase()
+
+  if (!isSpanish) {
+    const enName = formData?.names?.find(({ language }) => language?.name === 'en')?.name
+    if (enName) return enName
+
+    const regionAdjective = {
+      alola: 'Alolan',
+      galar: 'Galarian',
+      hisui: 'Hisuian',
+      paldea: 'Paldean',
+    }[region] || region
+
+    if (pName.includes('combat')) return `${regionAdjective} ${baseLocalizedName} (Combat Breed)`
+    if (pName.includes('blaze')) return `${regionAdjective} ${baseLocalizedName} (Blaze Breed)`
+    if (pName.includes('aqua')) return `${regionAdjective} ${baseLocalizedName} (Aqua Breed)`
+    return `${regionAdjective} ${baseLocalizedName}`
+  }
+
+  const regionProper = {
+    alola: 'Alola',
+    galar: 'Galar',
+    hisui: 'Hisui',
+    paldea: 'Paldea',
+  }[region] || region
+
+  if (pName.includes('combat')) return `${baseLocalizedName} de ${regionProper} (Variedad Combatiente)`
+  if (pName.includes('blaze')) return `${baseLocalizedName} de ${regionProper} (Variedad Ígnea)`
+  if (pName.includes('aqua')) return `${baseLocalizedName} de ${regionProper} (Variedad Acuática)`
+  return `${baseLocalizedName} de ${regionProper}`
+}
+
 export async function getPokemonForm(formUrlOrId) {
   const url = String(formUrlOrId).startsWith('http')
     ? formUrlOrId
@@ -727,6 +882,193 @@ export async function getMegaForms(pokemonIdOrName, locale = 'en') {
 
 export async function getPokemonForms(pokemonIdOrName, locale = 'en') {
   return getMegaForms(pokemonIdOrName, locale)
+}
+
+export async function getRegionalForms(pokemonIdOrName, locale = 'en') {
+  if (!pokemonIdOrName) return []
+
+  const cacheKey = `regional:${String(pokemonIdOrName).toLowerCase()}:${locale}`
+  if (pokemonFormsCache.has(cacheKey)) {
+    return pokemonFormsCache.get(cacheKey)
+  }
+
+  try {
+    const speciesUrl = `https://pokeapi.co/api/v2/pokemon-species/${encodeURIComponent(String(pokemonIdOrName).toLowerCase())}`
+    let speciesResponse = await fetch(speciesUrl)
+    let speciesData = null
+    if (speciesResponse.ok) {
+      speciesData = await speciesResponse.json()
+    } else {
+      // If pokemonIdOrName was a variety slug (e.g. vulpix-alola), fetch pokemon first to get species.url
+      try {
+        const pRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(String(pokemonIdOrName).toLowerCase())}`)
+        if (pRes.ok) {
+          const pData = await pRes.json()
+          if (pData?.species?.url) {
+            const sRes = await fetch(pData.species.url)
+            if (sRes.ok) speciesData = await sRes.json()
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!speciesData) {
+      pokemonFormsCache.set(cacheKey, [])
+      return []
+    }
+
+    const baseLocalizedName =
+      speciesData.names?.find(
+        ({ language }) =>
+          language.name === locale ||
+          (locale.startsWith('es') && language.name === 'es'),
+      )?.name || speciesData.name
+
+    const basePokedexDescription = resolvePokedexDescription(
+      speciesData.flavor_text_entries,
+      locale,
+      speciesData.id,
+      speciesData.name,
+    )
+
+    const varieties = speciesData.varieties || []
+    const candidateVarieties = varieties.filter((v) => !v.is_default)
+
+    if (candidateVarieties.length === 0) {
+      pokemonFormsCache.set(cacheKey, [])
+      return []
+    }
+
+    const varietyPokemonList = await Promise.all(
+      candidateVarieties.map(async ({ pokemon }) => {
+        try {
+          const res = await fetch(pokemon.url)
+          return res.ok ? res.json() : null
+        } catch {
+          return null
+        }
+      }),
+    )
+
+    const regionalEntries = []
+
+    for (const pData of varietyPokemonList) {
+      if (!pData || !Array.isArray(pData.forms)) continue
+
+      for (const formRef of pData.forms) {
+        try {
+          const formRes = await fetch(formRef.url)
+          if (!formRes.ok) continue
+          const formData = await formRes.json()
+
+          if (formData.is_mega === true) continue
+          if (formData.is_battle_only === true) continue
+
+          const region = detectRegionalVariant(formData.form_name, pData.name)
+          if (!region) continue
+
+          regionalEntries.push({ pokemonData: pData, formData, region })
+        } catch {
+          // ignore individual fetch errors
+        }
+      }
+    }
+
+    if (regionalEntries.length === 0) {
+      pokemonFormsCache.set(cacheKey, [])
+      return []
+    }
+
+    const normalizedRegionalForms = await Promise.all(
+      regionalEntries.map(async ({ pokemonData, formData, region }) => {
+        const typeResources = await Promise.all(
+          pokemonData.types.map(({ type }) => fetchResourceData(type.url)),
+        )
+        const abilityResources = await Promise.all(
+          pokemonData.abilities.map(({ ability }) => fetchResourceData(ability.url)),
+        )
+
+        const types = pokemonData.types.map(({ type }) => type.name)
+        const typeLabels = Object.fromEntries(
+          pokemonData.types.map(({ type }, index) => [
+            type.name,
+            resolveLocalizedResourceName(typeResources[index], locale, type.name),
+          ]),
+        )
+
+        const abilities = pokemonData.abilities.map(({ ability }) => ability.name)
+        const abilityLabels = Object.fromEntries(
+          pokemonData.abilities.map(({ ability }, index) => [
+            ability.name,
+            resolveLocalizedResourceName(abilityResources[index], locale, ability.name),
+          ]),
+        )
+
+        const localizedName = resolveRegionalLocalizedName(
+          formData,
+          pokemonData,
+          baseLocalizedName,
+          region,
+          locale,
+        )
+
+        const image =
+          pokemonData.sprites.other?.['official-artwork']?.front_default ||
+          pokemonData.sprites.front_default ||
+          formData.sprites?.front_default ||
+          null
+
+        const shinyImage =
+          pokemonData.sprites.other?.['official-artwork']?.front_shiny ||
+          pokemonData.sprites.front_shiny ||
+          formData.sprites?.front_shiny ||
+          null
+
+        return {
+          id: pokemonData.id,
+          name: pokemonData.name,
+          formName: formData.form_name,
+          localizedName,
+          image,
+          shinyImage,
+          types,
+          typeLabels,
+          abilities,
+          abilityLabels,
+          stats: pokemonData.stats.map(({ base_stat, stat }) => ({
+            name: stat.name,
+            value: base_stat,
+          })),
+          height: pokemonData.height / 10,
+          weight: pokemonData.weight / 10,
+          isRegional: true,
+          region,
+          formLocale: locale,
+          pokedexDescription: resolveRegionalPokedexDescription(
+            formData,
+            speciesData,
+            region,
+            locale,
+            basePokedexDescription,
+          ),
+          cry: pokemonData.cries?.latest || pokemonData.cries?.legacy || null,
+        }
+      }),
+    )
+
+    const regionOrder = { alola: 1, galar: 2, hisui: 3, paldea: 4 }
+    normalizedRegionalForms.sort((a, b) => {
+      return (regionOrder[a.region] || 99) - (regionOrder[b.region] || 99)
+    })
+
+    pokemonFormsCache.set(cacheKey, normalizedRegionalForms)
+    return normalizedRegionalForms
+  } catch (error) {
+    console.error('Failed to get Regional forms:', error)
+    return []
+  }
 }
 
 /*

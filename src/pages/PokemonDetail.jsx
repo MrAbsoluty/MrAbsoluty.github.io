@@ -5,10 +5,10 @@ import EvolutionChain from '../components/EvolutionChain'
 import PokemonStats from '../components/PokemonStats'
 import PokemonTypeAffinities from '../components/PokemonTypeAffinities'
 import PokemonFocusMenu from '../components/PokemonFocusMenu'
-import { getMegaForms } from '../services/pokeapi'
+import { getMegaForms, getRegionalForms } from '../services/pokeapi'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
-import { playButtonSound, playClickSound, playShinySound } from '../utils/audio'
+import { playButtonSound, playClickSound, playShinySound, playShinylessSound } from '../utils/audio'
 
 const typeColors = {
   bug: '#65a47b', dark: '#59636b', dragon: '#7d77a9', electric: '#ddb431', fairy: '#c875a6', fighting: '#c87545', fire: '#e5764f', flying: '#7f9db2', ghost: '#756d9a', grass: '#65a47b', ground: '#b18a62', ice: '#70afae', normal: '#929a98', poison: '#a46f9a', psychic: '#dd7181', rock: '#a29468', steel: '#77858e', water: '#5d98b4',
@@ -34,6 +34,12 @@ function PokemonDetail({
   const [megaForms, setMegaForms] = useState([])
   const [isLoadingMegas, setIsLoadingMegas] = useState(false)
   const [activeForm, setActiveForm] = useState(null)
+  const [regionalForms, setRegionalForms] = useState([])
+  const [isLoadingRegionals, setIsLoadingRegionals] = useState(false)
+  const [activeRegionalForm, setActiveRegionalForm] = useState(null)
+  const [isRegionalTransforming, setIsRegionalTransforming] = useState(false)
+  const [regionalTransformStage, setRegionalTransformStage] = useState('idle')
+  const [regionalTransformRegion, setRegionalTransformRegion] = useState(null)
   const [prevPokemonId, setPrevPokemonId] = useState(pokemon?.id)
   const [isTransforming, setIsTransforming] = useState(false)
   const [transformStage, setTransformStage] = useState('idle')
@@ -43,12 +49,18 @@ function PokemonDetail({
   const [shinyStage, setShinyStage] = useState('idle')
   const [isFocusMode, setIsFocusMode] = useState(false)
 
-  // Reset active form during render when pokemon prop changes
+  // Reset active form and states during render when pokemon prop changes
   if (pokemon?.id !== prevPokemonId) {
     setPrevPokemonId(pokemon?.id)
     setActiveForm(null)
     setMegaForms([])
     setIsLoadingMegas(true)
+    setActiveRegionalForm(null)
+    setRegionalForms([])
+    setIsLoadingRegionals(true)
+    setIsRegionalTransforming(false)
+    setRegionalTransformStage('idle')
+    setRegionalTransformRegion(null)
     setIsShiny(false)
     setIsShinyAnimating(false)
     setShinyStage('idle')
@@ -87,8 +99,40 @@ function PokemonDetail({
     }
   }, [pokemon?.id, locale])
 
+  // Fetch regional forms in background
+  useEffect(() => {
+    if (!pokemon?.id) return
+
+    let isMounted = true
+
+    getRegionalForms(pokemon.id, locale)
+      .then((forms) => {
+        if (!isMounted) return
+        setRegionalForms(forms)
+        setActiveRegionalForm((currentActive) => {
+          if (!currentActive) return null
+          return (
+            forms.find(
+              (f) => f.id === currentActive.id || f.name === currentActive.name,
+            ) || currentActive
+          )
+        })
+      })
+      .catch((err) => {
+        console.error('Error loading regional forms:', err)
+        if (isMounted) setRegionalForms([])
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingRegionals(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [pokemon?.id, locale])
+
   function handleTransform(targetForm) {
-    if (isTransforming) return
+    if (isTransforming || isRegionalTransforming) return
 
     const isReverting =
       !targetForm || (activeForm && activeForm.id === targetForm.id)
@@ -96,6 +140,9 @@ function PokemonDetail({
     const audio = new Audio(isReverting ? megaRevertSound : megaSound)
     audio.currentTime = 0
     audio.play().catch(() => { })
+
+    // Clear active regional form if mega-evolving
+    if (activeRegionalForm) setActiveRegionalForm(null)
 
     // Revert to base form
     if (!targetForm || (activeForm && activeForm.id === targetForm.id)) {
@@ -133,6 +180,45 @@ function PokemonDetail({
     }, 350)
   }
 
+  function handleSelectRegionalForm(targetForm) {
+    if (isRegionalTransforming || isTransforming) return
+
+    const isReverting =
+      !targetForm || (activeRegionalForm && activeRegionalForm.id === targetForm.id)
+    const region = isReverting ? 'reverting' : (targetForm.region || 'alola')
+
+    const audio = new Audio(isReverting ? megaRevertSound : megaSound)
+    audio.currentTime = 0
+    audio.play().catch(() => { })
+
+    // Clear active mega form if transforming into a regional form
+    if (activeForm) setActiveForm(null)
+
+    setIsRegionalTransforming(true)
+    setRegionalTransformRegion(region)
+    setRegionalTransformStage('charging')
+
+    // Clímax at 320ms: flash + swap sprite and all stats + stats bump
+    setTimeout(() => {
+      setActiveRegionalForm(isReverting ? null : targetForm)
+      setRegionalTransformStage('flash')
+      setStatsBump(true)
+
+      // Particles disperse at 540ms
+      setTimeout(() => {
+        setRegionalTransformStage('fade')
+
+        // Conclude animation cleanly at 840ms
+        setTimeout(() => {
+          setIsRegionalTransforming(false)
+          setRegionalTransformStage('idle')
+          setRegionalTransformRegion(null)
+          setStatsBump(false)
+        }, 320)
+      }, 220)
+    }, 320)
+  }
+
   function handleToggleShiny() {
     if (!hasShiny || isShinyAnimating) return
 
@@ -160,8 +246,27 @@ function PokemonDetail({
         setShinyStage('idle')
       }, 1150)
     } else {
-      // Regreso a forma regular
-      setIsShiny(false)
+      // Regreso a forma regular (shinyless) con animación suave y sonido
+      setIsShinyAnimating(true)
+      setShinyStage('reverting-charging')
+
+      // Momento clímax de reversión (180ms): sonido shinyless, flash de disipación y cambio de sprite
+      setTimeout(() => {
+        playShinylessSound()
+        setShinyStage('reverting-flash')
+        setIsShiny(false)
+      }, 180)
+
+      // Dispersión suave de estela de brillo (420ms)
+      setTimeout(() => {
+        setShinyStage('reverting-fade')
+      }, 420)
+
+      // Retorno completo a reposo (950ms)
+      setTimeout(() => {
+        setIsShinyAnimating(false)
+        setShinyStage('idle')
+      }, 950)
     }
   }
 
@@ -203,12 +308,24 @@ function PokemonDetail({
     )
   }
 
-  const currentData = activeForm || pokemon
-  const currentName = activeForm?.localizedName || pokemon?.localizedName || formatName(pokemon?.name || '')
+  const matchedRegionalForm = activeRegionalForm
+    ? regionalForms.find(
+        (f) => f.id === activeRegionalForm.id || f.name === activeRegionalForm.name,
+      ) || activeRegionalForm
+    : null
+
+  const currentData = matchedRegionalForm || activeForm || pokemon
+  const currentName =
+    matchedRegionalForm?.localizedName ||
+    activeForm?.localizedName ||
+    pokemon?.localizedName ||
+    formatName(pokemon?.name || '')
+
   const currentImage =
     isShiny && currentData?.shinyImage
       ? currentData.shinyImage
       : (currentData?.image || pokemon?.image)
+
   const hasShiny = Boolean(currentData?.shinyImage || pokemon?.shinyImage)
   const currentTypes = currentData?.types || []
   const currentTypeLabels = currentData?.typeLabels || {}
@@ -217,12 +334,15 @@ function PokemonDetail({
   const currentStats = currentData?.stats || []
   const currentHeight = currentData?.height
   const currentWeight = currentData?.weight
-  const currentCry = activeForm?.cry || pokemon?.cry || null
-  const currentPokedexDescription = activeForm
-    ? (activeForm.pokedexDescription || null)
-    : (pokemon?.pokedexDescription || null)
+  const currentCry = matchedRegionalForm?.cry || activeForm?.cry || pokemon?.cry || null
+  const currentPokedexDescription = matchedRegionalForm
+    ? (matchedRegionalForm.pokedexDescription || pokemon?.pokedexDescription || null)
+    : activeForm
+      ? (activeForm.pokedexDescription || pokemon?.pokedexDescription || null)
+      : (pokemon?.pokedexDescription || null)
 
   const hasMegas = megaForms.length > 0
+  const hasRegionalForms = regionalForms.length > 0
 
   const nameLength = currentName.length
   const titleLengthClass =
@@ -245,6 +365,7 @@ function PokemonDetail({
             <p className="eyebrow">
               {t.detail.pokedex} #{String(pokemon.id).padStart(3, '0')}
               {activeForm && " ✦ " + activeForm.megaVariant?.toUpperCase()}
+              {activeRegionalForm && " ✦ " + activeRegionalForm.region?.toUpperCase()}
             </p>
             <h1 className={`detail-title ${titleLengthClass}`.trim()}>
               {currentName}
@@ -289,14 +410,14 @@ function PokemonDetail({
               title={isFocusMode ? t.detail.bubbleClose : t.detail.interactHint}
               aria-label={isFocusMode ? t.detail.bubbleClose : `${pokemon.name}, ${t.detail.interactHint}`}
             >
-              <div className={`art-ring ${activeForm ? 'is-mega' : ''}`} />
+              <div className={`art-ring ${activeForm ? 'is-mega' : ''} ${activeRegionalForm ? `is-regional region-${activeRegionalForm.region}` : ''}`} />
 
-              {/* Transformation energy shockwave aura */}
+              {/* Transformation energy shockwave aura for Megas */}
               <div className={`mega-energy-ring ${transformStage !== 'idle' ? transformStage : ''}`} aria-hidden="true" />
 
-              {/* Shiny transformation energy & particle effects */}
+              {/* Shiny & Shinyless transformation energy & particle effects */}
               {isShinyAnimating && (
-                <div className={`shiny-transform-overlay stage-${shinyStage}`} aria-hidden="true">
+                <div className={`shiny-transform-overlay stage-${shinyStage} ${shinyStage.startsWith('reverting') ? 'is-shinyless' : 'is-shiny'}`} aria-hidden="true">
                   <div className="shiny-energy-shockwave" />
                   <div className="shiny-aura-burst" />
                   <div className="shiny-light-flash" />
@@ -313,9 +434,31 @@ function PokemonDetail({
                 </div>
               )}
 
+              {/* Regional Transformation Visual Effects Overlay */}
+              {isRegionalTransforming && (
+                <div
+                  className={`regional-transform-overlay region-${regionalTransformRegion} stage-${regionalTransformStage}`}
+                  aria-hidden="true"
+                >
+                  <div className="regional-aura-burst" />
+                  <div className="regional-energy-wave" />
+                  <div className="regional-light-flash" />
+                  <div className="regional-particles-cluster">
+                    <span className="regional-particle p-1" />
+                    <span className="regional-particle p-2" />
+                    <span className="regional-particle p-3" />
+                    <span className="regional-particle p-4" />
+                    <span className="regional-particle p-5" />
+                    <span className="regional-particle p-6" />
+                    <span className="regional-particle p-7" />
+                    <span className="regional-particle p-8" />
+                  </div>
+                </div>
+              )}
+
               <img
-                key={`${activeForm ? activeForm.name : pokemon.name}-${isShiny ? 'shiny' : 'regular'}`}
-                className={`detail-art-image ${transformStage === 'charging' ? 'sprite-charging' : ''} ${transformStage === 'impact' ? 'sprite-impact' : ''} ${isShinyAnimating ? `shiny-sprite-${shinyStage}` : ''}`}
+                key={`${currentData?.name || pokemon.name}-${isShiny ? 'shiny' : 'regular'}`}
+                className={`detail-art-image ${transformStage === 'charging' ? 'sprite-charging' : ''} ${transformStage === 'impact' ? 'sprite-impact' : ''} ${isShinyAnimating ? `shiny-sprite-${shinyStage}` : ''} ${isRegionalTransforming ? `regional-sprite-${regionalTransformStage} regional-sprite-${regionalTransformRegion}` : ''}`}
                 src={currentImage}
                 alt={currentName}
               />
@@ -327,8 +470,8 @@ function PokemonDetail({
                 </div>
               )}
 
-              {/* Background loading indicator for Mega forms */}
-              {isLoadingMegas && !hasMegas && (
+              {/* Background loading indicator for Mega / Regional forms */}
+              {(isLoadingMegas || isLoadingRegionals) && !hasMegas && !hasRegionalForms && (
                 <div className="mega-loading-dot" title={t.detail.megaLoading} aria-label={t.detail.megaLoading} />
               )}
             </div>
@@ -342,11 +485,17 @@ function PokemonDetail({
               hasShiny={hasShiny}
               currentCry={currentCry}
               pokemonName={currentName}
+              basePokemonName={pokemon?.localizedName || formatName(pokemon?.name || '')}
               hasMegas={hasMegas}
               megaForms={megaForms}
               activeForm={activeForm}
               onTransform={handleTransform}
               isTransforming={isTransforming}
+              hasRegionalForms={hasRegionalForms}
+              regionalForms={regionalForms}
+              activeRegionalForm={matchedRegionalForm}
+              onSelectRegionalForm={handleSelectRegionalForm}
+              isRegionalTransforming={isRegionalTransforming}
               onScrollToStats={() => {
                 setIsFocusMode(false)
                 setTimeout(() => {
