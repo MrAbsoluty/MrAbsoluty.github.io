@@ -8,6 +8,10 @@ import PokemonDetail from './pages/PokemonDetail'
 import { defaultLocale, getTranslations } from './locales'
 import { getItem, getPokemon } from './services/pokeapi'
 import MusicPlayer from './components/MusicPlayer'
+import AuthModal from './components/auth/AuthModal'
+import UsernameSetupModal from './components/auth/UsernameSetupModal'
+import ProfileModal from './components/profile/ProfileModal'
+import SettingsModal from './components/profile/SettingsModal'
 import './App.css'
 
 function getInitialLocale() {
@@ -299,6 +303,10 @@ function App() {
     <>
       {currentView}
       <MusicPlayer locale={locale} t={t} />
+      <AuthModal />
+      <UsernameSetupModal />
+      <ProfileModal />
+      <SettingsModal locale={locale} onLocaleChange={handleLocaleChange} t={t} />
     </>
   )
 }

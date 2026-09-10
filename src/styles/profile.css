@@ -1,0 +1,659 @@
+/* ================================================================
+   PokeGuide - Estilos de Perfil, Editor de Avatar y Ajustes
+   Conserva fielmente la paleta y diseño nativo de PokeGuide
+   ================================================================ */
+
+/* --- Modal Base de Perfil y Ajustes --- */
+.profile-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(23, 39, 51, 0.22);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  position: relative;
+  animation: authCardScaleIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 28px 56px rgba(23, 39, 51, 0.24);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow: hidden;
+  position: relative;
+  animation: authCardScaleIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Sección del Avatar en Mi Perfil --- */
+.profile-avatar-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 20px;
+}
+
+.profile-avatar-preview-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.profile-avatar-img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--paper);
+  box-shadow: 0 6px 18px rgba(23, 39, 51, 0.12);
+  background: var(--navy);
+  display: block;
+}
+
+.profile-avatar-fallback {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #ffffff;
+  font: 700 38px/96px var(--display);
+  text-align: center;
+  border: 3px solid var(--paper);
+  box-shadow: 0 6px 18px rgba(23, 39, 51, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-avatar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-btn-upload {
+  background: var(--navy);
+  color: #ffffff;
+  border: none;
+  border-radius: 100px;
+  font: 600 12.5px var(--display);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-btn-upload:hover {
+  background: var(--coral);
+  transform: translateY(-1px);
+}
+
+.profile-btn-delete {
+  background: none;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 100px;
+  font: 600 12px var(--display);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-btn-delete:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
+/* --- Editor de Avatar --- */
+.avatar-editor-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 28px 60px rgba(23, 39, 51, 0.28);
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  animation: authCardScaleIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.avatar-editor-body {
+  padding: 10px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Área de recorte interactiva */
+.crop-viewport-container {
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #121921;
+  box-shadow: 0 10px 25px rgba(23, 39, 51, 0.25);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.crop-viewport-container.is-dragging {
+  cursor: grabbing;
+}
+
+.crop-canvas-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Máscara circular para guiar el recorte */
+.crop-circle-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(18, 25, 33, 0.7);
+  border: 2px dashed rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  transition: border-color 0.2s;
+}
+
+.crop-viewport-container:hover .crop-circle-mask {
+  border-color: var(--coral);
+}
+
+.crop-hint-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(23, 39, 51, 0.75);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  border-radius: 100px;
+  font: 500 11px var(--sans);
+  padding: 4px 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Controles de zoom */
+.crop-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 360px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.crop-zoom-btn {
+  background: #f4f5f2;
+  border: 1px solid var(--line);
+  color: var(--navy);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+
+.crop-zoom-btn:hover {
+  background: #e9ece6;
+  border-color: var(--coral);
+  color: var(--coral);
+}
+
+.crop-zoom-slider {
+  flex: 1;
+  accent-color: var(--coral);
+  cursor: pointer;
+}
+
+/* --- Previsualización de Resoluciones --- */
+.resolutions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.resolutions-title-group {
+  text-align: center;
+}
+
+.resolutions-title {
+  font: 700 16px var(--display);
+  color: var(--navy);
+  margin: 0 0 3px;
+  letter-spacing: -0.02em;
+}
+
+.resolutions-subtitle {
+  font: 12px var(--sans);
+  color: var(--muted);
+  margin: 0;
+}
+
+.resolutions-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.resolution-card-btn {
+  background: #fbfcfb;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 4px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.resolution-card-btn:hover {
+  border-color: #cbd5ce;
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(23, 39, 51, 0.08);
+}
+
+.resolution-card-btn.is-selected {
+  border-color: var(--coral);
+  background: #fffafa;
+  box-shadow: 0 8px 20px rgba(237, 109, 93, 0.18);
+  transform: translateY(-3px);
+}
+
+.resolution-recommended-tag {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--coral);
+  color: #ffffff;
+  font: 700 8.5px var(--display);
+  letter-spacing: 0.04em;
+  padding: 1.5px 6px;
+  border-radius: 100px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(237, 109, 93, 0.35);
+}
+
+.resolution-preview-circle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(23, 39, 51, 0.12);
+  background: #17212b;
+}
+
+/* Diferencias visuales entre previews */
+.resolution-preview-circle-wrap.size-64 {
+  width: 36px;
+  height: 36px;
+}
+
+.resolution-preview-circle-wrap.size-128 {
+  width: 48px;
+  height: 48px;
+}
+
+.resolution-preview-circle-wrap.size-256 {
+  width: 62px;
+  height: 62px;
+}
+
+.resolution-preview-circle-wrap.size-384 {
+  width: 76px;
+  height: 76px;
+}
+
+.resolution-preview-circle-wrap.size-512 {
+  width: 90px;
+  height: 90px;
+}
+
+.resolution-preview-circle-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.resolution-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.resolution-label {
+  font: 700 11.5px var(--display);
+  color: var(--navy);
+  letter-spacing: -0.01em;
+}
+
+.resolution-status-text {
+  font: 600 9.5px var(--display);
+  color: var(--coral);
+  min-height: 12px;
+}
+
+/* Previsualización en el Navbar de PokeGuide */
+.navbar-mock-preview-wrap {
+  background: #f7f8f5;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-mock-title {
+  font: 600 11.5px var(--display);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.navbar-mock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 4px 12px 4px 6px;
+  box-shadow: 0 2px 8px rgba(23, 39, 51, 0.05);
+}
+
+.navbar-mock-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--paper);
+}
+
+.navbar-mock-name {
+  font: 600 13px var(--display);
+  color: var(--navy);
+}
+
+.navbar-mock-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+}
+
+/* --- Encabezado centrado de Ajustes de Cuenta --- */
+.settings-modal-header {
+  padding: 24px 44px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-modal-header .auth-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.settings-modal-header .auth-modal-title {
+  text-align: center;
+  margin: 0 0 6px;
+  width: 100%;
+}
+
+.settings-modal-header .auth-modal-subtitle {
+  text-align: center;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.settings-modal-header .auth-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  margin: 0;
+}
+
+/* --- Ajustes de Cuenta (Tabs) --- */
+.settings-tabs-header {
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid var(--line);
+  background: #fafbf9;
+  padding: 0 16px;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.settings-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--muted);
+  font: 600 13px var(--display);
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.settings-tab-btn:hover {
+  color: var(--navy);
+}
+
+.settings-tab-btn.is-active {
+  color: var(--coral);
+  border-bottom-color: var(--coral);
+}
+
+.settings-tab-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+  text-align: center;
+}
+
+.settings-tab-body .auth-field {
+  text-align: center;
+  align-items: center;
+}
+
+.settings-tab-body .auth-label {
+  text-align: center;
+  display: block;
+}
+
+.settings-tab-body .auth-input {
+  text-align: center;
+}
+
+.settings-tab-body .auth-input-wrapper {
+  width: 100%;
+}
+
+.settings-tab-body .auth-primary-btn {
+  align-self: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.settings-tab-body .auth-alert {
+  text-align: center;
+}
+
+/* Zona de peligro / Datos */
+.settings-danger-box {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.settings-danger-title {
+  font: 700 13px var(--display);
+  color: #c53030;
+  margin: 0;
+  text-align: center;
+}
+
+.settings-danger-text {
+  font: 12.5px/1.5 var(--sans);
+  color: #742a2a;
+  margin: 0;
+  text-align: center;
+}
+
+/* Acciones en pie de modales */
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.modal-btn-cancel {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 8px;
+  font: 600 13px var(--display);
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-btn-cancel:hover {
+  border-color: #cbd5ce;
+  color: var(--navy);
+}
+
+/* --- Responsive --- */
+@media (max-width: 650px) {
+  .resolutions-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .crop-viewport-container {
+    width: 260px;
+    height: 260px;
+  }
+  .settings-modal-card,
+  .avatar-editor-modal-card,
+  .profile-modal-card {
+    max-width: 95%;
+  }
+  .settings-tab-btn {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+}
+
+/* --- Integración con UserMenuDropdown --- */
+.nav-user-avatar-pill {
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+}
+
+.nav-user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.dropdown-user-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2px solid var(--paper);
+}
+
+.dropdown-user-header-clickable {
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background 0.18s ease;
+  padding: 8px 10px;
+}
+
+.dropdown-user-header-clickable:hover {
+  background: #f7f8f5;
+}
+
+.dropdown-item-icon.icon-profile {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.dropdown-item-icon.icon-profile svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dropdown-item-icon.icon-settings {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dropdown-item-icon.icon-settings svg {
+  width: 16px;
+  height: 16px;
+}

@@ -6,6 +6,8 @@ import hoverBubbleSoundUrl from '../audio/hover-bubble.mp3'
 import shinySoundUrl from '../audio/shiny.mp3'
 import shinylessSoundUrl from '../audio/shinyless.mp3'
 import favoritoSoundUrl from '../audio/favorito.mp3'
+import despliegueSoundUrl from '../audio/despliegue.mp3'
+import clickuserSoundUrl from '../audio/clickuser.mp3'
 
 let lastBuscarTime = 0
 export function playBuscarSound() {
@@ -124,6 +126,36 @@ export function playFavoritoSound() {
     const audio = new Audio(favoritoSoundUrl)
     audio.currentTime = 0
     audio.volume = 0.85
+    audio.play().catch(() => {})
+  } catch {
+    // Ignore playback restrictions/errors
+  }
+}
+
+let lastDespliegueTime = 0
+export function playDespliegueSound() {
+  const now = Date.now()
+  if (now - lastDespliegueTime < 100) return
+  lastDespliegueTime = now
+
+  try {
+    const audio = new Audio(despliegueSoundUrl)
+    audio.currentTime = 0
+    audio.play().catch(() => {})
+  } catch {
+    // Ignore playback restrictions/errors
+  }
+}
+
+let lastClickUserTime = 0
+export function playClickUserSound() {
+  const now = Date.now()
+  if (now - lastClickUserTime < 100) return
+  lastClickUserTime = now
+
+  try {
+    const audio = new Audio(clickuserSoundUrl)
+    audio.currentTime = 0
     audio.play().catch(() => {})
   } catch {
     // Ignore playback restrictions/errors

@@ -1,5 +1,7 @@
 import { localeOptions } from '../locales'
 import { useFavorites } from '../context/FavoritesContext'
+import { useAuth } from '../context/AuthContext'
+import UserMenuDropdown from './auth/UserMenuDropdown'
 
 function Navbar({
   t,
@@ -11,6 +13,16 @@ function Navbar({
   activeNav = 'home',
 }) {
   const { unseenCount, markFavoritesAsSeen } = useFavorites()
+  const {
+    isAuthenticated,
+    isProfileComplete,
+    profile,
+    user,
+    loading: authLoading,
+    openAuthModal,
+    signOut,
+    setShowUsernameSetup,
+  } = useAuth()
 
   function handleBrandClick(event) {
     if (onHomeClick) {
@@ -55,34 +67,88 @@ function Navbar({
         >
           {t.nav.pokedex}
         </a>
-        <a
-          className={activeNav === 'favorites' ? 'active' : ''}
-          href="#favorites"
-          onClick={handleFavoritesNavClick}
-        >
-          {t?.nav?.favorites || 'Favoritos'}
-          {unseenCount > 0 && activeNav !== 'favorites' && (
-            <span className="nav-fav-badge" aria-label={`${unseenCount} nuevos favoritos`}>
-              {unseenCount}
-            </span>
-          )}
-        </a>
+        {!isAuthenticated && (
+          <a
+            className={activeNav === 'favorites' ? 'active' : ''}
+            href="#favorites"
+            onClick={handleFavoritesNavClick}
+          >
+            {t?.nav?.favorites || 'Favoritos'}
+            {unseenCount > 0 && activeNav !== 'favorites' && (
+              <span className="nav-fav-badge" aria-label={`${unseenCount} nuevos favoritos`}>
+                {unseenCount}
+              </span>
+            )}
+          </a>
+        )}
         <a href="#categories">{t.nav.competitive}</a>
         <a href="#categories">{t.nav.guide}</a>
       </nav>
       <div className="header-actions">
-        <label className="language-picker">
-          <span aria-hidden="true">{localeOptions.find((option) => option.code === locale)?.flag}</span>
-          <select value={locale} onChange={(event) => onLocaleChange(event.target.value)} aria-label="Language">
-            <option value="es">{t.languages.es}</option>
-            <option value="es-419">{t.languages['es-419']}</option>
-            <option value="en">{t.languages.en}</option>
-          </select>
-        </label>
-        <button className="ai-link" type="button" aria-label={t.nav.ai}>
-          <span className="spark" aria-hidden="true">✦</span>
-          <span>{t.nav.ai}</span>
-        </button>
+        {!isAuthenticated && (
+          <>
+            <label className="language-picker">
+              <span aria-hidden="true">{localeOptions.find((option) => option.code === locale)?.flag}</span>
+              <select value={locale} onChange={(event) => onLocaleChange(event.target.value)} aria-label="Language">
+                <option value="es">{t.languages.es}</option>
+                <option value="es-419">{t.languages['es-419']}</option>
+                <option value="en">{t.languages.en}</option>
+              </select>
+            </label>
+            <button className="ai-link" type="button" aria-label={t.nav.ai}>
+              <span className="spark" aria-hidden="true">✦</span>
+              <span>{t.nav.ai}</span>
+            </button>
+          </>
+        )}
+
+        {!authLoading && (
+          <div className="nav-auth-group">
+            {isAuthenticated ? (
+              <>
+                {isProfileComplete ? (
+                  <UserMenuDropdown
+                    profile={profile}
+                    user={user}
+                    t={t}
+                    locale={locale}
+                    onLocaleChange={onLocaleChange}
+                    onFavoritesClick={onFavoritesClick}
+                    unseenCount={unseenCount}
+                    markFavoritesAsSeen={markFavoritesAsSeen}
+                    signOut={signOut}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="nav-incomplete-btn"
+                    onClick={() => setShowUsernameSetup(true)}
+                    title="Debes elegir un nombre de usuario"
+                  >
+                    ⚠️ Elegir username
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="nav-auth-btn btn-login"
+                  onClick={() => openAuthModal('login')}
+                >
+                  Iniciar sesión
+                </button>
+                <button
+                  type="button"
+                  className="nav-auth-btn btn-register"
+                  onClick={() => openAuthModal('register')}
+                >
+                  Crear cuenta
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </header>
   )
