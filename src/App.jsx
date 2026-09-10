@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Favorites from './pages/Favorites'
 import Home from './pages/Home'
 import ItemDetail from './pages/ItemDetail'
 import Items from './pages/Items'
@@ -25,11 +26,83 @@ function App() {
   const [locale, setLocale] = useState(getInitialLocale)
   const t = getTranslations(locale)
 
+  async function loadPokemonByQuery(query, pushHistory = true) {
+    setView('detail')
+    setPokemon(null)
+    setError(null)
+    setIsLoading(true)
+
+    try {
+      const result = await getPokemon(query, locale, t.errors)
+      setPokemon(result)
+      if (pushHistory) {
+        window.history.pushState({}, '', `#pokemon/${result.name}`)
+      }
+    } catch (searchError) {
+      console.error('SEARCH ERROR IN APP:', searchError)
+      setError(searchError)
+      if (pushHistory) {
+        window.history.pushState({}, '', '#pokemon/not-found')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function loadItemByName(name, pushHistory = true) {
+    setView('item-detail')
+    setItem(null)
+    setError(null)
+    setIsLoading(true)
+
+    try {
+      const result = await getItem(name, locale, t.errors)
+      setItem(result)
+      if (pushHistory) {
+        window.history.pushState({}, '', `#item/${result.name}`)
+      }
+    } catch (itemError) {
+      setError(itemError)
+      if (pushHistory) {
+        window.history.pushState({}, '', '#item/not-found')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleSearch(query) {
+    loadPokemonByQuery(query, true)
+  }
+
+  function handleItemClick(name) {
+    loadItemByName(name, true)
+  }
+
   useEffect(() => {
     function handlePopState() {
       const hash = window.location.hash
+      if (hash.startsWith('#pokemon/')) {
+        const query = decodeURIComponent(hash.slice('#pokemon/'.length).trim())
+        if (query && query !== 'not-found') {
+          loadPokemonByQuery(query, false)
+          return
+        }
+      }
+      if (hash.startsWith('#item/')) {
+        const itemName = decodeURIComponent(hash.slice('#item/'.length).trim())
+        if (itemName && itemName !== 'not-found') {
+          loadItemByName(itemName, false)
+          return
+        }
+      }
       if (hash === '#pokedex') {
         setView('pokedex')
+        setPokemon(null)
+        setItem(null)
+        setError(null)
+      } else if (hash === '#favorites') {
+        setView('favorites')
         setPokemon(null)
         setItem(null)
         setError(null)
@@ -46,45 +119,11 @@ function App() {
       }
     }
 
+    handlePopState()
+
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
-
-  async function handleSearch(query) {
-    setView('detail')
-    setPokemon(null)
-    setError(null)
-    setIsLoading(true)
-
-    try {
-      const result = await getPokemon(query, locale, t.errors)
-      setPokemon(result)
-      window.history.pushState({}, '', `#pokemon/${result.name}`)
-    } catch (searchError) {
-      setError(searchError)
-      window.history.pushState({}, '', '#pokemon/not-found')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  async function handleItemClick(name) {
-    setView('item-detail')
-    setItem(null)
-    setError(null)
-    setIsLoading(true)
-
-    try {
-      const result = await getItem(name, locale, t.errors)
-      setItem(result)
-      window.history.pushState({}, '', `#item/${result.name}`)
-    } catch (itemError) {
-      setError(itemError)
-      window.history.pushState({}, '', '#item/not-found')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [locale])
 
   function handleItemsOpen() {
     setView('items')
@@ -99,6 +138,14 @@ function App() {
     window.history.pushState({}, '', '#pokedex')
   }
 
+  function handleFavoritesOpen() {
+    setView('favorites')
+    setPokemon(null)
+    setItem(null)
+    setError(null)
+    window.history.pushState({}, '', '#favorites')
+  }
+
   function handleHome() {
     setView('home')
     setPokemon(null)
@@ -109,6 +156,11 @@ function App() {
 
   function handlePokemonFromPokedex(query) {
     setPokemonReturnView('pokedex')
+    handleSearch(query)
+  }
+
+  function handlePokemonFromFavorites(query) {
+    setPokemonReturnView('favorites')
     handleSearch(query)
   }
 
@@ -161,6 +213,13 @@ function App() {
       window.history.pushState({}, '', '#pokedex')
       return
     }
+    if (view === 'detail' && pokemonReturnView === 'favorites') {
+      setView('favorites')
+      setPokemon(null)
+      setError(null)
+      window.history.pushState({}, '', '#favorites')
+      return
+    }
     setView('home')
     setPokemon(null)
     setItem(null)
@@ -181,6 +240,19 @@ function App() {
         onPokemonClick={handlePokemonFromPokedex}
         onBack={handleBack}
         onHomeClick={handleHome}
+        onFavoritesClick={handleFavoritesOpen}
+        t={t}
+        locale={locale}
+        onLocaleChange={handleLocaleChange}
+      />
+    )
+  } else if (view === 'favorites') {
+    currentView = (
+      <Favorites
+        onPokemonClick={handlePokemonFromFavorites}
+        onBack={handleBack}
+        onHomeClick={handleHome}
+        onPokedexClick={handlePokedexOpen}
         t={t}
         locale={locale}
         onLocaleChange={handleLocaleChange}
@@ -200,6 +272,7 @@ function App() {
         onPokemonClick={handleSearch}
         onPokedexClick={handlePokedexOpen}
         onHomeClick={handleHome}
+        onFavoritesClick={handleFavoritesOpen}
         t={t}
         locale={locale}
         onLocaleChange={handleLocaleChange}
@@ -213,6 +286,7 @@ function App() {
         onItemClick={handleItemClick}
         onItemsClick={handleItemsOpen}
         onPokedexClick={handlePokedexOpen}
+        onFavoritesClick={handleFavoritesOpen}
         isLoading={isLoading}
         t={t}
         locale={locale}

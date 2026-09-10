@@ -11,6 +11,7 @@ function Pokedex({
   onPokemonClick,
   onBack,
   onHomeClick,
+  onFavoritesClick,
   t,
   locale,
   onLocaleChange,
@@ -132,6 +133,7 @@ function Pokedex({
         onLocaleChange={onLocaleChange}
         activeNav="pokedex"
         onHomeClick={onHomeClick}
+        onFavoritesClick={onFavoritesClick}
       />
 
       <main className="pokedex-page">

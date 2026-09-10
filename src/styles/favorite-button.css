@@ -1,0 +1,478 @@
+/* ==========================================================================
+   ⭐ POKÉGUIDE - FAVORITE BUTTON & SPARKLE ANIMATIONS
+   ========================================================================== */
+
+.pokemon-favorite-btn {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(23, 39, 51, 0.12);
+  border-radius: 50%;
+  color: #899391;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.22s ease,
+              border-color 0.22s ease,
+              box-shadow 0.22s ease,
+              color 0.22s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  contain: layout style;
+}
+
+/* Sizes */
+.pokemon-favorite-btn.size-large {
+  width: 44px;
+  height: 44px;
+}
+
+.pokemon-favorite-btn.size-medium {
+  width: 36px;
+  height: 36px;
+}
+
+.pokemon-favorite-btn.size-small {
+  width: 28px;
+  height: 28px;
+}
+
+/* Star SVG Icon */
+.fav-star-icon {
+  display: block;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              fill 0.22s ease,
+              stroke 0.22s ease,
+              filter 0.22s ease;
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pokemon-favorite-btn.size-large .fav-star-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.pokemon-favorite-btn.size-medium .fav-star-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.pokemon-favorite-btn.size-small .fav-star-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
+}
+
+/* Hover on Inactive */
+.pokemon-favorite-btn:not(.is-favorite):hover {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(255, 255, 255, 0.96);
+  transform: scale(1.1);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.22);
+}
+
+.pokemon-favorite-btn:not(.is-favorite):active {
+  transform: scale(0.92);
+}
+
+/* Focus Visible */
+.pokemon-favorite-btn:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 3px;
+}
+
+/* Active Favorite State (★) */
+.pokemon-favorite-btn.is-favorite {
+  background: rgba(254, 243, 199, 0.85);
+  border-color: #f59e0b;
+  color: #d97706;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.35), inset 0 1px 2px #ffffff;
+}
+
+.pokemon-favorite-btn.is-favorite .fav-star-icon {
+  fill: #f59e0b;
+  stroke: #d97706;
+  filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.45));
+}
+
+.pokemon-favorite-btn.is-favorite:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.5), inset 0 1px 2px #ffffff;
+}
+
+.pokemon-favorite-btn.is-favorite:active {
+  transform: scale(0.94);
+}
+
+/* Subtle persistent warm halo on active star */
+.pokemon-favorite-btn.is-favorite::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   ✨ SPARKLES & BOUNCE ANIMATION ON ADD (☆ → ✨ → ★)
+   ========================================================================== */
+
+.pokemon-favorite-btn.is-animating-add {
+  animation: fav-btn-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.pokemon-favorite-btn.is-animating-add .fav-star-icon {
+  animation: fav-star-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes fav-btn-bounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.28) rotate(-8deg); }
+  65% { transform: scale(0.92) rotate(4deg); }
+  85% { transform: scale(1.06) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes fav-star-pop {
+  0% { transform: scale(0.8) rotate(-20deg); }
+  50% { transform: scale(1.35) rotate(15deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Particles / Sparkles Container */
+.fav-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.fav-sparkle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  color: #f59e0b;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  opacity: 0;
+}
+
+.pokemon-favorite-btn.is-animating-add .fav-sparkle.sp-1 {
+  animation: fav-sparkle-tr 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.pokemon-favorite-btn.is-animating-add .fav-sparkle.sp-2 {
+  animation: fav-sparkle-tl 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.03s forwards;
+}
+
+.pokemon-favorite-btn.is-animating-add .fav-sparkle.sp-3 {
+  animation: fav-sparkle-br 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards;
+}
+
+.pokemon-favorite-btn.is-animating-add .fav-sparkle.sp-4 {
+  animation: fav-sparkle-bl 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.02s forwards;
+}
+
+@keyframes fav-sparkle-tr {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(calc(-50% + 15px), calc(-50% - 15px)) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + 20px), calc(-50% - 20px)) scale(0.2);
+  }
+}
+
+@keyframes fav-sparkle-tl {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(calc(-50% - 15px), calc(-50% - 15px)) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - 20px), calc(-50% - 20px)) scale(0.2);
+  }
+}
+
+@keyframes fav-sparkle-br {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(calc(-50% + 15px), calc(-50% + 14px)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + 19px), calc(-50% + 18px)) scale(0.2);
+  }
+}
+
+@keyframes fav-sparkle-bl {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(calc(-50% - 15px), calc(-50% + 14px)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - 19px), calc(-50% + 18px)) scale(0.2);
+  }
+}
+
+/* ==========================================================================
+   DISMISS / REMOVE ANIMATION (★ → ☆)
+   ========================================================================== */
+
+.pokemon-favorite-btn.is-animating-remove {
+  animation: fav-btn-shrink 0.32s ease-out forwards;
+}
+
+@keyframes fav-btn-shrink {
+  0% { transform: scale(1); }
+  45% { transform: scale(0.85); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   CARD & DETAIL INTEGRATION ADAPTATIONS
+   ========================================================================== */
+
+/* Detail Header Row */
+.detail-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+
+.detail-title-wrapper .detail-title {
+  margin: 0;
+}
+
+/* Pokedex Card Top-Right Float */
+.pokedex-card-fav-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.pokedex-interactive-card .pokemon-meta {
+  padding-right: 32px;
+}
+
+/* Search Suggestions List Inline Star */
+.search-suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.search-suggestion-item > button {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-suggestion-item .pokemon-favorite-btn {
+  margin-left: 6px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+/* Navbar Favorites Badge */
+.nav-fav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  margin-left: 5px;
+  font: 700 10px var(--display);
+  background: var(--coral);
+  color: #ffffff;
+  border-radius: 10px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+   FAVORITES PAGE VIEW
+   ========================================================================== */
+
+.favorites-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  min-height: 70vh;
+}
+
+.favorites-header {
+  margin-bottom: 40px;
+}
+
+.favorites-header .eyebrow {
+  color: #d97706;
+  font: 700 12px var(--display);
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.favorites-header h1 {
+  font: 700 48px var(--display);
+  color: var(--navy);
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  margin: 0 0 14px;
+}
+
+.favorites-header h1 em {
+  font-style: italic;
+  color: #f59e0b;
+}
+
+.favorites-header-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.favorites-subtitle {
+  color: #5c6867;
+  font-size: 16px;
+  max-width: 600px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.favorites-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(254, 243, 199, 0.7);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 20px;
+  color: #b45309;
+  font: 600 13px var(--display);
+  letter-spacing: -0.01em;
+}
+
+.favorites-count-pill svg {
+  width: 14px;
+  height: 14px;
+  fill: #f59e0b;
+}
+
+/* Empty State Card */
+.favorites-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 28px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px dashed rgba(245, 158, 11, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(23, 39, 51, 0.04);
+  max-width: 580px;
+  margin: 40px auto 0;
+}
+
+.favorites-empty-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.9) 0%, rgba(254, 243, 199, 0.3) 70%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.25);
+}
+
+.favorites-empty-icon {
+  font-size: 38px;
+  color: #f59e0b;
+  line-height: 1;
+}
+
+.favorites-empty-card h3 {
+  font: 700 24px var(--display);
+  color: var(--navy);
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+
+.favorites-empty-card p {
+  font-size: 15px;
+  color: #6a7776;
+  line-height: 1.55;
+  margin: 0 0 24px;
+  max-width: 440px;
+}
+
+.favorites-explore-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  font-size: 15px;
+}
+
+@media (max-width: 650px) {
+  .favorites-page {
+    padding: 24px 16px 60px;
+  }
+  .favorites-header h1 {
+    font-size: 34px;
+  }
+  .favorites-empty-card {
+    padding: 44px 20px;
+  }
+}
+

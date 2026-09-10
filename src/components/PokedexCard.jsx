@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { playClickSound } from '../utils/audio'
+import PokemonFavoriteButton from './PokemonFavoriteButton'
 
 const typeColors = {
   bug: '#65a47b',
@@ -38,20 +39,35 @@ function PokedexCard({
 
   // Format type string: e.g. "Planta · Veneno" or "Fuego"
   const typesText = types
-    .map((typeKey) => t.types[typeKey] || typeKey.charAt(0).toUpperCase() + typeKey.slice(1))
+    .map((typeKey) => t?.types?.[typeKey] || typeKey.charAt(0).toUpperCase() + typeKey.slice(1))
     .join(' · ')
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       className="pokemon-card pokedex-interactive-card"
       style={{ '--card-accent': cardAccent }}
       onClick={() => {
         playClickSound()
         onClick?.(apiName || String(id))
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          playClickSound()
+          onClick?.(apiName || String(id))
+        }
+      }}
       aria-label={`${name} #${formattedId} - ${typesText}`}
     >
+      <PokemonFavoriteButton
+        pokemon={pokemon}
+        size="small"
+        className="pokedex-card-fav-btn"
+        t={t}
+      />
+
       <div className="pokemon-meta">
         <span>
           #{formattedId}
@@ -74,7 +90,7 @@ function PokedexCard({
         <h3>{name}</h3>
         <span aria-hidden="true">↗</span>
       </div>
-    </button>
+    </div>
   )
 }
 

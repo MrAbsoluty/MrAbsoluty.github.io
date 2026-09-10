@@ -1,4 +1,6 @@
 import { localeOptions } from '../locales'
+import { useFavorites } from '../context/FavoritesContext'
+import { playFavoritoSound } from '../utils/audio'
 
 function Navbar({
   t,
@@ -6,8 +8,11 @@ function Navbar({
   onLocaleChange,
   onPokedexClick,
   onHomeClick,
+  onFavoritesClick,
   activeNav = 'home',
 }) {
+  const { favoritesCount } = useFavorites()
+
   function handleBrandClick(event) {
     if (onHomeClick) {
       event.preventDefault()
@@ -19,6 +24,14 @@ function Navbar({
     if (onPokedexClick) {
       event.preventDefault()
       onPokedexClick()
+    }
+  }
+
+  function handleFavoritesNavClick(event) {
+    if (onFavoritesClick) {
+      event.preventDefault()
+      playFavoritoSound()
+      onFavoritesClick()
     }
   }
 
@@ -42,6 +55,18 @@ function Navbar({
           onClick={handlePokedexNavClick}
         >
           {t.nav.pokedex}
+        </a>
+        <a
+          className={activeNav === 'favorites' ? 'active' : ''}
+          href="#favorites"
+          onClick={handleFavoritesNavClick}
+        >
+          {t?.nav?.favorites || 'Favoritos'}
+          {favoritesCount > 0 && (
+            <span className="nav-fav-badge" aria-label={`${favoritesCount} favoritos`}>
+              {favoritesCount}
+            </span>
+          )}
         </a>
         <a href="#categories">{t.nav.competitive}</a>
         <a href="#categories">{t.nav.guide}</a>

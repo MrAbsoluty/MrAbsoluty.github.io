@@ -553,6 +553,7 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
     localizedName: speciesName,
     image:
       data.sprites.other?.['official-artwork']?.front_default ||
+      data.sprites.other?.home?.front_default ||
       data.sprites.front_default,
     types: data.types.map(({ type }) => type.name),
     typeLabels: Object.fromEntries(
@@ -588,6 +589,7 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
     pokedexDescription,
     shinyImage:
       data.sprites.other?.['official-artwork']?.front_shiny ||
+      data.sprites.other?.home?.front_shiny ||
       data.sprites.front_shiny ||
       null,
     cry: data.cries?.latest || data.cries?.legacy || null,
@@ -852,12 +854,14 @@ export async function getMegaForms(pokemonIdOrName, locale = 'en') {
 
         const image =
           pokemonData.sprites.other?.['official-artwork']?.front_default ||
+          pokemonData.sprites.other?.home?.front_default ||
           pokemonData.sprites.front_default ||
           formData.sprites?.front_default ||
           null
 
         const shinyImage =
           pokemonData.sprites.other?.['official-artwork']?.front_shiny ||
+          pokemonData.sprites.other?.home?.front_shiny ||
           pokemonData.sprites.front_shiny ||
           formData.sprites?.front_shiny ||
           null
@@ -1042,12 +1046,14 @@ export async function getRegionalForms(pokemonIdOrName, locale = 'en') {
 
         const image =
           pokemonData.sprites.other?.['official-artwork']?.front_default ||
+          pokemonData.sprites.other?.home?.front_default ||
           pokemonData.sprites.front_default ||
           formData.sprites?.front_default ||
           null
 
         const shinyImage =
           pokemonData.sprites.other?.['official-artwork']?.front_shiny ||
+          pokemonData.sprites.other?.home?.front_shiny ||
           pokemonData.sprites.front_shiny ||
           formData.sprites?.front_shiny ||
           null
@@ -1880,10 +1886,12 @@ export async function getPokedexCard(id, locale = 'es') {
 
     const image =
       pokemonData?.sprites?.other?.['official-artwork']?.front_default ||
+      pokemonData?.sprites?.other?.home?.front_default ||
       `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
 
     const shinyImage =
       pokemonData?.sprites?.other?.['official-artwork']?.front_shiny ||
+      pokemonData?.sprites?.other?.home?.front_shiny ||
       `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${id}.png`
 
     const card = {

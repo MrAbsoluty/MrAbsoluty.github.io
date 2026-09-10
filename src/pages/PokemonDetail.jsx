@@ -5,6 +5,7 @@ import EvolutionChain from '../components/EvolutionChain'
 import PokemonStats from '../components/PokemonStats'
 import PokemonTypeAffinities from '../components/PokemonTypeAffinities'
 import PokemonFocusMenu from '../components/PokemonFocusMenu'
+import PokemonFavoriteButton from '../components/PokemonFavoriteButton'
 import { getMegaForms, getRegionalForms } from '../services/pokeapi'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
@@ -30,6 +31,7 @@ function PokemonDetail({
   onPokemonClick,
   onPokedexClick,
   onHomeClick,
+  onFavoritesClick,
   t,
   locale,
   onLocaleChange,
@@ -52,9 +54,8 @@ function PokemonDetail({
   const [shinyStage, setShinyStage] = useState('idle')
   const [isFocusMode, setIsFocusMode] = useState(false)
 
-  // Reset active form and states during render when pokemon prop changes
-  if (pokemon?.id !== prevPokemonId) {
-    setPrevPokemonId(pokemon?.id)
+  // Reset active form and states safely when pokemon changes
+  useEffect(() => {
     setActiveForm(null)
     setMegaForms([])
     setIsLoadingMegas(true)
@@ -68,7 +69,7 @@ function PokemonDetail({
     setIsShinyAnimating(false)
     setShinyStage('idle')
     setIsFocusMode(false)
-  }
+  }, [pokemon?.id])
 
   // Fetch mega forms in background
   useEffect(() => {
@@ -298,7 +299,7 @@ function PokemonDetail({
   if (isLoading) {
     return (
       <div className="page-shell">
-        <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onHomeClick={onHomeClick} />
+        <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onHomeClick={onHomeClick} onFavoritesClick={onFavoritesClick} />
         <main className="detail-state">
           <div className="loader-orbit" aria-hidden="true"><span /></div>
           <p className="eyebrow">{t.detail.loadingEyebrow}</p>
@@ -313,7 +314,7 @@ function PokemonDetail({
   if (error) {
     return (
       <div className="page-shell">
-        <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onHomeClick={onHomeClick} />
+        <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onHomeClick={onHomeClick} onFavoritesClick={onFavoritesClick} />
         <main className="detail-state">
           <span className="error-mark" aria-hidden="true">!</span>
           <p className="eyebrow">{t.detail.errorEyebrow}</p>
@@ -374,7 +375,7 @@ function PokemonDetail({
 
   return (
     <div className="page-shell">
-      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onHomeClick={onHomeClick} />
+      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onHomeClick={onHomeClick} onFavoritesClick={onFavoritesClick} />
       <main className="detail-page">
         <button className="back-link" type="button" onClick={handleBackClick}>
           <span aria-hidden="true">←</span> {t.detail.back}
@@ -383,14 +384,17 @@ function PokemonDetail({
         <section className="detail-hero">
           <div className="detail-copy">
             <p className="eyebrow">
-              {t.detail.pokedex} #{String(pokemon.id).padStart(3, '0')}
+              {t.detail.pokedex} #{String(pokemon?.id || '').padStart(3, '0')}
               {activeForm && " ✦ " + activeForm.megaVariant?.toUpperCase()}
               {activeRegionalForm && " ✦ " + activeRegionalForm.region?.toUpperCase()}
             </p>
-            <h1 className={`detail-title ${titleLengthClass}`.trim()}>
-              {currentName}
-              <em>.</em>
-            </h1>
+            <div className="detail-title-wrapper">
+              <h1 className={`detail-title ${titleLengthClass}`.trim()}>
+                {currentName}
+                <em>.</em>
+              </h1>
+              <PokemonFavoriteButton pokemon={pokemon} t={t} size="large" />
+            </div>
             <div className="type-list">
               {currentTypes.map((type) => (
                 <span key={type} style={{ '--type-color': typeColors[type] || '#ed6d5d' }}>
@@ -428,7 +432,7 @@ function PokemonDetail({
                 }
               }}
               title={isFocusMode ? t.detail.bubbleClose : t.detail.interactHint}
-              aria-label={isFocusMode ? t.detail.bubbleClose : `${pokemon.name}, ${t.detail.interactHint}`}
+              aria-label={isFocusMode ? t.detail.bubbleClose : `${pokemon?.name || ''}, ${t.detail.interactHint}`}
             >
               <div className={`art-ring ${activeForm ? 'is-mega' : ''} ${activeRegionalForm ? `is-regional region-${activeRegionalForm.region}` : ''}`} />
 

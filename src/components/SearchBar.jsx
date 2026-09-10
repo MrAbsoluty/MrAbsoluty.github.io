@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getPokemonIndex, normalizeSearchText } from '../services/pokeapi'
 import { playBuscarSound } from '../utils/audio'
+import PokemonFavoriteButton from './PokemonFavoriteButton'
 
 function SearchBar({
   onSearch,
@@ -123,7 +124,37 @@ function SearchBar({
         </svg>
       </button>
       <button type="submit" aria-label={t.search.button} disabled={isLoading} onClick={playBuscarSound}>{isLoading ? t.search.loading : t.search.button} <span aria-hidden="true">↗</span></button>
-      {isOpen && suggestions.length > 0 && <ul className="suggestions-list" id="pokemon-suggestions" aria-label={t.search.suggestions}>{suggestions.map((pokemon, index) => <li key={pokemon.apiName}><button type="button" className={index === activeIndex ? 'active' : ''} onMouseDown={(event) => event.preventDefault()} onClick={() => { setQuery(pokemon.displayName); submitSearch(pokemon.apiName) }}><img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`} alt="" /><span>{pokemon.displayName}</span><small>#{String(pokemon.id).padStart(3, '0')}</small></button></li>)}</ul>}
+      {isOpen && suggestions.length > 0 && (
+        <ul className="suggestions-list" id="pokemon-suggestions" aria-label={t.search.suggestions}>
+          {suggestions.map((pokemon, index) => (
+            <li key={pokemon.apiName}>
+              <div className="search-suggestion-item">
+                <button
+                  type="button"
+                  className={index === activeIndex ? 'active' : ''}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setQuery(pokemon.displayName)
+                    submitSearch(pokemon.apiName)
+                  }}
+                >
+                  <img
+                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`}
+                    alt=""
+                  />
+                  <span>{pokemon.displayName}</span>
+                  <small>#{String(pokemon.id).padStart(3, '0')}</small>
+                </button>
+                <PokemonFavoriteButton
+                  pokemon={{ id: pokemon.id, name: pokemon.displayName || pokemon.apiName }}
+                  size="small"
+                  t={t}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </form>
   )
 }

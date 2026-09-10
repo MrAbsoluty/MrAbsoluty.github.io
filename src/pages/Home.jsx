@@ -15,11 +15,11 @@ const featuredItems = [
   { name: 'poke-ball', localizedName: 'Poké Ball', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png' }, { name: 'rare-candy', localizedName: 'Caramelo Raro', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png' }, { name: 'leftovers', localizedName: 'Restos', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/leftovers.png' }, { name: 'master-ball', localizedName: 'Master Ball', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png' },
 ]
 
-function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onPokedexClick, isLoading, t, locale, onLocaleChange }) {
+function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onPokedexClick, onFavoritesClick, isLoading, t, locale, onLocaleChange }) {
   const categoryKeys = ['pokedex', 'competitive', 'learn', 'items', 'moves']
   return (
     <div className="page-shell">
-      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} activeNav="home" />
+      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onFavoritesClick={onFavoritesClick} activeNav="home" />
       <main>
         <Hero onSearch={onSearch} onPokemonClick={onPokemonClick} isLoading={isLoading} t={t} locale={locale} />
         <section className="content-section categories-section" id="categories">

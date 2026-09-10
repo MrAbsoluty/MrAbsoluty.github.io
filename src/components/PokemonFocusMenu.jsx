@@ -40,14 +40,6 @@ function CloseIcon() {
   )
 }
 
-function RevertIcon() {
-  return (
-    <svg className="bubble-icon revert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 14L4 9l5-5" />
-      <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
-    </svg>
-  )
-}
 
 function GlobeIcon() {
   return (
@@ -174,17 +166,13 @@ function PokemonFocusMenu({
     if (isTransforming || isRegionalTransforming) return
     setShowRegionalDrawer(false)
 
-    // If there are multiple mega forms (e.g. Charizard X & Y), toggle the variant selection drawer
+    // If there are multiple mega forms (e.g. Charizard X & Y, Garchomp & Garchomp Z), toggle the variant selection drawer
     if (megaForms.length > 1) {
-      if (activeForm) {
-        // Revert directly if already transformed
-        onTransform?.(null)
-      } else {
-        playButtonSound()
-        setShowVariantsDrawer((prev) => !prev)
-      }
+      playButtonSound()
+      setShowVariantsDrawer((prev) => !prev)
     } else {
       // Single Mega form: toggle between Mega and Base
+      playButtonSound()
       onTransform?.(activeForm ? null : megaForms[0])
     }
   }
@@ -192,8 +180,9 @@ function PokemonFocusMenu({
   const handleVariantSelect = (e, form) => {
     e.stopPropagation()
     if (isTransforming || isRegionalTransforming) return
-    onTransform?.(form)
+    playButtonSound()
     setShowVariantsDrawer(false)
+    onTransform?.(form)
   }
 
   const handleFormsClick = (e) => {
@@ -291,55 +280,78 @@ function PokemonFocusMenu({
                 aria-pressed={!!activeForm}
               >
                 <span className="bubble-icon-wrap">
-                  {activeForm && !activeRegionalForm ? (
-                    <RevertIcon />
-                  ) : (
-                    <img
-                      src={megaSymbol}
-                      alt={t.detail.megaButton}
-                      className="mega-symbol-img bubble-mega-img"
-                    />
-                  )}
+                  <img
+                    src={megaSymbol}
+                    alt={t.detail.megaButton}
+                    className="mega-symbol-img bubble-mega-img"
+                  />
                 </span>
                 <span className="bubble-label">
                   {activeForm && !activeRegionalForm
-                    ? (activeForm.megaVariant?.replace('mega-', '').toUpperCase() || (t.detail.megaActive || 'Mega'))
+                    ? (activeForm.megaVariant && activeForm.megaVariant !== 'mega'
+                        ? `MEGA ${activeForm.megaVariant.replace('mega-', '').toUpperCase()}`
+                        : (t.detail.megaActive || 'Mega'))
                     : (t.detail.bubbleMega || 'Mega')}
                 </span>
+                {activeForm && !activeRegionalForm && (
+                  <span className="bubble-active-glow" aria-hidden="true" />
+                )}
               </button>
 
-              {/* Multi-Mega variant choices (e.g. Charizard X / Y) */}
+              {/* Multi-Mega variant choices drawer */}
               {hasMultipleMegas && (
-                <div className={`focus-mega-drawer ${showVariantsDrawer || (activeForm && !activeRegionalForm) ? 'is-open' : ''}`}>
+                <div className={`focus-mega-drawer ${showVariantsDrawer ? 'is-open' : ''}`}>
+                  <div className="mega-drawer-header">
+                    <span>{t.detail.megaSelect || 'Elegir Megaevolución'}</span>
+                  </div>
+
+                  {/* Base / Normal form option */}
+                  <button
+                    type="button"
+                    className={`focus-mega-option ${!activeForm ? 'is-selected' : ''}`}
+                    onClick={(e) => handleVariantSelect(e, null)}
+                    onMouseEnter={playHoverBubbleSound}
+                    disabled={isTransforming || isRegionalTransforming}
+                  >
+                    <span className="mega-radio-circle" aria-hidden="true">
+                      <span className="mega-radio-fill" />
+                    </span>
+                    <span className="mega-option-label">
+                      {basePokemonName || t.detail.baseForm || 'Normal'}
+                    </span>
+                    {!activeForm && (
+                      <span className="mega-tag tag-base">
+                        {t.detail.baseForm || 'Normal'}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Mega form options */}
                   {megaForms.map((form) => {
-                    const variantLetter = form.megaVariant?.replace('mega-', '').toUpperCase() || 'M'
-                    const isThisActive = activeForm?.id === form.id
+                    const isSelected = activeForm?.id === form.id || activeForm?.name === form.name
+                    const variant = form.megaVariant?.replace('mega-', '').toUpperCase()
+                    const tagLabel = variant && variant !== 'MEGA' ? `MEGA ${variant}` : 'MEGA'
                     return (
                       <button
                         key={form.name}
                         type="button"
-                        className={`focus-variant-pill ${isThisActive ? 'is-active' : ''}`}
-                        onClick={(e) => handleVariantSelect(e, isThisActive ? null : form)}
+                        className={`focus-mega-option ${isSelected ? 'is-selected' : ''}`}
+                        onClick={(e) => handleVariantSelect(e, form)}
                         onMouseEnter={playHoverBubbleSound}
                         disabled={isTransforming || isRegionalTransforming}
-                        title={form.localizedName || form.name}
                       >
-                        {variantLetter}
+                        <span className="mega-radio-circle" aria-hidden="true">
+                          <span className="mega-radio-fill" />
+                        </span>
+                        <span className="mega-option-label">
+                          {form.localizedName || form.name}
+                        </span>
+                        <span className="mega-tag tag-mega">
+                          {tagLabel}
+                        </span>
                       </button>
                     )
                   })}
-                  {activeForm && !activeRegionalForm && (
-                    <button
-                      type="button"
-                      className="focus-variant-pill pill-base"
-                      onClick={(e) => handleVariantSelect(e, null)}
-                      onMouseEnter={playHoverBubbleSound}
-                      disabled={isTransforming || isRegionalTransforming}
-                      title={t.detail.baseForm || 'Normal'}
-                    >
-                      {t.detail.baseForm || 'Normal'}
-                    </button>
-                  )}
                 </div>
               )}
             </div>
