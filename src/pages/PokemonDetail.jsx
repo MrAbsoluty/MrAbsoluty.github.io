@@ -203,6 +203,7 @@ function PokemonDetail({
       soundVolume = 0.45
     } else if (normalizedRegion.includes('hisui')) {
       soundToPlay = hisuiFormSound
+      soundVolume = 0.45
     }
 
     const audio = new Audio(soundToPlay)
