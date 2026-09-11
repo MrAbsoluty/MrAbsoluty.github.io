@@ -14,6 +14,7 @@ import ProfileModal from './components/profile/ProfileModal'
 import SettingsModal from './components/profile/SettingsModal'
 import SocialModal from './components/social/SocialModal'
 import SocialToast from './components/social/SocialToast'
+import FloatingChat from './components/social/FloatingChat'
 import './App.css'
 
 function getInitialLocale() {
@@ -311,6 +312,7 @@ function App() {
       <SettingsModal locale={locale} onLocaleChange={handleLocaleChange} t={t} />
       <SocialModal />
       <SocialToast />
+      <FloatingChat />
     </>
   )
 }

@@ -36,6 +36,10 @@ export function AuthProvider({ children }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('account')
   const [isSocialOpen, setIsSocialOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isChatMinimized, setIsChatMinimized] = useState(false)
+  const [activeChatFriend, setActiveChatFriend] = useState(null)
+  const [hasUnreadChat, setHasUnreadChat] = useState(false)
 
   const openAuthModal = useCallback((view = 'login') => {
     setAuthModal({ isOpen: true, view })
@@ -68,6 +72,40 @@ export function AuthProvider({ children }) {
 
   const openSocialModal = useCallback(() => setIsSocialOpen(true), [])
   const closeSocialModal = useCallback(() => setIsSocialOpen(false), [])
+
+  const openChatWithFriend = useCallback((friend) => {
+    setActiveChatFriend(friend)
+    setIsChatOpen(true)
+    setIsChatMinimized(false)
+    setHasUnreadChat(false)
+    setIsSocialOpen(false)
+  }, [])
+
+  const openFloatingChat = useCallback(() => {
+    setIsChatOpen(true)
+    setIsChatMinimized(false)
+    setHasUnreadChat(false)
+  }, [])
+
+  const closeFloatingChat = useCallback(() => {
+    setIsChatOpen(false)
+    setIsChatMinimized(false)
+  }, [])
+
+  const minimizeFloatingChat = useCallback(() => {
+    setIsChatMinimized(true)
+  }, [])
+
+  const toggleFloatingChat = useCallback(() => {
+    setIsChatOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setIsChatMinimized(false)
+        setHasUnreadChat(false)
+      }
+      return next
+    })
+  }, [])
 
   // Cargar perfil desde la base de datos
   const fetchProfile = useCallback(async (userId) => {
@@ -725,6 +763,17 @@ export function AuthProvider({ children }) {
       isSocialOpen,
       openSocialModal,
       closeSocialModal,
+      isChatOpen,
+      isChatMinimized,
+      activeChatFriend,
+      hasUnreadChat,
+      setActiveChatFriend,
+      setHasUnreadChat,
+      openChatWithFriend,
+      openFloatingChat,
+      closeFloatingChat,
+      minimizeFloatingChat,
+      toggleFloatingChat,
       signUpWithEmail,
       signInWithEmail,
       signInWithGoogle,
@@ -763,6 +812,15 @@ export function AuthProvider({ children }) {
       isSocialOpen,
       openSocialModal,
       closeSocialModal,
+      isChatOpen,
+      isChatMinimized,
+      activeChatFriend,
+      hasUnreadChat,
+      openChatWithFriend,
+      openFloatingChat,
+      closeFloatingChat,
+      minimizeFloatingChat,
+      toggleFloatingChat,
       signUpWithEmail,
       signInWithEmail,
       signInWithGoogle,

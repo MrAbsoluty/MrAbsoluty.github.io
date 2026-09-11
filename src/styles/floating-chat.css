@@ -1,0 +1,639 @@
+/* ==========================================================================
+   PokeGuide - Chat Emergente Flotante
+   Colores principales: Coral (#ed6d5d) y Navy (#172733)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Contenedor Principal Flotante
+   -------------------------------------------------------------------------- */
+.floating-chat-wrapper {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+  font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
+}
+
+.floating-chat-wrapper * {
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   2. Botón Disparador en Forma de Píldora (Pill Trigger)
+   -------------------------------------------------------------------------- */
+.floating-chat-pill {
+  pointer-events: auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 46px;
+  padding: 0 20px 0 16px;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--navy, #172733), var(--navy, #172733)) padding-box,
+    linear-gradient(135deg, var(--coral, #ed6d5d) 0%, #ff8373 50%, var(--navy, #172733) 100%) border-box;
+  color: #ffffff;
+  font-family: var(--display, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(23, 39, 51, 0.22), 0 2px 6px rgba(237, 109, 93, 0.18);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, background 0.2s ease;
+  user-select: none;
+}
+
+.floating-chat-pill:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(237, 109, 93, 0.3), 0 4px 12px rgba(23, 39, 51, 0.25);
+  background:
+    linear-gradient(#1e3242, #1e3242) padding-box,
+    linear-gradient(135deg, var(--coral, #ed6d5d) 0%, #ff9587 50%, #2b4559 100%) border-box;
+}
+
+.floating-chat-pill:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.floating-chat-pill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--coral, #ed6d5d);
+  transition: transform 0.25s ease;
+}
+
+.floating-chat-pill:hover .floating-chat-pill-icon {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.floating-chat-pill-text {
+  line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   3. Círculo Coral Brillante (Pulsing Glow Dot)
+   -------------------------------------------------------------------------- */
+.floating-chat-coral-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--coral, #ed6d5d);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 0 rgba(237, 109, 93, 0.8), 0 0 12px rgba(237, 109, 93, 1);
+  animation: coral-glow-pulse 1.8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes coral-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(237, 109, 93, 0.85), 0 0 10px #ed6d5d;
+    transform: scale(0.95);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(237, 109, 93, 0), 0 0 18px #ed6d5d;
+    transform: scale(1.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(237, 109, 93, 0.85), 0 0 10px #ed6d5d;
+    transform: scale(0.95);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Marco de Chat de 2 Colores (Ventana Desplegada)
+   -------------------------------------------------------------------------- */
+.floating-chat-window {
+  pointer-events: auto;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--paper, #f7f8f5);
+  /* Marco estilizado de 2 colores: Coral (#ed6d5d) y Navy (#172733) */
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--paper, #f7f8f5), var(--paper, #f7f8f5)) padding-box,
+    linear-gradient(135deg, var(--coral, #ed6d5d) 0%, #ff8373 35%, var(--navy, #172733) 70%, #0d1720 100%) border-box;
+  box-shadow: 0 20px 50px rgba(23, 39, 51, 0.32), 0 6px 18px rgba(23, 39, 51, 0.15);
+  transform-origin: bottom right;
+  animation: floating-chat-pop-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes floating-chat-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Cabecera del Chat (Navy + Coral Accent Bar)
+   -------------------------------------------------------------------------- */
+.floating-chat-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--navy, #172733);
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+/* Franja superior de acento de 2 colores */
+.floating-chat-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--coral, #ed6d5d) 0%, #ffa599 60%, var(--navy, #172733) 100%);
+}
+
+.floating-chat-header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.floating-chat-header-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.floating-chat-header-name {
+  font-family: var(--display, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floating-chat-header-status {
+  font-size: 11px;
+  color: #a0aec0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.floating-chat-header-status.is-online {
+  color: #6ee7b7;
+}
+
+.floating-chat-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.floating-chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.floating-chat-header-btn {
+  background: none;
+  border: 0;
+  color: #c4d1d9;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  padding: 0;
+}
+
+.floating-chat-header-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.floating-chat-header-btn:active {
+  transform: scale(0.92);
+}
+
+.floating-chat-minimize-btn {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.floating-chat-close-btn {
+  font-size: 20px;
+}
+
+.floating-chat-back-btn {
+  margin-right: 4px;
+  font-size: 18px;
+}
+
+.floating-chat-header-badge {
+  background: var(--coral, #ed6d5d);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  margin-left: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   6. Vista de Lista de Amigos
+   -------------------------------------------------------------------------- */
+.floating-chat-list-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: var(--paper, #f7f8f5);
+}
+
+.floating-chat-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line, #dfe4df);
+  background: #ffffff;
+}
+
+.floating-chat-search-bar span {
+  color: var(--coral, #ed6d5d);
+  font-size: 16px;
+}
+
+.floating-chat-search-bar input {
+  border: 0;
+  outline: 0;
+  flex: 1;
+  background: transparent;
+  font-size: 13px;
+  color: var(--ink, #17212b);
+}
+
+.floating-chat-search-bar input::placeholder {
+  color: var(--muted, #6c747d);
+}
+
+.floating-chat-friends-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.floating-chat-friend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.floating-chat-friend-item:hover {
+  background: #ffffff;
+  border-color: rgba(237, 109, 93, 0.35);
+  box-shadow: 0 4px 12px rgba(23, 39, 51, 0.06);
+  transform: translateX(2px);
+}
+
+.floating-chat-friend-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-chat-friend-name {
+  font-family: var(--display, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #17212b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floating-chat-friend-sub {
+  font-size: 11px;
+  color: var(--muted, #6c747d);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.floating-chat-friend-sub.online {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.floating-chat-friend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--coral, #ed6d5d);
+  box-shadow: 0 0 8px rgba(237, 109, 93, 0.9);
+  flex-shrink: 0;
+}
+
+.floating-chat-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted, #6c747d);
+  gap: 10px;
+}
+
+.floating-chat-empty-icon {
+  font-size: 32px;
+  color: var(--coral, #ed6d5d);
+  opacity: 0.8;
+}
+
+.floating-chat-empty-state p {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   7. Vista de Conversación
+   -------------------------------------------------------------------------- */
+.floating-chat-messages-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: #fbfcf9;
+}
+
+.floating-chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-behavior: smooth;
+}
+
+.floating-chat-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 85%;
+}
+
+.floating-chat-msg-row.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.floating-chat-msg-row.friend {
+  align-self: flex-start;
+}
+
+.floating-chat-bubble-text {
+  padding: 9px 13px;
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+  box-shadow: 0 2px 5px rgba(23, 39, 51, 0.04);
+}
+
+.floating-chat-msg-row.mine .floating-chat-bubble-text {
+  background: var(--coral, #ed6d5d);
+  color: #ffffff;
+  border-radius: 16px 16px 4px 16px;
+}
+
+.floating-chat-msg-row.friend .floating-chat-bubble-text {
+  background: #eef2ed;
+  color: var(--ink, #17212b);
+  border: 1px solid #dfe5df;
+  border-radius: 16px 16px 16px 4px;
+}
+
+.floating-chat-msg-time {
+  font-size: 9px;
+  opacity: 0.7;
+  margin-top: 3px;
+  text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   8. Animación de Burbujas al Escribir (Typing Indicator)
+   -------------------------------------------------------------------------- */
+.floating-chat-typing-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  align-self: flex-start;
+  margin: 4px 0 2px;
+  animation: typing-appear 0.2s ease-out;
+}
+
+@keyframes typing-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.floating-chat-typing-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #edf2eb;
+  border: 1px solid #dce4dc;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  box-shadow: 0 2px 6px rgba(23, 39, 51, 0.04);
+}
+
+.floating-chat-typing-bubble {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--coral, #ed6d5d);
+  animation: floating-bubble-bounce 1.3s infinite ease-in-out;
+}
+
+.floating-chat-typing-bubble:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.floating-chat-typing-bubble:nth-child(2) {
+  animation-delay: 0.22s;
+}
+
+.floating-chat-typing-bubble:nth-child(3) {
+  animation-delay: 0.44s;
+}
+
+@keyframes floating-bubble-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0) scale(0.85);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-6px) scale(1.2);
+    opacity: 1;
+    box-shadow: 0 3px 6px rgba(237, 109, 93, 0.45);
+  }
+}
+
+.floating-chat-typing-text {
+  font-size: 11px;
+  color: var(--muted, #6c747d);
+  font-style: italic;
+  margin-left: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   9. Barra de Composición (Input + Send Button)
+   -------------------------------------------------------------------------- */
+.floating-chat-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border-top: 1px solid var(--line, #dfe4df);
+  flex-shrink: 0;
+}
+
+.floating-chat-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line, #dfe4df);
+  border-radius: 24px;
+  padding: 8px 14px;
+  font-size: 13px;
+  outline: none;
+  background: #fdfdfd;
+  color: var(--ink, #17212b);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-chat-input:focus {
+  border-color: var(--coral, #ed6d5d);
+  box-shadow: 0 0 0 3px rgba(237, 109, 93, 0.15);
+}
+
+.floating-chat-send-btn {
+  background: var(--navy, #172733);
+  color: #ffffff;
+  border: 0;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.floating-chat-send-btn:hover:not(:disabled) {
+  background: var(--coral, #ed6d5d);
+  transform: translateY(-1px) scale(1.05);
+}
+
+.floating-chat-send-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.95);
+}
+
+.floating-chat-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.floating-chat-simulate-btn {
+  background: none;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+  border-radius: 6px;
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-right: 4px;
+}
+
+.floating-chat-simulate-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--coral, #ed6d5d);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   10. Responsividad
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .floating-chat-wrapper {
+    bottom: 16px;
+    right: 16px;
+  }
+  .floating-chat-window {
+    width: calc(100vw - 32px);
+    height: 480px;
+    bottom: 0;
+    right: 0;
+  }
+}

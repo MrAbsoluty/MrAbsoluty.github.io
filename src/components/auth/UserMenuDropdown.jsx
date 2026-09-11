@@ -225,7 +225,7 @@ function UserMenuDropdown({
 
           <button type="button" className="dropdown-menu-item item-profile" onClick={() => { setIsOpen(false); openSocial?.() }} onMouseEnter={playHoverBubbleSound} role="menuitem">
             <span className="dropdown-item-icon icon-profile" aria-hidden="true">👥</span>
-            <div className="dropdown-item-content"><span className="dropdown-item-title">Amigos y chat</span><span className="dropdown-item-desc">Solicitudes y mensajes privados</span></div>
+            <div className="dropdown-item-content"><span className="dropdown-item-title">Amigos</span><span className="dropdown-item-desc">Comunidad y solicitudes</span></div>
           </button>
 
           {/* Opción 2: Favoritos */}
