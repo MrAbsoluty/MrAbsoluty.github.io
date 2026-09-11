@@ -1,9 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getConversation, getRelationships, sendMessage } from '../../services/social'
+import {
+  getConversation,
+  getRelationships,
+  sendMessage,
+  getRecentConversations,
+  markConversationAsRead,
+  getUnreadSenderIds,
+} from '../../services/social'
 import { supabase } from '../../services/supabase'
 import { playBubbleSound, playHoverBubbleSound } from '../../utils/audio'
 import '../../styles/floating-chat.css'
+
+function formatMessageTime(timestamp) {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const now = new Date()
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear()
+
+  if (isToday) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
 
 function ChatAvatar({ person, size = 32, online = false }) {
   const initial = person?.username?.[0]?.toUpperCase() || '?'
@@ -75,28 +97,124 @@ export default function FloatingChat() {
   const [onlineIds, setOnlineIds] = useState(new Set())
   const [isFriendTyping, setIsFriendTyping] = useState(false)
   const [unreadFriendIds, setUnreadFriendIds] = useState(new Set())
+  const [lastMessagesMap, setLastMessagesMap] = useState(new Map())
   const [isSending, setIsSending] = useState(false)
 
   const messagesEndRef = useRef(null)
   const typingTimerRef = useRef(null)
   const lastBroadcastRef = useRef(0)
 
-  // Cargar lista de amigos
-  const loadFriends = async () => {
-    if (!user) return
+  const userId = user?.id
+
+  // Cargar lista de amigos desde Supabase
+  const loadFriends = useCallback(async () => {
+    if (!userId) return
     try {
-      const data = await getRelationships(user.id)
+      const data = await getRelationships(userId)
       setRelations(data || [])
     } catch {
       // Manejo silencioso de red/esquema
     }
-  }
+  }, [userId])
 
+  // Cargar las conversaciones recientes y sender IDs no leídos
+  const loadRecentMessages = useCallback(async () => {
+    if (!userId) return
+    try {
+      const [recents, unreadSenders] = await Promise.all([
+        getRecentConversations(userId),
+        getUnreadSenderIds(userId),
+      ])
+
+      const map = new Map()
+      for (const msg of recents) {
+        const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id
+        if (!map.has(otherId)) {
+          map.set(otherId, msg)
+        }
+      }
+      setLastMessagesMap(map)
+
+      if (unreadSenders.length > 0) {
+        setUnreadFriendIds(new Set(unreadSenders))
+        setHasUnreadChat(true)
+      }
+    } catch {
+      // Manejo silencioso
+    }
+  }, [userId, setHasUnreadChat])
+
+  // Cargar conversación del amigo activo
+  const loadMessages = useCallback(async (friendId) => {
+    if (!userId || !friendId) return
+    try {
+      const data = await getConversation(userId, friendId)
+      setMessages(data || [])
+      setUnreadFriendIds((prev) => {
+        const next = new Set(prev)
+        next.delete(friendId)
+        if (next.size === 0) setHasUnreadChat(false)
+        return next
+      })
+      markConversationAsRead(userId, friendId)
+    } catch {
+      // Ignorar errores temporales
+    }
+  }, [userId, setHasUnreadChat])
+
+  // Carga inicial al autenticar
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadFriends()
+      loadRecentMessages()
     }
-  }, [isAuthenticated, user?.id])
+  }, [isAuthenticated, user?.id, loadFriends, loadRecentMessages])
+
+  // Sincronización automática cuando la ventana recupera el foco (cambio de dispositivo móvil a PC)
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      if (isAuthenticated && user?.id) {
+        loadFriends()
+        loadRecentMessages()
+        if (activeChatFriend?.id && isChatOpen && !isChatMinimized) {
+          loadMessages(activeChatFriend.id)
+        }
+      }
+    }
+
+    window.addEventListener('focus', handleWindowFocus)
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus)
+    }
+  }, [isAuthenticated, user?.id, activeChatFriend?.id, isChatOpen, isChatMinimized, loadFriends, loadRecentMessages, loadMessages])
+
+  // Recargar amigos e interacciones cada vez que se despliega la ventana de chat
+  useEffect(() => {
+    if (isChatOpen && user?.id) {
+      loadFriends()
+      loadRecentMessages()
+    }
+  }, [isChatOpen, user?.id, loadFriends, loadRecentMessages])
+
+  // Escuchar adición o cambios de amigos en tiempo real
+  useEffect(() => {
+    if (!user?.id || !supabase) return undefined
+
+    const channel = supabase
+      .channel(`chat-friend-requests-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'friend_requests' },
+        () => {
+          loadFriends()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, loadFriends])
 
   // Presencia online
   useEffect(() => {
@@ -116,46 +234,52 @@ export default function FloatingChat() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id])
+  }, [user])
 
-  // Filtrar amigos confirmados
+  // Filtrar amigos confirmados únicos
   const friends = useMemo(() => {
     if (!user) return []
-    return relations
-      .filter((r) => r.status === 'accepted')
-      .map((r) => (r.requester_id === user.id ? r.recipient : r.requester))
-      .filter(Boolean)
-  }, [relations, user?.id])
+    const map = new Map()
+    for (const r of relations) {
+      if (r.status === 'accepted') {
+        const friend = r.requester_id === user.id ? r.recipient : r.requester
+        if (friend && friend.id && !map.has(friend.id)) {
+          map.set(friend.id, friend)
+        }
+      }
+    }
+    return Array.from(map.values())
+  }, [relations, user])
 
+  // Ordenar lista de amigos: 1° no leídos, 2° último mensaje reciente, 3° alfabético
   const filteredFriends = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
-    if (!q) return friends
-    return friends.filter((f) => f.username?.toLowerCase().includes(q))
-  }, [friends, searchQuery])
-
-  // Cargar conversación del amigo activo
-  const loadMessages = async (friendId) => {
-    if (!user || !friendId) return
-    try {
-      const data = await getConversation(user.id, friendId)
-      setMessages(data || [])
-      // Eliminar de no leídos
-      setUnreadFriendIds((prev) => {
-        const next = new Set(prev)
-        next.delete(friendId)
-        if (next.size === 0) setHasUnreadChat(false)
-        return next
-      })
-    } catch {
-      // Ignorar errores temporales
+    let list = friends
+    if (q) {
+      list = friends.filter((f) => f.username?.toLowerCase().includes(q))
     }
-  }
 
+    return [...list].sort((a, b) => {
+      const aUnread = unreadFriendIds.has(a.id) ? 1 : 0
+      const bUnread = unreadFriendIds.has(b.id) ? 1 : 0
+      if (aUnread !== bUnread) return bUnread - aUnread
+
+      const aMsg = lastMessagesMap.get(a.id)
+      const bMsg = lastMessagesMap.get(b.id)
+      const aTime = aMsg ? new Date(aMsg.created_at).getTime() : 0
+      const bTime = bMsg ? new Date(bMsg.created_at).getTime() : 0
+      if (aTime !== bTime) return bTime - aTime
+
+      return (a.username || '').localeCompare(b.username || '')
+    })
+  }, [friends, searchQuery, unreadFriendIds, lastMessagesMap])
+
+  // Cargar conversación al seleccionar amigo activo
   useEffect(() => {
     if (activeChatFriend?.id && isChatOpen && !isChatMinimized) {
       loadMessages(activeChatFriend.id)
     }
-  }, [activeChatFriend?.id, isChatOpen, isChatMinimized])
+  }, [activeChatFriend?.id, isChatOpen, isChatMinimized, loadMessages])
 
   // Auto-scroll al fondo al llegar mensajes o activar tecleo
   useEffect(() => {
@@ -164,9 +288,9 @@ export default function FloatingChat() {
     }
   }, [messages, isFriendTyping, isChatOpen, isChatMinimized])
 
-  // Escuchar mensajes entrantes en tiempo real
+  // Escuchar mensajes en tiempo real (entrantes y enviados desde otros dispositivos como el celular)
   useEffect(() => {
-    if (!user || !supabase) return undefined
+    if (!user?.id || !supabase) return undefined
 
     const channel = supabase
       .channel(`chat-incoming-${user.id}`)
@@ -175,27 +299,43 @@ export default function FloatingChat() {
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const newMsg = payload.new
-          // Si el mensaje es para nosotros
-          if (newMsg && newMsg.receiver_id === user.id) {
-            // Sonido de notificación de mensaje entrante
-            playBubbleSound()
+          if (!newMsg) return
 
-            const fromFriendId = newMsg.sender_id
-            const isCurrentlyViewing =
-              isChatOpen && !isChatMinimized && activeChatFriend?.id === fromFriendId
+          const isOutgoing = newMsg.sender_id === user.id
+          const isIncoming = newMsg.receiver_id === user.id
 
-            if (isCurrentlyViewing) {
-              setMessages((prev) => {
-                if (prev.some((m) => m.id === newMsg.id)) return prev
-                return [...prev, newMsg]
-              })
+          if (!isOutgoing && !isIncoming) return
+
+          const otherUserId = isOutgoing ? newMsg.receiver_id : newMsg.sender_id
+
+          // Actualizar mapa de últimos mensajes al instante
+          setLastMessagesMap((prev) => {
+            const next = new Map(prev)
+            next.set(otherUserId, newMsg)
+            return next
+          })
+
+          const isCurrentlyViewing =
+            isChatOpen && !isChatMinimized && activeChatFriend?.id === otherUserId
+
+          if (isCurrentlyViewing) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev
+              return [...prev, newMsg]
+            })
+            if (isIncoming) {
               setIsFriendTyping(false)
-            } else {
-              // Activar círculo coral brillante en el chat
-              setHasUnreadChat(true)
-              setUnreadFriendIds((prev) => new Set([...prev, fromFriendId]))
+              markConversationAsRead(user.id, otherUserId)
             }
+          } else if (isIncoming) {
+            playBubbleSound()
+            setHasUnreadChat(true)
+            setUnreadFriendIds((prev) => new Set([...prev, otherUserId]))
           }
+
+          // Asegurar que si es un amigo nuevo o se interactuó desde el celular,
+          // la lista de amigos se actualice de inmediato
+          loadFriends()
         }
       )
       .subscribe()
@@ -203,12 +343,11 @@ export default function FloatingChat() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, isChatOpen, isChatMinimized, activeChatFriend?.id, setHasUnreadChat])
+  }, [user?.id, isChatOpen, isChatMinimized, activeChatFriend?.id, setHasUnreadChat, loadFriends])
 
   // Canal de Broadcast en tiempo real para la animación de tecleo (typing)
   useEffect(() => {
     if (!user || !activeChatFriend?.id || !supabase) {
-      setIsFriendTyping(false)
       return undefined
     }
 
@@ -233,7 +372,7 @@ export default function FloatingChat() {
     }
   }, [user, activeChatFriend?.id])
 
-  // Notificar al amigo que estamos escribiendo (con debounce de 1s)
+  // Notificar al amigo que estamos escribiendo (con debounce de 900ms)
   const handleInputChange = (e) => {
     const val = e.target.value
     setDraft(val)
@@ -262,6 +401,16 @@ export default function FloatingChat() {
     try {
       await sendMessage(activeChatFriend.id, text)
       setDraft('')
+      setLastMessagesMap((prev) => {
+        const next = new Map(prev)
+        next.set(activeChatFriend.id, {
+          sender_id: user.id,
+          receiver_id: activeChatFriend.id,
+          content: text,
+          created_at: new Date().toISOString(),
+        })
+        return next
+      })
       await loadMessages(activeChatFriend.id)
     } catch {
       // Error silencioso
@@ -280,6 +429,8 @@ export default function FloatingChat() {
 
     if (!isChatOpen || isChatMinimized) {
       openFloatingChat()
+      loadFriends()
+      loadRecentMessages()
     } else {
       minimizeFloatingChat()
     }
@@ -300,28 +451,31 @@ export default function FloatingChat() {
   // Elegir amigo para chatear
   const handleSelectFriend = (friend) => {
     playHoverBubbleSound()
+    setIsFriendTyping(false)
     setActiveChatFriend(friend)
-    // Quitar dot no leído
     setUnreadFriendIds((prev) => {
       const next = new Set(prev)
       next.delete(friend.id)
       if (next.size === 0) setHasUnreadChat(false)
       return next
     })
+    markConversationAsRead(user?.id, friend.id)
   }
 
   // Volver a la lista de amigos
   const handleBackToList = () => {
     playHoverBubbleSound()
+    setIsFriendTyping(false)
     setActiveChatFriend(null)
     loadFriends()
+    loadRecentMessages()
   }
 
   const isVisible = isChatOpen && !isChatMinimized
 
   return (
     <aside className="floating-chat-wrapper" aria-label="Chat flotante de PokéGuide">
-      {/* Botón Píldora de Chat (Siempre presente cuando no está desplegado) */}
+      {/* Botón Píldora de Chat */}
       {!isVisible && (
         <button
           type="button"
@@ -343,7 +497,7 @@ export default function FloatingChat() {
         </button>
       )}
 
-      {/* Ventana de Chat Desplegada con Marco de 2 Colores */}
+      {/* Ventana de Chat Desplegada */}
       {isVisible && (
         <section
           className="floating-chat-window"
@@ -393,7 +547,6 @@ export default function FloatingChat() {
             )}
 
             <div className="floating-chat-header-actions">
-              {/* Botón para Minimizar el chat */}
               <button
                 type="button"
                 className="floating-chat-header-btn floating-chat-minimize-btn"
@@ -403,7 +556,6 @@ export default function FloatingChat() {
               >
                 —
               </button>
-              {/* Botón para Cerrar */}
               <button
                 type="button"
                 className="floating-chat-header-btn floating-chat-close-btn"
@@ -418,7 +570,7 @@ export default function FloatingChat() {
 
           {/* Cuerpo: Vista de Amigos O Conversación */}
           {activeChatFriend ? (
-            /* Vista de Conversación con el Amigo Seleccionado */
+            /* Vista de Conversación */
             <div className="floating-chat-messages-view">
               <div className="floating-chat-messages-container">
                 {messages.length === 0 ? (
@@ -444,10 +596,12 @@ export default function FloatingChat() {
                         <div className="floating-chat-bubble-text">
                           {msg.content}
                           <div className="floating-chat-msg-time">
-                            {new Date(msg.created_at || Date.now()).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {msg.created_at
+                              ? new Date(msg.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : ''}
                           </div>
                         </div>
                       </div>
@@ -455,7 +609,7 @@ export default function FloatingChat() {
                   })
                 )}
 
-                {/* Detalle: Animación de burbujas al momento de que tu amigo escriba */}
+                {/* Animación de tecleo */}
                 {isFriendTyping && (
                   <div className="floating-chat-typing-container" aria-live="polite">
                     <ChatAvatar
@@ -526,21 +680,37 @@ export default function FloatingChat() {
                   filteredFriends.map((friend) => {
                     const isOnline = onlineIds.has(friend.id)
                     const hasUnread = unreadFriendIds.has(friend.id)
+                    const lastMsg = lastMessagesMap.get(friend.id)
                     return (
                       <button
                         type="button"
                         key={friend.id}
-                        className="floating-chat-friend-item"
+                        className={`floating-chat-friend-item ${hasUnread ? 'has-unread' : ''}`}
                         onClick={() => handleSelectFriend(friend)}
                       >
                         <ChatAvatar person={friend} size={36} online={isOnline} />
                         <div className="floating-chat-friend-details">
-                          <strong className="floating-chat-friend-name">@{friend.username}</strong>
-                          <span
-                            className={`floating-chat-friend-sub ${isOnline ? 'online' : ''}`}
-                          >
-                            {isOnline ? '● En línea' : '○ Desconectado'}
-                          </span>
+                          <div className="floating-chat-friend-header-row">
+                            <strong className="floating-chat-friend-name">@{friend.username}</strong>
+                            {lastMsg && (
+                              <span className="floating-chat-friend-time">
+                                {formatMessageTime(lastMsg.created_at)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="floating-chat-friend-sub-row">
+                            {lastMsg ? (
+                              <span className={`floating-chat-last-preview ${hasUnread ? 'unread' : ''}`}>
+                                {lastMsg.sender_id === user?.id ? 'Tú: ' : ''}{lastMsg.content}
+                              </span>
+                            ) : (
+                              <span
+                                className={`floating-chat-friend-sub ${isOnline ? 'online' : ''}`}
+                              >
+                                {isOnline ? '● En línea' : '○ Desconectado'}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {hasUnread && (
                           <span

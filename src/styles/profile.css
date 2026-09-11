@@ -605,7 +605,7 @@
 
 /* --- Integración con UserMenuDropdown --- */
 .nav-user-avatar-pill {
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
   position: relative;
 }

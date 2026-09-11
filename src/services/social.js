@@ -47,3 +47,49 @@ export async function sendMessage(receiver_id, content) {
   const { error } = await client().from('messages').insert({ receiver_id, content: text })
   if (error) throw error
 }
+
+export async function getRecentConversations(userId) {
+  if (!userId) return []
+  try {
+    const { data, error } = await client()
+      .from('messages')
+      .select('id, sender_id, receiver_id, content, created_at, read_at')
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    if (error) throw error
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+export async function markConversationAsRead(userId, friendId) {
+  if (!userId || !friendId) return
+  try {
+    const { error } = await client()
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('receiver_id', userId)
+      .eq('sender_id', friendId)
+      .is('read_at', null)
+    if (error) throw error
+  } catch {
+    // Manejo silencioso
+  }
+}
+
+export async function getUnreadSenderIds(userId) {
+  if (!userId) return []
+  try {
+    const { data, error } = await client()
+      .from('messages')
+      .select('sender_id')
+      .eq('receiver_id', userId)
+      .is('read_at', null)
+    if (error) throw error
+    return [...new Set((data || []).map((m) => m.sender_id))]
+  } catch {
+    return []
+  }
+}

@@ -344,11 +344,25 @@
   transform: translateX(2px);
 }
 
+.floating-chat-friend-item.has-unread {
+  background: #fffcfb;
+  border-color: rgba(237, 109, 93, 0.28);
+  box-shadow: 0 2px 8px rgba(237, 109, 93, 0.08);
+}
+
 .floating-chat-friend-details {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+.floating-chat-friend-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .floating-chat-friend-name {
@@ -361,6 +375,19 @@
   text-overflow: ellipsis;
 }
 
+.floating-chat-friend-time {
+  font-size: 10px;
+  color: var(--muted, #8a94a0);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.floating-chat-friend-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .floating-chat-friend-sub {
   font-size: 11px;
   color: var(--muted, #6c747d);
@@ -371,6 +398,21 @@
 
 .floating-chat-friend-sub.online {
   color: #16a34a;
+  font-weight: 600;
+}
+
+.floating-chat-last-preview {
+  font-size: 11.5px;
+  color: var(--muted, #6c747d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 185px;
+  line-height: 1.25;
+}
+
+.floating-chat-last-preview.unread {
+  color: var(--ink, #17212b);
   font-weight: 600;
 }
 
