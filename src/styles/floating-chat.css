@@ -604,24 +604,6 @@
   cursor: not-allowed;
 }
 
-.floating-chat-simulate-btn {
-  background: none;
-  border: 1px dashed rgba(255, 255, 255, 0.25);
-  color: #e2e8f0;
-  border-radius: 6px;
-  font-size: 10px;
-  padding: 2px 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-right: 4px;
-}
-
-.floating-chat-simulate-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: var(--coral, #ed6d5d);
-  color: #ffffff;
-}
-
 /* --------------------------------------------------------------------------
    10. Responsividad
    -------------------------------------------------------------------------- */

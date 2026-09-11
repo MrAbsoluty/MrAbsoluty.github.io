@@ -317,15 +317,6 @@ export default function FloatingChat() {
     loadFriends()
   }
 
-  // Simular tecleo para demostración interactiva
-  const handleSimulateTyping = () => {
-    setIsFriendTyping(true)
-    if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
-    typingTimerRef.current = setTimeout(() => {
-      setIsFriendTyping(false)
-    }, 3500)
-  }
-
   const isVisible = isChatOpen && !isChatMinimized
 
   return (
@@ -402,16 +393,6 @@ export default function FloatingChat() {
             )}
 
             <div className="floating-chat-header-actions">
-              {activeChatFriend && (
-                <button
-                  type="button"
-                  className="floating-chat-simulate-btn"
-                  onClick={handleSimulateTyping}
-                  title="Simular tecleo del amigo para ver animación de burbujas"
-                >
-                  Probar burbujas
-                </button>
-              )}
               {/* Botón para Minimizar el chat */}
               <button
                 type="button"
