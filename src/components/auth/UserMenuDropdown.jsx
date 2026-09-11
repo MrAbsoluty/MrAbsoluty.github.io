@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { getRelationships } from '../../services/social'
+import { supabase } from '../../services/supabase'
+import '../../styles/social-states.css'
 import { localeOptions } from '../../locales'
 import {
   playHoverBubbleSound,
@@ -22,11 +25,13 @@ function UserMenuDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [failedAvatarUrl, setFailedAvatarUrl] = useState(null)
+  const [socialNotifications, setSocialNotifications] = useState(0)
   const menuRef = useRef(null)
 
   const authContext = useAuth()
   const openProfile = propOpenProfileModal || authContext.openProfileModal
   const openSettings = propOpenSettingsModal || authContext.openSettingsModal
+  const openSocial = authContext.openSocialModal
 
   // Cerrar al hacer clic fuera
   useEffect(() => {
@@ -52,6 +57,16 @@ function UserMenuDropdown({
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen])
+
+  useEffect(() => {
+    if (!user?.id || !supabase) return undefined
+    const refresh = async () => {
+      try { setSocialNotifications((await getRelationships(user.id)).filter(item => item.status === 'pending' && item.recipient_id === user.id).length) } catch { setSocialNotifications(0) }
+    }
+    refresh()
+    const channel = supabase.channel(`social-menu-${user.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, refresh).subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id])
 
   function handleToggle() {
     setIsOpen((prev) => {
@@ -130,6 +145,7 @@ function UserMenuDropdown({
           ) : (
             <span className="nav-user-initial">{userInitial}</span>
           )}
+          {socialNotifications > 0 && <span className="social-profile-notice" />}
         </span>
         <span className="nav-user-name-text">{username}</span>
         <svg
@@ -205,6 +221,11 @@ function UserMenuDropdown({
               <span className="dropdown-item-title">Mi perfil</span>
               <span className="dropdown-item-desc">Foto, nombre y cuenta</span>
             </div>
+          </button>
+
+          <button type="button" className="dropdown-menu-item item-profile" onClick={() => { setIsOpen(false); openSocial?.() }} onMouseEnter={playHoverBubbleSound} role="menuitem">
+            <span className="dropdown-item-icon icon-profile" aria-hidden="true">👥</span>
+            <div className="dropdown-item-content"><span className="dropdown-item-title">Amigos y chat</span><span className="dropdown-item-desc">Solicitudes y mensajes privados</span></div>
           </button>
 
           {/* Opción 2: Favoritos */}

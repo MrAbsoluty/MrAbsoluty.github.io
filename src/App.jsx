@@ -12,6 +12,8 @@ import AuthModal from './components/auth/AuthModal'
 import UsernameSetupModal from './components/auth/UsernameSetupModal'
 import ProfileModal from './components/profile/ProfileModal'
 import SettingsModal from './components/profile/SettingsModal'
+import SocialModal from './components/social/SocialModal'
+import SocialToast from './components/social/SocialToast'
 import './App.css'
 
 function getInitialLocale() {
@@ -307,6 +309,8 @@ function App() {
       <UsernameSetupModal />
       <ProfileModal />
       <SettingsModal locale={locale} onLocaleChange={handleLocaleChange} t={t} />
+      <SocialModal />
+      <SocialToast />
     </>
   )
 }

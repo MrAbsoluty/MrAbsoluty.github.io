@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('account')
+  const [isSocialOpen, setIsSocialOpen] = useState(false)
 
   const openAuthModal = useCallback((view = 'login') => {
     setAuthModal({ isOpen: true, view })
@@ -64,6 +65,9 @@ export function AuthProvider({ children }) {
   const closeSettingsModal = useCallback(() => {
     setIsSettingsOpen(false)
   }, [])
+
+  const openSocialModal = useCallback(() => setIsSocialOpen(true), [])
+  const closeSocialModal = useCallback(() => setIsSocialOpen(false), [])
 
   // Cargar perfil desde la base de datos
   const fetchProfile = useCallback(async (userId) => {
@@ -718,6 +722,9 @@ export function AuthProvider({ children }) {
       openSettingsModal,
       closeSettingsModal,
       setSettingsTab,
+      isSocialOpen,
+      openSocialModal,
+      closeSocialModal,
       signUpWithEmail,
       signInWithEmail,
       signInWithGoogle,
@@ -753,6 +760,9 @@ export function AuthProvider({ children }) {
       settingsTab,
       openSettingsModal,
       closeSettingsModal,
+      isSocialOpen,
+      openSocialModal,
+      closeSocialModal,
       signUpWithEmail,
       signInWithEmail,
       signInWithGoogle,
