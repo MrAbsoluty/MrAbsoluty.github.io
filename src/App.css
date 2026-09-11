@@ -309,7 +309,256 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   letter-spacing: -0.01em;
 }
 
-.detail-info { border-top: 1px solid var(--line); display: grid; gap: 80px; grid-template-columns: .8fr 1.2fr; padding-top: 55px; }.detail-info h2 { font-size: 32px; margin-bottom: 24px; }.ability-list { display: flex; flex-wrap: wrap; gap: 9px; }.ability-list span { background: white; border: 1px solid var(--line); border-radius: 6px; color: var(--navy); font: 600 13px var(--display); padding: 11px 14px; text-transform: capitalize; }
+.detail-info { border-top: 1px solid var(--line); display: grid; gap: 80px; grid-template-columns: .8fr 1.2fr; padding-top: 55px; }
+.detail-info h2 { font-size: 32px; margin-bottom: 24px; }
+.ability-list { display: flex; flex-wrap: wrap; gap: 9px; }
+.ability-list span,
+.ability-badge {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--navy);
+  font: 600 13px var(--display);
+  padding: 10px 14px;
+  text-transform: capitalize;
+}
+.ability-badge {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(23, 39, 51, 0.04);
+  user-select: none;
+}
+.ability-badge:hover {
+  background: #ffffff;
+  border-color: var(--coral);
+  color: var(--coral);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(23, 39, 51, 0.09);
+}
+.ability-badge:active {
+  transform: translateY(0) scale(0.98);
+}
+.ability-badge:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+.ability-badge.selected {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(23, 39, 51, 0.18);
+}
+.ability-badge.selected:hover {
+  background: #223645;
+  border-color: #223645;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+.ability-badge-arrow {
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.55;
+  transition: transform 0.2s ease, opacity 0.2s ease, color 0.2s ease;
+}
+.ability-badge.selected .ability-badge-arrow {
+  color: var(--coral);
+  opacity: 1;
+}
+
+/* Panel explicativo de la habilidad */
+.ability-detail-panel {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--coral);
+  border-radius: 8px;
+  padding: 16px 18px 18px;
+  box-shadow: 0 10px 25px rgba(23, 39, 51, 0.06);
+  animation: abilityPanelSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+
+@keyframes abilityPanelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ability-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #edf1ec;
+  padding-bottom: 10px;
+}
+
+.ability-panel-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ability-panel-title-label {
+  font: 600 11px var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ability-panel-name {
+  font: 700 16px var(--display);
+  color: var(--navy);
+  text-transform: capitalize;
+}
+
+.ability-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Botón interactivo de estrella para futura IA */
+.ability-ai-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f9f6;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: #8fa099;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+}
+
+.ability-ai-btn:hover {
+  background: linear-gradient(135deg, #fff8f5 0%, #ffece7 100%);
+  border-color: var(--coral);
+  color: var(--coral);
+  box-shadow: 0 4px 12px rgba(237, 109, 93, 0.28);
+  transform: translateY(-1px) scale(1.08);
+}
+
+.ability-ai-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 6px rgba(237, 109, 93, 0.2);
+}
+
+.ability-ai-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ability-ai-icon {
+  font-size: 15px;
+  line-height: 1;
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.ability-ai-btn:hover .ability-ai-icon {
+  transform: rotate(15deg) scale(1.1);
+}
+
+/* Tooltip elegante */
+.ability-ai-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--navy);
+  color: #ffffff;
+  font: 500 11px var(--sans);
+  letter-spacing: normal;
+  padding: 5px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  box-shadow: 0 6px 18px rgba(23, 39, 51, 0.25);
+  z-index: 10;
+}
+
+.ability-ai-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 11px;
+  border-width: 4px;
+  border-style: solid;
+  border-color: var(--navy) transparent transparent transparent;
+}
+
+.ability-ai-btn:hover .ability-ai-tooltip,
+.ability-ai-btn:focus-visible .ability-ai-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Botón cerrar panel */
+.ability-panel-close {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.ability-panel-close:hover {
+  background: #eef2ed;
+  color: var(--ink);
+}
+
+.ability-panel-close:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 1px;
+}
+
+.ability-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ability-panel-eyebrow {
+  font: 700 10px var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--coral);
+}
+
+.ability-panel-text {
+  margin: 0;
+  font: 400 14px/1.55 var(--sans);
+  color: #3b454e;
+}
 /* ==========================================================================
    Pokemon Stats Visual System
    ========================================================================== */
@@ -1154,6 +1403,14 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   }
   .stat-row {
     grid-template-columns: 82px 30px 1fr;
+  }
+  .ability-detail-panel {
+    padding: 14px 15px 16px;
+    margin-top: 14px;
+  }
+  .ability-badge {
+    padding: 8px 12px;
+    font-size: 12px;
   }
   .detail-state {
     min-height: 570px;

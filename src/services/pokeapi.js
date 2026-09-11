@@ -8,6 +8,8 @@ import {
   translateEnglishPokedexToSpanish,
 } from '../locales/pokedexGen9Es.js'
 import { getRegionalDescriptionEs } from '../locales/regionalDescriptions.js'
+import { gen9AbilitiesEs } from '../locales/gen9AbilitiesEs.js'
+import { abilityCatalogEs } from '../locales/abilityCatalogEs.js'
 
 const API_URL = 'https://pokeapi.co/api/v2/pokemon/'
 const SPECIES_LIST_URL = 'https://pokeapi.co/api/v2/pokemon-species?limit=2000'
@@ -25,6 +27,15 @@ export class PokeApiError extends Error {
 
 export function normalizeSearchText(value) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s_-]+/g, ' ')
+}
+
+export function formatName(name) {
+  if (!name) return ''
+  return name
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function normalizePokemonQuery(query) {
@@ -503,14 +514,7 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
     [
       ...data.types.map(({ type }) => type.url),
       ...data.abilities.map(({ ability }) => ability.url),
-    ].map(async (url) => {
-      try {
-        const response = await fetch(url)
-        return response.ok ? response.json() : null
-      } catch {
-        return null
-      }
-    }),
+    ].map((url) => fetchResourceData(url)),
   )
 
   const typeResources = localizedResources.slice(
@@ -568,13 +572,23 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
     ),
     abilities: data.abilities.map(({ ability }) => ability.name),
     abilityLabels: Object.fromEntries(
+      data.abilities.map(({ ability }, index) => {
+        const isSpanish = locale.startsWith('es')
+        const fallbackName = (isSpanish && abilityCatalogEs[ability.name]?.name) || formatName(ability.name.replaceAll('-', ' '))
+        return [
+          ability.name,
+          resolveLocalizedResourceName(
+            abilityResources[index],
+            locale,
+            fallbackName,
+          ),
+        ]
+      }),
+    ),
+    abilityDescriptions: Object.fromEntries(
       data.abilities.map(({ ability }, index) => [
         ability.name,
-        abilityResources[index]?.names?.find(
-          ({ language }) =>
-            language.name === locale ||
-            (locale.startsWith('es') && language.name === 'es'),
-        )?.name || ability.name,
+        resolveAbilityDescription(abilityResources[index], locale, ability.name),
       ]),
     ),
     stats: data.stats.map(
@@ -599,18 +613,31 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
 const pokemonFormsCache = new Map()
 const resourceLabelCache = new Map()
 
-async function fetchResourceData(url) {
+async function fetchResourceData(url, retries = 2) {
   if (!url) return null
   if (resourceLabelCache.has(url)) return resourceLabelCache.get(url)
-  try {
-    const response = await fetch(url)
-    if (!response.ok) return null
-    const data = await response.json()
-    resourceLabelCache.set(url, data)
-    return data
-  } catch {
-    return null
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        if (i < retries) {
+          await new Promise((resolve) => setTimeout(resolve, 150 * (i + 1)))
+          continue
+        }
+        return null
+      }
+      const data = await response.json()
+      resourceLabelCache.set(url, data)
+      return data
+    } catch {
+      if (i < retries) {
+        await new Promise((resolve) => setTimeout(resolve, 150 * (i + 1)))
+        continue
+      }
+      return null
+    }
   }
+  return null
 }
 
 function resolveLocalizedResourceName(data, locale, fallback) {
@@ -624,6 +651,122 @@ function resolveLocalizedResourceName(data, locale, fallback) {
   const en = data.names.find(({ language }) => language.name === 'en')
   if (en) return en.name
   return fallback
+}
+
+export function resolveAbilityDescription(data, locale = 'es', fallbackAbilityName = '') {
+  const isSpanish = locale.startsWith('es')
+  const abilityName = data?.name || fallbackAbilityName || ''
+
+  // 1. Catálogo dedicado Gen 9 en español si aplica
+  if (isSpanish && abilityName && gen9AbilitiesEs[abilityName]) {
+    return gen9AbilitiesEs[abilityName]
+  }
+
+  // 2. Extraer flavor_text_entries según el idioma solicitado
+  if (Array.isArray(data?.flavor_text_entries) && data.flavor_text_entries.length > 0) {
+    if (isSpanish) {
+      const esEntries = data.flavor_text_entries.filter(
+        (entry) => entry?.language?.name === 'es' || entry?.language?.name === 'es-419',
+      )
+      if (esEntries.length > 0) {
+        const latest = esEntries[esEntries.length - 1]
+        if (latest?.flavor_text) {
+          const cleaned = cleanFlavorText(latest.flavor_text)
+          if (cleaned) return cleaned
+        }
+      }
+    } else {
+      const localeEntries = data.flavor_text_entries.filter(
+        (entry) => entry?.language?.name === locale,
+      )
+      if (localeEntries.length > 0) {
+        const latest = localeEntries[localeEntries.length - 1]
+        if (latest?.flavor_text) {
+          const cleaned = cleanFlavorText(latest.flavor_text)
+          if (cleaned) return cleaned
+        }
+      }
+    }
+  }
+
+  // 3. Revisar effect_entries (short_effect prioritario sobre effect)
+  if (Array.isArray(data?.effect_entries) && data.effect_entries.length > 0) {
+    if (isSpanish) {
+      const esEffect = data.effect_entries.find(
+        (entry) => entry?.language?.name === 'es' || entry?.language?.name === 'es-419',
+      )
+      if (esEffect?.short_effect) return cleanFlavorText(esEffect.short_effect)
+      if (esEffect?.effect) return cleanFlavorText(esEffect.effect)
+    } else {
+      const localeEffect = data.effect_entries.find(
+        (entry) => entry?.language?.name === locale,
+      )
+      if (localeEffect?.short_effect) return cleanFlavorText(localeEffect.short_effect)
+      if (localeEffect?.effect) return cleanFlavorText(localeEffect.effect)
+    }
+  }
+
+  // 4. Catálogo de respaldo estático en español si no se encontró en la API
+  if (isSpanish && abilityName && abilityCatalogEs[abilityName]?.description) {
+    return abilityCatalogEs[abilityName].description
+  }
+
+  // 5. Fallback a texto en inglés (flavor_text o effect) como último recurso
+  if (Array.isArray(data?.flavor_text_entries) && data.flavor_text_entries.length > 0) {
+    const enEntries = data.flavor_text_entries.filter(
+      (entry) => entry?.language?.name === 'en',
+    )
+    if (enEntries.length > 0) {
+      const latest = enEntries[enEntries.length - 1]
+      if (latest?.flavor_text) {
+        return cleanFlavorText(latest.flavor_text)
+      }
+    }
+  }
+
+  if (Array.isArray(data?.effect_entries) && data.effect_entries.length > 0) {
+    const enEffect = data.effect_entries.find(
+      (entry) => entry?.language?.name === 'en',
+    )
+    if (enEffect?.short_effect) return cleanFlavorText(enEffect.short_effect)
+    if (enEffect?.effect) return cleanFlavorText(enEffect.effect)
+  }
+
+  return ''
+}
+
+export async function getAbilityDescription(abilityName, locale = 'es') {
+  if (!abilityName) return ''
+  const isSpanish = locale.startsWith('es')
+  if (isSpanish && gen9AbilitiesEs[abilityName]) {
+    return gen9AbilitiesEs[abilityName]
+  }
+  const data = await fetchResourceData(`https://pokeapi.co/api/v2/ability/${abilityName}`, 2)
+  return resolveAbilityDescription(data, locale, abilityName)
+}
+
+export async function getAbilityDetails(abilityName, locale = 'es') {
+  if (!abilityName) return { name: '', description: '' }
+  const isSpanish = locale.startsWith('es')
+  const catalogEntry = isSpanish ? (abilityCatalogEs[abilityName] || null) : null
+  const gen9Desc = isSpanish ? (gen9AbilitiesEs[abilityName] || null) : null
+
+  try {
+    const data = await fetchResourceData(`https://pokeapi.co/api/v2/ability/${abilityName}`, 2)
+    if (data) {
+      const fallbackName = catalogEntry?.name || formatName(abilityName.replaceAll('-', ' '))
+      const name = resolveLocalizedResourceName(data, locale, fallbackName)
+      const description = resolveAbilityDescription(data, locale, abilityName)
+      return { name, description }
+    }
+  } catch {
+    // Ignore error and fall back to catalog
+  }
+
+  return {
+    name: catalogEntry?.name || formatName(abilityName.replaceAll('-', ' ')),
+    description: gen9Desc || catalogEntry?.description || '',
+  }
 }
 
 function resolveFormLocalizedName(formData, baseLocalizedName, locale) {
@@ -834,10 +977,20 @@ export async function getMegaForms(pokemonIdOrName, locale = 'en') {
         )
 
         const abilities = pokemonData.abilities.map(({ ability }) => ability.name)
+        const isSpanish = locale.startsWith('es')
         const abilityLabels = Object.fromEntries(
+          pokemonData.abilities.map(({ ability }, index) => {
+            const fallbackName = (isSpanish && abilityCatalogEs[ability.name]?.name) || formatName(ability.name.replaceAll('-', ' '))
+            return [
+              ability.name,
+              resolveLocalizedResourceName(abilityResources[index], locale, fallbackName),
+            ]
+          }),
+        )
+        const abilityDescriptions = Object.fromEntries(
           pokemonData.abilities.map(({ ability }, index) => [
             ability.name,
-            resolveLocalizedResourceName(abilityResources[index], locale, ability.name),
+            resolveAbilityDescription(abilityResources[index], locale, ability.name),
           ]),
         )
 
@@ -877,6 +1030,7 @@ export async function getMegaForms(pokemonIdOrName, locale = 'en') {
           typeLabels,
           abilities,
           abilityLabels,
+          abilityDescriptions,
           stats: pokemonData.stats.map(({ base_stat, stat }) => ({
             name: stat.name,
             value: base_stat,
@@ -1029,10 +1183,20 @@ export async function getRegionalForms(pokemonIdOrName, locale = 'en') {
         )
 
         const abilities = pokemonData.abilities.map(({ ability }) => ability.name)
+        const isSpanish = locale.startsWith('es')
         const abilityLabels = Object.fromEntries(
+          pokemonData.abilities.map(({ ability }, index) => {
+            const fallbackName = (isSpanish && abilityCatalogEs[ability.name]?.name) || formatName(ability.name.replaceAll('-', ' '))
+            return [
+              ability.name,
+              resolveLocalizedResourceName(abilityResources[index], locale, fallbackName),
+            ]
+          }),
+        )
+        const abilityDescriptions = Object.fromEntries(
           pokemonData.abilities.map(({ ability }, index) => [
             ability.name,
-            resolveLocalizedResourceName(abilityResources[index], locale, ability.name),
+            resolveAbilityDescription(abilityResources[index], locale, ability.name),
           ]),
         )
 
@@ -1069,6 +1233,7 @@ export async function getRegionalForms(pokemonIdOrName, locale = 'en') {
           typeLabels,
           abilities,
           abilityLabels,
+          abilityDescriptions,
           stats: pokemonData.stats.map(({ base_stat, stat }) => ({
             name: stat.name,
             value: base_stat,

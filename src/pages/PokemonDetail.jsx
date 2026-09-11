@@ -6,7 +6,7 @@ import PokemonStats from '../components/PokemonStats'
 import PokemonTypeAffinities from '../components/PokemonTypeAffinities'
 import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import PokemonFavoriteButton from '../components/PokemonFavoriteButton'
-import { getMegaForms, getRegionalForms } from '../services/pokeapi'
+import { getMegaForms, getRegionalForms, getAbilityDetails } from '../services/pokeapi'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
 import alolaFormSound from '../audio/alolaform.mp3'
@@ -45,7 +45,6 @@ function PokemonDetail({
   const [isRegionalTransforming, setIsRegionalTransforming] = useState(false)
   const [regionalTransformStage, setRegionalTransformStage] = useState('idle')
   const [regionalTransformRegion, setRegionalTransformRegion] = useState(null)
-  const [prevPokemonId, setPrevPokemonId] = useState(pokemon?.id)
   const [isTransforming, setIsTransforming] = useState(false)
   const [transformStage, setTransformStage] = useState('idle')
   const [statsBump, setStatsBump] = useState(false)
@@ -53,6 +52,8 @@ function PokemonDetail({
   const [isShinyAnimating, setIsShinyAnimating] = useState(false)
   const [shinyStage, setShinyStage] = useState('idle')
   const [isFocusMode, setIsFocusMode] = useState(false)
+  const [selectedAbility, setSelectedAbility] = useState(null)
+  const [extraAbilityData, setExtraAbilityData] = useState({})
 
   // Reset active form and states safely when pokemon changes
   useEffect(() => {
@@ -69,6 +70,8 @@ function PokemonDetail({
     setIsShinyAnimating(false)
     setShinyStage('idle')
     setIsFocusMode(false)
+    setSelectedAbility(null)
+    setExtraAbilityData({})
   }, [pokemon?.id])
 
   // Fetch mega forms in background
@@ -147,6 +150,7 @@ function PokemonDetail({
 
     // Clear active regional form if mega-evolving
     if (activeRegionalForm) setActiveRegionalForm(null)
+    setSelectedAbility(null)
 
     // Revert to base form
     if (!targetForm || (activeForm && activeForm.id === targetForm.id)) {
@@ -214,6 +218,7 @@ function PokemonDetail({
 
     // Clear active mega form if transforming into a regional form
     if (activeForm) setActiveForm(null)
+    setSelectedAbility(null)
 
     setIsRegionalTransforming(true)
     setRegionalTransformRegion(region)
@@ -352,6 +357,46 @@ function PokemonDetail({
   const currentTypeLabels = currentData?.typeLabels || {}
   const currentAbilities = currentData?.abilities || []
   const currentAbilityLabels = currentData?.abilityLabels || {}
+  const currentAbilityDescriptions = currentData?.abilityDescriptions || {}
+  const activeSelectedAbility = currentAbilities.includes(selectedAbility) ? selectedAbility : null
+
+  function handleAbilityClick(ability) {
+    playClickSound()
+    setSelectedAbility((prev) => (prev === ability ? null : ability))
+
+    const existingLabel = currentAbilityLabels[ability]
+    const isRawSlug =
+      !existingLabel ||
+      existingLabel.toLowerCase() === ability.toLowerCase() ||
+      existingLabel.includes('-')
+    const hasDesc = Boolean(
+      currentAbilityDescriptions[ability] ||
+      extraAbilityData[ability]?.description,
+    )
+
+    if (isRawSlug || !hasDesc) {
+      getAbilityDetails(ability, locale).then((details) => {
+        if (details?.name || details?.description) {
+          setExtraAbilityData((prev) => ({
+            ...prev,
+            [ability]: {
+              name: details.name || prev[ability]?.name || existingLabel,
+              description: details.description || prev[ability]?.description || '',
+            },
+          }))
+        }
+      })
+    }
+  }
+
+  function handleAbilityAIAnalysis(event, _abilityName) {
+    event?.stopPropagation?.()
+    playClickSound()
+    // Futura integración con IA:
+    // Esta función queda preparada para abrir el análisis profundo de la habilidad
+    // (sinergias, viability en singles/doubles, counters, objetos y aliados).
+    // Por ahora es solo visual y no ejecuta acciones ni llamadas.
+  }
   const currentStats = currentData?.stats || []
   const currentHeight = currentData?.height
   const currentWeight = currentData?.weight
@@ -548,13 +593,91 @@ function PokemonDetail({
           <div className="info-column">
             <p className="eyebrow">{t.detail.traits}</p>
             <h2>{t.detail.abilities}</h2>
-            <div className="ability-list">
-              {currentAbilities.map((ability) => (
-                <span key={ability} className={statsBump ? 'ability-updated' : ''}>
-                  {currentAbilityLabels[ability] || formatName(ability.replaceAll('-', ' '))}
-                </span>
-              ))}
+            <div className="ability-list" role="tablist" aria-label={t.detail.abilities}>
+              {currentAbilities.map((ability) => {
+                const isSelected = activeSelectedAbility === ability
+                const rawLabel = currentAbilityLabels[ability]
+                const isInvalid = !rawLabel || rawLabel.toLowerCase() === ability.toLowerCase() || rawLabel.includes('-')
+                const label =
+                  extraAbilityData[ability]?.name ||
+                  (!isInvalid ? rawLabel : formatName(ability.replaceAll('-', ' ')))
+                return (
+                  <button
+                    key={ability}
+                    type="button"
+                    className={`ability-badge ${isSelected ? 'selected' : ''} ${statsBump ? 'ability-updated' : ''}`}
+                    onClick={() => handleAbilityClick(ability)}
+                    aria-expanded={isSelected}
+                    aria-controls={isSelected ? `ability-panel-${ability}` : undefined}
+                    title={t.detail.abilityClickHint || 'Haz clic para ver la explicación'}
+                  >
+                    <span>{label}</span>
+                    <span className="ability-badge-arrow" aria-hidden="true">
+                      {isSelected ? '▾' : '▸'}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
+
+            {activeSelectedAbility && (() => {
+              const rawActive = currentAbilityLabels[activeSelectedAbility]
+              const isInvalidActive = !rawActive || rawActive.toLowerCase() === activeSelectedAbility.toLowerCase() || rawActive.includes('-')
+              const activeAbilityName =
+                extraAbilityData[activeSelectedAbility]?.name ||
+                (!isInvalidActive ? rawActive : formatName(activeSelectedAbility.replaceAll('-', ' ')))
+              const activeAbilityDescription =
+                extraAbilityData[activeSelectedAbility]?.description ||
+                currentAbilityDescriptions[activeSelectedAbility] ||
+                t.detail.abilityNoDescription
+
+              return (
+                <div
+                  id={`ability-panel-${activeSelectedAbility}`}
+                  className="ability-detail-panel"
+                  role="region"
+                  aria-label={activeAbilityName}
+                >
+                  <div className="ability-panel-header">
+                    <div className="ability-panel-title-wrap">
+                      <span className="ability-panel-title-label">{t.detail.ability || 'Habilidad'}:</span>
+                      <strong className="ability-panel-name">
+                        {activeAbilityName}
+                      </strong>
+                    </div>
+                    <div className="ability-panel-actions">
+                      <button
+                        type="button"
+                        className="ability-ai-btn"
+                        onClick={(e) => handleAbilityAIAnalysis(e, activeSelectedAbility)}
+                        title={t.detail.abilityAiTooltip || 'Analizar con IA (Próximamente)'}
+                        aria-label={t.detail.abilityAiTooltip || 'Analizar con IA (Próximamente)'}
+                      >
+                        <span className="ability-ai-icon" aria-hidden="true">✦</span>
+                        <span className="ability-ai-tooltip">{t.detail.abilityAiTooltip || 'Analizar con IA (Próximamente)'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="ability-panel-close"
+                        onClick={() => setSelectedAbility(null)}
+                        aria-label={t.detail.abilityClose || 'Cerrar explicación'}
+                        title={t.detail.abilityClose || 'Cerrar explicación'}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <div className="ability-panel-body">
+                    <span className="ability-panel-eyebrow">
+                      {t.detail.abilityBriefExplanation || 'Explicación breve'}
+                    </span>
+                    <p className="ability-panel-text">
+                      {activeAbilityDescription}
+                    </p>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
 
           <div className="stats-column">
