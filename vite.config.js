@@ -8,8 +8,8 @@ export default defineConfig({
   base: '/',
 
   server: {
-    allowedHosts: [
-      'chrome-alberta-racks-foundations.trycloudflare.com'
-    ]
+    // Arena proxies the preview through a generated host, so it cannot be
+    // hard-coded here. Vite still binds only to the sandbox interface below.
+    allowedHosts: true
   }
 })

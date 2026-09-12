@@ -11,8 +11,8 @@ import { getRegionalDescriptionEs } from '../locales/regionalDescriptions.js'
 import { gen9AbilitiesEs } from '../locales/gen9AbilitiesEs.js'
 import { abilityCatalogEs } from '../locales/abilityCatalogEs.js'
 import {
-  itemCategoriesEs,
   itemEffectsEs,
+  itemNamesEs,
   canonicalItemCosts,
   getLocalizedCategoryName,
 } from '../locales/itemCatalogEs.js'
@@ -53,12 +53,43 @@ function normalizeItemQuery(query) {
   return query.trim().toLowerCase().replace(/[\s_-]+/g, '-').replace(/^-|-$/g, '')
 }
 
-function getErrorMessage(code, query, messages) {
-  if (code === 'empty') return messages.empty
-  if (code === 'network') return messages.network
-  if (code === 'not-found') return messages.notFound.replace('{query}', query.trim())
-  if (code === 'invalid') return messages.invalid
-  return messages.api
+async function fetchWithRetry(url, attempts = 2) {
+  let lastError
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetch(url)
+      // PokéAPI occasionally answers with a rate-limit or transient server
+      // error. Retrying those responses prevents a page of cards from losing
+      // random objects when all detail requests run concurrently.
+      if (
+        attempt < attempts - 1 &&
+        (response.status === 429 || response.status >= 500)
+      ) {
+        continue
+      }
+      return response
+    } catch (error) {
+      lastError = error
+      if (attempt === attempts - 1) throw error
+    }
+  }
+
+  throw lastError || new Error('Request failed')
+}
+
+const DEFAULT_ERROR_MESSAGES = {
+  empty: 'Enter an item name to search.',
+  network: 'We could not connect to PokéAPI. Check your connection and try again.',
+  notFound: 'We could not find an item named “{query}”.',
+  api: 'PokéAPI is unavailable right now. Please try again.',
+  invalid: 'PokéAPI returned an invalid response.',
+}
+
+function getErrorMessage(code, query, messages = {}) {
+  const key = code === 'not-found' ? 'notFound' : code
+  const template = messages?.[key] || DEFAULT_ERROR_MESSAGES[key] || DEFAULT_ERROR_MESSAGES.api
+  return String(template).replace('{query}', String(query ?? '').trim())
 }
 
 function getLocalizedName(names, locale, fallback) {
@@ -1317,6 +1348,21 @@ export const KNOWN_STUB_ITEMS = new Set([
   'magearnite', 'scovillainite', 'baxcalibrite', 'tatsugirinite', 'glimmoranite',
 ])
 
+// PokéAPI also exposes one internal, parameterized record for every possible
+// Dynamax encounter. Their names are values such as "★And458", they have no
+// sprite, and they are not user-facing inventory items. They must not leak
+// into the catalogue as if they were real objects.
+const HIDDEN_ITEM_PREFIXES = ['dynamax-crystal-']
+export const HIDDEN_ITEM_CATEGORIES = new Set(['dynamax-crystals'])
+
+export function isDisplayableItemName(name) {
+  return Boolean(
+    name &&
+      !KNOWN_STUB_ITEMS.has(name) &&
+      !HIDDEN_ITEM_PREFIXES.some((prefix) => name.startsWith(prefix)),
+  )
+}
+
 export function getItemSprite(itemData) {
   if (!itemData) {
     return {
@@ -1358,32 +1404,62 @@ export function getItemSprite(itemData) {
 }
 
 const itemCategoryCache = new Map()
+const itemCategoryPromises = new Map()
 
 /*
  * Devuelve la entrada localizada de una lista tipo
  * names / flavor_text_entries / effect_entries.
  *
- * Prioridad: locale exacto → es (si locale empieza por "es") → en →
- * cualquier entrada disponible (última versión) → null.
+ * No usamos "la última entrada disponible" como fallback: las respuestas de
+ * PokéAPI mezclan idiomas y versiones, por lo que ese comportamiento podía
+ * mostrar nombres japoneses, franceses o el slug interno en una interfaz en
+ * español. La prioridad es siempre determinista: idioma pedido, español,
+ * inglés y, si no existe ninguno, null.
  */
 function getLocalizedEntry(entries, locale) {
   if (!Array.isArray(entries) || entries.length === 0) return null
 
-  const candidates = [...entries].reverse()
-  const exact = candidates.find((e) => e.language?.name === locale)
-  if (exact) return exact
+  const isSpanish = locale?.startsWith('es')
+  const languages = isSpanish
+    ? [locale, 'es', 'es-419', 'en']
+    : [locale, 'en']
 
-  if (locale.startsWith('es')) {
-    const es = candidates.find((e) => e.language?.name === 'es' || e.language?.name === 'es-419')
-    if (es) return es
+  for (const language of languages) {
+    if (!language) continue
+    // Reverse keeps the latest flavor text when an endpoint has several
+    // entries for the same language/version family.
+    const match = [...entries].reverse().find(
+      (entry) => entry?.language?.name === language && entry?.name !== '' && entry?.text !== '',
+    )
+    if (match) return match
   }
 
-  const en = candidates.find((e) => e.language?.name === 'en')
-  if (en) return en
-
-  if (candidates.length > 0) return candidates[0]
-
   return null
+}
+
+function getLocalizedItemName(names, itemSlug, locale) {
+  const isSpanish = locale?.startsWith('es')
+  const preferredLanguages = isSpanish
+    ? [locale, 'es', 'es-419']
+    : [locale]
+
+  for (const language of preferredLanguages) {
+    if (!language) continue
+    const match = [...(Array.isArray(names) ? names : [])].reverse().find(
+      (entry) => entry?.language?.name === language && entry?.name,
+    )
+    if (match) return match.name
+  }
+
+  if (isSpanish && itemNamesEs[itemSlug]) {
+    return itemNamesEs[itemSlug]
+  }
+
+  const englishName = [...(Array.isArray(names) ? names : [])].reverse().find(
+    (entry) => entry?.language?.name === 'en' && entry?.name,
+  )?.name
+
+  return englishName || humanizeSlug(itemSlug)
 }
 
 /*
@@ -1460,13 +1536,26 @@ async function getItemCategoryMeta(categoryUrl, locale) {
   if (!categoryUrl) return { name: null, lang: null }
 
   if (!itemCategoryCache.has(categoryUrl)) {
+    if (!itemCategoryPromises.has(categoryUrl)) {
+      const request = (async () => {
+        try {
+          const response = await fetchWithRetry(categoryUrl)
+          if (!response.ok) throw new Error('category fetch failed')
+          const cat = await response.json()
+          itemCategoryCache.set(categoryUrl, Array.isArray(cat.names) ? cat.names : [])
+        } catch {
+          // Category labels have a local slug fallback, so a failed label
+          // request should not make the item itself disappear.
+          itemCategoryCache.set(categoryUrl, [])
+        }
+      })()
+      itemCategoryPromises.set(categoryUrl, request)
+    }
+
     try {
-      const response = await fetch(categoryUrl)
-      if (!response.ok) throw new Error('category fetch failed')
-      const cat = await response.json()
-      itemCategoryCache.set(categoryUrl, cat.names || [])
-    } catch {
-      itemCategoryCache.set(categoryUrl, [])
+      await itemCategoryPromises.get(categoryUrl)
+    } finally {
+      itemCategoryPromises.delete(categoryUrl)
     }
   }
 
@@ -1504,7 +1593,7 @@ export async function getItem(query, locale = 'en', messages = {}) {
   let response
 
   try {
-    response = await fetch(
+    response = await fetchWithRetry(
       `https://pokeapi.co/api/v2/item/${encodeURIComponent(normalizedQuery)}`,
     )
   } catch {
@@ -1539,21 +1628,34 @@ export async function getItem(query, locale = 'en', messages = {}) {
     )
   }
 
-  if (KNOWN_STUB_ITEMS.has(data.name)) {
-    throw new PokeApiError('Item is an unreleased stub', 'stub')
+  if (!isDisplayableItemName(data.name)) {
+    throw new PokeApiError('Item is not a displayable catalogue item', 'unsupported')
   }
 
   const hasNoSprites = !data.sprites?.default
   const hasNoNames = !data.names || data.names.length === 0
   const hasNoFlavor = !data.flavor_text_entries || data.flavor_text_entries.length === 0
+  const hasNoEffects = !data.effect_entries || data.effect_entries.length === 0
   const hasNoGameIndices = !data.game_indices || data.game_indices.length === 0
+  const hasNoPrices = !data.prices || data.prices.length === 0
 
-  if (hasNoSprites && hasNoNames && hasNoFlavor && hasNoGameIndices) {
+  // Algunos registros de futuras generaciones aparecen en la API antes de
+  // tener datos reales: no tienen sprite, nombres ni textos. Esos registros
+  // no se deben renderizar como objetos válidos. Sí conservamos objetos reales
+  // que sólo carezcan de uno de esos campos, porque pueden seguir teniendo un
+  // efecto o una categoría utilizable.
+  if (
+    hasNoSprites &&
+    hasNoNames &&
+    hasNoFlavor &&
+    hasNoEffects &&
+    hasNoGameIndices &&
+    hasNoPrices
+  ) {
     throw new PokeApiError('Item is an unreleased stub', 'stub')
   }
 
-  const nameEntry = getLocalizedEntry(data.names, locale)
-  const localizedName = nameEntry?.name || data.name
+  const localizedName = getLocalizedItemName(data.names, data.name, locale)
 
   /*
    * DESCRIPCIÓN  ←  flavor_text_entries en el idioma seleccionado.
@@ -1572,9 +1674,11 @@ export async function getItem(query, locale = 'en', messages = {}) {
       const esEffect = data.effect_entries?.find(
         (e) => e.language?.name === 'es' || e.language?.name === 'es-419'
       )
-      if (esEffect) {
-        effect = cleanItemText(esEffect.short_effect || esEffect.effect)
-      }
+      const fallbackEffect = getLocalizedEntry(data.effect_entries, 'en')
+      effect = cleanItemText(
+        esEffect?.short_effect || esEffect?.effect ||
+        fallbackEffect?.short_effect || fallbackEffect?.effect,
+      )
     }
   } else {
     const effectEntry = getLocalizedEntry(data.effect_entries, locale)
@@ -1599,13 +1703,13 @@ export async function getItem(query, locale = 'en', messages = {}) {
   let category = ''
 
   if (locale.startsWith('es')) {
+    category = getLocalizedCategoryName(categorySlug, locale)
+  } else {
     category =
-      itemCategoriesEs[categorySlug] ||
       (categoryMeta.name && entryLanguageMatches(categoryMeta.lang, locale)
         ? categoryMeta.name
-        : humanizeSlug(categorySlug))
-  } else {
-    category = categoryMeta.name || humanizeSlug(categorySlug)
+        : null) ||
+      getLocalizedCategoryName(categorySlug, locale)
   }
 
   const cost = getItemCost(data)
@@ -1639,35 +1743,76 @@ export async function getItem(query, locale = 'en', messages = {}) {
 export const QUICK_ITEM_CATEGORIES = {
   balls: ['standard-balls', 'special-balls', 'apricorn-balls'],
   healing: ['healing', 'status-cures', 'revival', 'pp-recovery', 'medicine'],
-  battle: ['held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items'],
-  evolution: ['evolution', 'mega-stones', 'tera-shard', 'dynamax-crystals'],
+  battle: ['held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items', 'species-specific'],
+  evolution: ['evolution', 'mega-stones', 'memories', 'z-crystals', 'tera-shard'],
   berries: ['picky-healing', 'in-a-pinch', 'type-protection', 'baking-only', 'effort-drop'],
   vitamins: ['vitamins', 'nature-mints', 'effort-training', 'training'],
-  key: ['gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles'],
+  key: ['gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles', 'catching-bonus'],
 }
 
 const categoryItemNamesCache = new Map()
+const categoryItemNamesPromises = new Map()
 
 export async function getItemNamesForCategory(categorySlug) {
   if (categoryItemNamesCache.has(categorySlug)) {
     return categoryItemNamesCache.get(categorySlug)
   }
 
-  try {
-    const res = await fetch(`https://pokeapi.co/api/v2/item-category/${encodeURIComponent(categorySlug)}`)
-    if (!res.ok) {
+  if (categoryItemNamesPromises.has(categorySlug)) {
+    return categoryItemNamesPromises.get(categorySlug)
+  }
+
+  const request = (async () => {
+    let response
+    try {
+      response = await fetchWithRetry(
+        `https://pokeapi.co/api/v2/item-category/${encodeURIComponent(categorySlug)}`,
+      )
+    } catch {
+      throw new PokeApiError(
+        getErrorMessage('network', categorySlug),
+        'network',
+      )
+    }
+
+    // A bad optional category should behave as an empty category, but a
+    // service/rate-limit error must reach the UI instead of looking like “0
+    // items”. This distinction was the reason whole filters sometimes seemed
+    // to be missing.
+    if (response.status === 404) {
       categoryItemNamesCache.set(categorySlug, [])
       return []
     }
-    const data = await res.json()
-    const names = (data.items || [])
-      .map((item) => item.name)
-      .filter((name) => !KNOWN_STUB_ITEMS.has(name))
+    if (!response.ok) {
+      throw new PokeApiError(
+        getErrorMessage('api', categorySlug),
+        'api',
+      )
+    }
+
+    let data
+    try {
+      data = await response.json()
+    } catch {
+      throw new PokeApiError(
+        getErrorMessage('invalid', categorySlug),
+        'api',
+      )
+    }
+
+    const names = (Array.isArray(data.items) ? data.items : [])
+      .map((item) => item?.name)
+      .filter(isDisplayableItemName)
+
     categoryItemNamesCache.set(categorySlug, names)
     return names
-  } catch {
-    categoryItemNamesCache.set(categorySlug, [])
-    return []
+  })()
+
+  categoryItemNamesPromises.set(categorySlug, request)
+  try {
+    return await request
+  } finally {
+    categoryItemNamesPromises.delete(categorySlug)
   }
 }
 
@@ -1675,11 +1820,13 @@ export async function resolveCategoryItemNames(category) {
   if (!category || category === 'all') return null
 
   const slugs = QUICK_ITEM_CATEGORIES[category] || [category]
+  const categoryNames = await Promise.all(
+    slugs.map((slug) => getItemNamesForCategory(slug)),
+  )
   const allNames = []
   const seen = new Set()
 
-  for (const slug of slugs) {
-    const names = await getItemNamesForCategory(slug)
+  for (const names of categoryNames) {
     for (const name of names) {
       if (!seen.has(name)) {
         seen.add(name)
@@ -1750,21 +1897,32 @@ export async function searchItemDirect(query, locale = 'en', messages = {}) {
 }
 
 let allItemsCache = null
+let allItemsPromise = null
 
 export async function getAllItemSlugs() {
   if (allItemsCache && allItemsCache.length > 0) {
     return allItemsCache
   }
+  if (allItemsPromise) return allItemsPromise
+
+  allItemsPromise = (async () => {
+    try {
+      const res = await fetchWithRetry('https://pokeapi.co/api/v2/item?limit=10000')
+      if (!res.ok) return []
+      const data = await res.json()
+      allItemsCache = (Array.isArray(data.results) ? data.results : [])
+        .map((resource) => resource?.name)
+        .filter(isDisplayableItemName)
+      return allItemsCache
+    } catch {
+      return []
+    }
+  })()
+
   try {
-    const res = await fetch('https://pokeapi.co/api/v2/item?limit=2500')
-    if (!res.ok) return []
-    const data = await res.json()
-    allItemsCache = (data.results || [])
-      .map((r) => r.name)
-      .filter((name) => !KNOWN_STUB_ITEMS.has(name))
-    return allItemsCache
-  } catch {
-    return []
+    return await allItemsPromise
+  } finally {
+    allItemsPromise = null
   }
 }
 
@@ -1871,9 +2029,17 @@ export async function searchItemsCatalog(query, locale = 'en', messages = {}) {
   const allSlugs = await getAllItemSlugs()
   const candidateSet = new Set()
 
-  // a) Slugs del diccionario ES que contienen la palabra buscada
+  // a) Alias conocidos y nombres de respaldo en español. Buscar sólo por el
+  // slug inglés hacía que “Piedra Solar”, “Poción” y objetos nuevos no
+  // aparecieran aunque sí existieran en el catálogo.
   for (const [esKey, slug] of Object.entries(COMMON_ITEM_SLUGS_ES)) {
     if (esKey.includes(norm) || norm.includes(esKey)) {
+      candidateSet.add(slug)
+    }
+  }
+  for (const [slug, spanishName] of Object.entries(itemNamesEs)) {
+    const normalizedName = normalizeSearchText(spanishName)
+    if (normalizedName.includes(norm) || norm.includes(normalizedName)) {
       candidateSet.add(slug)
     }
   }
@@ -1897,7 +2063,9 @@ export async function searchItemsCatalog(query, locale = 'en', messages = {}) {
     }
   }
 
-  const candidateSlugs = Array.from(candidateSet).slice(0, 40)
+  // A search is not paginated like the main catalogue. Keep a generous cap
+  // so a translated query does not silently lose matching items.
+  const candidateSlugs = Array.from(candidateSet).slice(0, 100)
   if (candidateSlugs.length === 0) {
     try {
       const direct = await getItem(slugQuery, locale, messages)
@@ -1960,10 +2128,36 @@ export async function getItems({
   }
 
   // 2. Paginación global ('all')
+  // Paginar directamente la lista de PokéAPI deja huecos cuando una página
+  // contiene registros internos (por ejemplo, los Dynamax cristalizados).
+  // Construimos las páginas sobre el catálogo ya saneado para que “Cargar
+  // más” siempre entregue objetos visibles y no una pantalla vacía.
+  const allItemSlugs = await getAllItemSlugs()
+  if (allItemSlugs.length > 0) {
+    const pageSlice = allItemSlugs.slice(offset, offset + limit)
+    const itemsResults = await Promise.allSettled(
+      pageSlice.map((name) => getItem(name, locale, messages)),
+    )
+    const items = itemsResults
+      .filter((result) => result.status === 'fulfilled' && result.value)
+      .map((result) => result.value)
+
+    const result = {
+      items,
+      totalCount: allItemSlugs.length,
+      nextOffset: offset + limit < allItemSlugs.length ? offset + limit : null,
+    }
+
+    itemPageCache.set(cacheKey, result)
+    return result
+  }
+
+  // Fallback para que un servidor que no permita la consulta grande siga
+  // pudiendo entregar la primera página mediante el endpoint paginado.
   let response
 
   try {
-    response = await fetch(
+    response = await fetchWithRetry(
       `https://pokeapi.co/api/v2/item?limit=${limit}&offset=${offset}`,
     )
   } catch {
