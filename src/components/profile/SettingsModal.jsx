@@ -9,6 +9,8 @@ function SettingsModal({ locale, onLocaleChange, t }) {
     settingsTab,
     setSettingsTab,
     user,
+    profile,
+    updateProfilePrivacy,
     updateEmail,
     updatePasswordInSettings,
     signOut,
@@ -26,6 +28,24 @@ function SettingsModal({ locale, onLocaleChange, t }) {
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState(null)
   const [passwordError, setPasswordError] = useState(null)
+
+  // Estados para privacidad
+  const [profileVisibility, setProfileVisibility] = useState('public')
+  const [favoritesVisibility, setFavoritesVisibility] = useState('public')
+  const [followListVisibility, setFollowListVisibility] = useState('public')
+  const [isChangingPrivacy, setIsChangingPrivacy] = useState(false)
+  const [privacyMessage, setPrivacyMessage] = useState(null)
+  const [privacyError, setPrivacyError] = useState(null)
+
+  useEffect(() => {
+    if (isSettingsOpen && profile) {
+      setProfileVisibility(profile.profile_visibility || 'public')
+      setFavoritesVisibility(profile.favorites_visibility || 'public')
+      setFollowListVisibility(profile.follow_list_visibility || 'public')
+      setPrivacyMessage(null)
+      setPrivacyError(null)
+    }
+  }, [isSettingsOpen, profile])
 
   const modalRef = useRef(null)
 
@@ -159,6 +179,15 @@ function SettingsModal({ locale, onLocaleChange, t }) {
             onClick={() => setSettingsTab('security')}
           >
             🔒 Seguridad
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={settingsTab === 'privacy'}
+            className={`settings-tab-btn ${settingsTab === 'privacy' ? 'is-active' : ''}`}
+            onClick={() => setSettingsTab('privacy')}
+          >
+            🛡️ Privacidad
           </button>
           <button
             type="button"
@@ -347,6 +376,188 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                   <span>🚪</span>
                   <span>Cerrar sesión</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB PRIVACIDAD (SECCIÓN 17) */}
+          {settingsTab === 'privacy' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <h4 style={{ font: '600 15px var(--display)', color: 'var(--navy)', margin: '0 0 6px' }}>
+                  {t?.social?.privacySettings || 'Configuración de privacidad'}
+                </h4>
+                <p style={{ font: '12.5px var(--sans)', color: 'var(--muted)', margin: '0 0 16px' }}>
+                  Controla quién puede ver tu perfil, tus Pokémon favoritos y tus listas sociales.
+                </p>
+
+                {privacyError && (
+                  <div className="auth-alert alert-error" role="alert" style={{ marginBottom: '12px' }}>
+                    {privacyError}
+                  </div>
+                )}
+                {privacyMessage && (
+                  <div className="auth-alert alert-success" role="status" style={{ marginBottom: '12px' }}>
+                    {privacyMessage}
+                  </div>
+                )}
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setIsChangingPrivacy(true)
+                    setPrivacyMessage(null)
+                    setPrivacyError(null)
+                    try {
+                      const res = await updateProfilePrivacy({
+                        profile_visibility: profileVisibility,
+                        favorites_visibility: favoritesVisibility,
+                        follow_list_visibility: followListVisibility,
+                      })
+                      if (res.success) {
+                        setPrivacyMessage(t?.social?.privacyOptions?.savedSuccess || 'Preferencias de privacidad guardadas correctamente.')
+                      } else {
+                        setPrivacyError(res.error || 'Error al guardar privacidad.')
+                      }
+                    } catch {
+                      setPrivacyError('Error inesperado al conectar con el servidor.')
+                    } finally {
+                      setIsChangingPrivacy(false)
+                    }
+                  }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}
+                >
+                  {/* Perfil */}
+                  <div className="privacy-section">
+                    <h5 style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
+                      👤 {t?.social?.privacyOptions?.profileTitle || 'Visibilidad del perfil'}
+                    </h5>
+                    <div className="privacy-radio-group">
+                      <label className={`privacy-radio-card ${profileVisibility === 'public' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_profile_vis"
+                          value="public"
+                          checked={profileVisibility === 'public'}
+                          onChange={() => setProfileVisibility('public')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.public || 'Público'}</strong>
+                          <p>{t?.social?.privacyOptions?.profilePublicDesc || 'Cualquier usuario puede ver tu perfil y seguirte de inmediato.'}</p>
+                        </div>
+                      </label>
+
+                      <label className={`privacy-radio-card ${profileVisibility === 'private' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_profile_vis"
+                          value="private"
+                          checked={profileVisibility === 'private'}
+                          onChange={() => setProfileVisibility('private')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.private || 'Privado'}</strong>
+                          <p>{t?.social?.privacyOptions?.profilePrivateDesc || 'Solo los usuarios que apruebes pueden seguirte y ver tus datos privados.'}</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Favoritos */}
+                  <div className="privacy-section">
+                    <h5 style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
+                      ⭐ {t?.social?.privacyOptions?.favoritesTitle || 'Visibilidad de favoritos'}
+                    </h5>
+                    <div className="privacy-radio-group">
+                      <label className={`privacy-radio-card ${favoritesVisibility === 'public' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_fav_vis"
+                          value="public"
+                          checked={favoritesVisibility === 'public'}
+                          onChange={() => setFavoritesVisibility('public')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.public || 'Público'}</strong>
+                          <p>{t?.social?.privacyOptions?.favoritesPublicDesc || 'Cualquier visitante puede ver tu lista de Pokémon favoritos.'}</p>
+                        </div>
+                      </label>
+
+                      <label className={`privacy-radio-card ${favoritesVisibility === 'followers' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_fav_vis"
+                          value="followers"
+                          checked={favoritesVisibility === 'followers'}
+                          onChange={() => setFavoritesVisibility('followers')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.followers || 'Seguidores'}</strong>
+                          <p>{t?.social?.privacyOptions?.favoritesFollowersDesc || 'Solo tus seguidores aceptados pueden ver tus Pokémon favoritos.'}</p>
+                        </div>
+                      </label>
+
+                      <label className={`privacy-radio-card ${favoritesVisibility === 'private' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_fav_vis"
+                          value="private"
+                          checked={favoritesVisibility === 'private'}
+                          onChange={() => setFavoritesVisibility('private')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.private || 'Privado'}</strong>
+                          <p>{t?.social?.privacyOptions?.favoritesPrivateDesc || 'Solo tú puedes ver tu colección de Pokémon favoritos.'}</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Seguidores y Siguiendo */}
+                  <div className="privacy-section">
+                    <h5 style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
+                      👥 {t?.social?.privacyOptions?.followListTitle || 'Seguidores y Siguiendo'}
+                    </h5>
+                    <div className="privacy-radio-group">
+                      <label className={`privacy-radio-card ${followListVisibility === 'public' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_follow_vis"
+                          value="public"
+                          checked={followListVisibility === 'public'}
+                          onChange={() => setFollowListVisibility('public')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.public || 'Público'}</strong>
+                          <p>{t?.social?.privacyOptions?.followListPublicDesc || 'Cualquiera puede consultar a quién sigues y quién te sigue.'}</p>
+                        </div>
+                      </label>
+
+                      <label className={`privacy-radio-card ${followListVisibility === 'private' ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="settings_follow_vis"
+                          value="private"
+                          checked={followListVisibility === 'private'}
+                          onChange={() => setFollowListVisibility('private')}
+                        />
+                        <div className="privacy-radio-content">
+                          <strong>{t?.social?.privacyOptions?.private || 'Privado'}</strong>
+                          <p>{t?.social?.privacyOptions?.followListPrivateDesc || 'Solo tú puedes ver tus listas de seguidores y seguidos.'}</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="auth-primary-btn"
+                    style={{ width: 'auto', alignSelf: 'center', margin: '8px auto 0', padding: '10px 28px' }}
+                    disabled={isChangingPrivacy}
+                  >
+                    {isChangingPrivacy ? 'Guardando...' : (t?.social?.privacyOptions?.saveChanges || 'Guardar privacidad')}
+                  </button>
+                </form>
               </div>
             </div>
           )}

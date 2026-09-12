@@ -11,10 +11,19 @@ import MusicPlayer from './components/MusicPlayer'
 import AuthModal from './components/auth/AuthModal'
 import UsernameSetupModal from './components/auth/UsernameSetupModal'
 import ProfileModal from './components/profile/ProfileModal'
+import UserProfileModal from './components/profile/UserProfileModal'
 import SettingsModal from './components/profile/SettingsModal'
 import SocialModal from './components/social/SocialModal'
 import SocialToast from './components/social/SocialToast'
 import FloatingChat from './components/social/FloatingChat'
+import FollowersModal from './components/social/FollowersModal'
+import FollowingModal from './components/social/FollowingModal'
+import FollowRequestsModal from './components/social/FollowRequestsModal'
+import PrivacySettingsModal from './components/social/PrivacySettingsModal'
+import UserSearchModal from './components/social/UserSearchModal'
+import { useAuth } from './context/AuthContext'
+import './styles/profile.css'
+import './styles/social.css'
 import './App.css'
 
 function getInitialLocale() {
@@ -23,6 +32,7 @@ function getInitialLocale() {
 }
 
 function App() {
+  const { openUserProfile } = useAuth()
   const [view, setView] = useState('home')
   const [pokemon, setPokemon] = useState(null)
   const [item, setItem] = useState(null)
@@ -100,6 +110,13 @@ function App() {
         const itemName = decodeURIComponent(hash.slice('#item/'.length).trim())
         if (itemName && itemName !== 'not-found') {
           loadItemByName(itemName, false)
+          return
+        }
+      }
+      if (hash.startsWith('#profile/')) {
+        const username = decodeURIComponent(hash.slice('#profile/'.length).trim())
+        if (username) {
+          openUserProfile(username)
           return
         }
       }
@@ -309,9 +326,15 @@ function App() {
       <AuthModal />
       <UsernameSetupModal />
       <ProfileModal />
+      <UserProfileModal onPokemonClick={handleSearch} t={t} />
       <SettingsModal locale={locale} onLocaleChange={handleLocaleChange} t={t} />
+      <FollowersModal t={t} />
+      <FollowingModal t={t} />
+      <FollowRequestsModal t={t} />
+      <PrivacySettingsModal t={t} />
+      <UserSearchModal t={t} />
       <SocialModal />
-      <SocialToast />
+      <SocialToast t={t} />
       <FloatingChat />
     </>
   )

@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getRelationships } from '../../services/social'
-import { supabase } from '../../services/supabase'
 import '../../styles/social-states.css'
 import { localeOptions } from '../../locales'
 import {
@@ -29,9 +27,11 @@ function UserMenuDropdown({
   const menuRef = useRef(null)
 
   const authContext = useAuth()
-  const openProfile = propOpenProfileModal || authContext.openProfileModal
+  const openUserProfile = authContext.openUserProfile
   const openSettings = propOpenSettingsModal || authContext.openSettingsModal
-  const openSocial = authContext.openSocialModal
+  const openUserSearch = authContext.openUserSearch
+  const openFollowRequests = authContext.openFollowRequests
+  const pendingRequestsCount = authContext.pendingRequestsCount || 0
 
   // Cerrar al hacer clic fuera
   useEffect(() => {
@@ -58,15 +58,7 @@ function UserMenuDropdown({
     }
   }, [isOpen])
 
-  useEffect(() => {
-    if (!user?.id || !supabase) return undefined
-    const refresh = async () => {
-      try { setSocialNotifications((await getRelationships(user.id)).filter(item => item.status === 'pending' && item.recipient_id === user.id).length) } catch { setSocialNotifications(0) }
-    }
-    refresh()
-    const channel = supabase.channel(`social-menu-${user.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, refresh).subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [user?.id])
+
 
   function handleToggle() {
     setIsOpen((prev) => {
@@ -81,8 +73,8 @@ function UserMenuDropdown({
   function handleProfileClick() {
     playClickUserSound()
     setIsOpen(false)
-    if (openProfile) {
-      openProfile()
+    if (openUserProfile) {
+      openUserProfile()
     }
   }
 
@@ -145,7 +137,7 @@ function UserMenuDropdown({
           ) : (
             <span className="nav-user-initial">{userInitial}</span>
           )}
-          {socialNotifications > 0 && <span className="social-profile-notice" />}
+          {pendingRequestsCount > 0 && <span className="social-profile-notice" />}
         </span>
         <span className="nav-user-name-text">{username}</span>
         <svg
@@ -219,14 +211,48 @@ function UserMenuDropdown({
             </span>
             <div className="dropdown-item-content">
               <span className="dropdown-item-title">Mi perfil</span>
-              <span className="dropdown-item-desc">Foto, nombre y cuenta</span>
+              <span className="dropdown-item-desc">Favoritos, seguidores y bio</span>
             </div>
           </button>
 
-          <button type="button" className="dropdown-menu-item item-profile" onClick={() => { setIsOpen(false); openSocial?.() }} onMouseEnter={playHoverBubbleSound} role="menuitem">
-            <span className="dropdown-item-icon icon-profile" aria-hidden="true">👥</span>
-            <div className="dropdown-item-content"><span className="dropdown-item-title">Amigos</span><span className="dropdown-item-desc">Comunidad y solicitudes</span></div>
+          {/* Opción: Descubrir entrenadores */}
+          <button
+            type="button"
+            className="dropdown-menu-item item-profile"
+            onClick={() => {
+              setIsOpen(false)
+              openUserSearch?.()
+            }}
+            onMouseEnter={playHoverBubbleSound}
+            role="menuitem"
+          >
+            <span className="dropdown-item-icon icon-profile" aria-hidden="true">🔍</span>
+            <div className="dropdown-item-content">
+              <span className="dropdown-item-title">Descubrir</span>
+              <span className="dropdown-item-desc">Buscar otros entrenadores</span>
+            </div>
           </button>
+
+          {/* Opción: Solicitudes de seguimiento pendientes si existen */}
+          {pendingRequestsCount > 0 && (
+            <button
+              type="button"
+              className="dropdown-menu-item item-profile"
+              onClick={() => {
+                setIsOpen(false)
+                openFollowRequests?.()
+              }}
+              onMouseEnter={playHoverBubbleSound}
+              role="menuitem"
+            >
+              <span className="dropdown-item-icon icon-profile" aria-hidden="true">🔔</span>
+              <div className="dropdown-item-content">
+                <span className="dropdown-item-title">Solicitudes</span>
+                <span className="dropdown-item-desc">Tienes solicitudes pendientes</span>
+              </div>
+              <span className="dropdown-badge-count">{pendingRequestsCount}</span>
+            </button>
+          )}
 
           {/* Opción 2: Favoritos */}
           <button

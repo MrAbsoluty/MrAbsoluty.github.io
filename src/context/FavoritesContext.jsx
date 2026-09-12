@@ -1,4 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useAuth } from './AuthContext'
+import {
+  addFavoriteToSupabase,
+  removeFavoriteFromSupabase,
+  syncFavoritesToSupabase,
+  getUserFavorites,
+} from '../services/social'
 
 const FAVORITES_STORAGE_KEY = 'pokeguide-favorites'
 const LAST_VIEWED_KEY = 'pokeguide-favorites-last-viewed'
@@ -90,6 +97,7 @@ function loadInitialLastViewed() {
 }
 
 export function FavoritesProvider({ children }) {
+  const { user } = useAuth()
   const [favorites, setFavorites] = useState(loadInitialFavorites)
   const [lastViewedTime, setLastViewedTime] = useState(loadInitialLastViewed)
 
@@ -107,6 +115,57 @@ export function FavoritesProvider({ children }) {
     window.addEventListener('storage', handleStorage)
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
+
+  // Sincronizar con Supabase cuando el usuario inicia sesión
+  useEffect(() => {
+    if (!user?.id) return
+
+    let isMounted = true
+
+    async function syncWithRemote() {
+      try {
+        const remoteFavorites = await getUserFavorites(user.id)
+        if (!isMounted) return
+
+        // Combinar favoritos remotos con locales existentes sin duplicados
+        const local = loadInitialFavorites()
+        const combinedMap = new Map()
+
+        // Primero agregar locales
+        local.forEach((item) => {
+          const key = (item.name || String(item.id)).toLowerCase()
+          combinedMap.set(key, item)
+        })
+
+        // Luego agregar o actualizar con remotos
+        remoteFavorites.forEach((item) => {
+          const key = (item.name || String(item.id)).toLowerCase()
+          if (!combinedMap.has(key)) {
+            combinedMap.set(key, item)
+          }
+        })
+
+        const mergedList = Array.from(combinedMap.values())
+        setFavorites(mergedList)
+        try {
+          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(mergedList))
+        } catch {
+          // Silencioso
+        }
+
+        // Subir a Supabase cualquier favorito que estuviese en local
+        await syncFavoritesToSupabase(user.id, mergedList)
+      } catch (err) {
+        console.warn('[FavoritesContext] Error sincronizando con Supabase:', err)
+      }
+    }
+
+    syncWithRemote()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
 
   function saveFavorites(nextFavorites) {
     setFavorites(nextFavorites)
@@ -153,7 +212,12 @@ export function FavoritesProvider({ children }) {
       addedAt: Date.now(),
     }
 
-    saveFavorites([newItem, ...favorites])
+    const nextFavorites = [newItem, ...favorites]
+    saveFavorites(nextFavorites)
+
+    if (user?.id) {
+      addFavoriteToSupabase(user.id, newItem)
+    }
   }
 
   function removeFavorite(pokemonOrId) {
@@ -167,6 +231,10 @@ export function FavoritesProvider({ children }) {
     })
 
     saveFavorites(filtered)
+
+    if (user?.id) {
+      removeFavoriteFromSupabase(user.id, target)
+    }
   }
 
   function toggleFavorite(pokemon) {

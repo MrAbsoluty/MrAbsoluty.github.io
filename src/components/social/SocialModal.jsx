@@ -1,90 +1,242 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { findProfiles, getRelationships, removeRelationship, respondToRequest, sendFriendRequest } from '../../services/social'
+import { searchUsers, getFollowing, getPendingRequests, acceptFollowRequest, rejectFollowRequest } from '../../services/social'
 import { supabase } from '../../services/supabase'
-import { playHoverBubbleSound } from '../../utils/audio'
+import { playHoverBubbleSound, playClickUserSound, playBubbleSound } from '../../utils/audio'
+import FollowButton from './FollowButton'
 import '../../styles/social.css'
 import '../../styles/social-states.css'
 
 function Avatar({ person, online = false }) {
-  return <span className={`social-avatar-wrap ${online ? 'is-online' : ''}`}>{person?.avatar_url ? <img className="social-avatar" src={person.avatar_url} alt="" /> : <span className="social-avatar social-avatar-fallback">{person?.username?.[0]?.toUpperCase() || '?'}</span>}</span>
+  return (
+    <span className={`social-avatar-wrap ${online ? 'is-online' : ''}`}>
+      {person?.avatar_url ? (
+        <img className="social-avatar" src={person.avatar_url} alt="" />
+      ) : (
+        <span className="social-avatar social-avatar-fallback">
+          {person?.username?.[0]?.toUpperCase() || '?'}
+        </span>
+      )}
+    </span>
+  )
 }
 
 export default function SocialModal() {
-  const { user, isSocialOpen, closeSocialModal, openChatWithFriend } = useAuth()
-  const [relations, setRelations] = useState([])
-  const [tab, setTab] = useState('friends')
+  const { user, isSocialOpen, closeSocialModal, openUserProfile, setPendingRequestsCount } = useAuth()
+  const [following, setFollowing] = useState([])
+  const [incoming, setIncoming] = useState([])
+  const [tab, setTab] = useState('following')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [error, setError] = useState('')
   const [onlineIds, setOnlineIds] = useState(new Set())
-  const [sendingTo, setSendingTo] = useState(null)
 
   const reload = async () => {
-    if (!user) return
-    try { setRelations(await getRelationships(user.id)); setError('') } catch (err) { setError(err.message || 'No se pudo cargar la sección social.') }
+    if (!user?.id) return
+    try {
+      const [fList, reqList] = await Promise.all([
+        getFollowing(user.id, user.id),
+        getPendingRequests(user.id),
+      ])
+      setFollowing(fList)
+      setIncoming(reqList)
+      setPendingRequestsCount(reqList.length)
+      setError('')
+    } catch (err) {
+      setError(err.message || 'No se pudo cargar la sección social.')
+    }
   }
-  useEffect(() => { if (isSocialOpen) reload() }, [isSocialOpen, user?.id])
+
   useEffect(() => {
-    if (!isSocialOpen || !user || !supabase) return undefined
-    const channel = supabase.channel(`social-${user.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, reload).subscribe()
-    return () => { supabase.removeChannel(channel) }
+    if (isSocialOpen) reload()
   }, [isSocialOpen, user?.id])
+
   useEffect(() => {
-    if (!isSocialOpen || !user || !supabase) return undefined
-    const channel = supabase.channel('pokeguide-presence', { config: { presence: { key: user.id } } })
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        setOnlineIds(new Set(Object.values(state).flat().map(entry => entry.user_id)))
-      })
-      .subscribe(status => { if (status === 'SUBSCRIBED') channel.track({ user_id: user.id }) })
-    return () => { supabase.removeChannel(channel) }
+    if (!isSocialOpen || !user?.id || !supabase) return undefined
+    const channel = supabase
+      .channel(`social-follows-modal-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'follows' }, reload)
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [isSocialOpen, user?.id])
+
   useEffect(() => {
-    const timer = setTimeout(async () => { if (!user || query.trim().length < 2) return setResults([]); try { setResults(await findProfiles(query, user.id)) } catch { setResults([]) } }, 250)
+    const timer = setTimeout(async () => {
+      if (!user || query.trim().length < 2) return setResults([])
+      try {
+        setResults(await searchUsers(query, user.id))
+      } catch {
+        setResults([])
+      }
+    }, 250)
     return () => clearTimeout(timer)
   }, [query, user?.id])
 
-  const incoming = useMemo(() => relations.filter(r => r.status === 'pending' && r.recipient_id === user?.id), [relations, user?.id])
-  const friends = useMemo(() => relations.filter(r => r.status === 'accepted').map(r => r.requester_id === user?.id ? r.recipient : r.requester).filter(Boolean), [relations, user?.id])
-  function relationshipFor(personId) { return relations.find(r => r.requester_id === personId || r.recipient_id === personId) }
-  function requestLabel(personId) {
-    const relation = relationshipFor(personId)
-    if (!relation) return 'Agregar'
-    if (relation.status === 'accepted') return 'Amigo'
-    if (relation.status === 'rejected') return 'Solicitud rechazada'
-    return relation.requester_id === user?.id ? 'Solicitud enviada' : 'Te envió solicitud'
-  }
-  async function action(fn) { try { await fn(); await reload() } catch (err) { setError(err.message || 'No se pudo completar la acción.') } }
-  async function handleSendRequest(personId) { if (relationshipFor(personId) || sendingTo) return; setSendingTo(personId); await action(() => sendFriendRequest(personId)); setSendingTo(null) }
-  function handleStartChat(friend) {
-    playHoverBubbleSound()
-    openChatWithFriend(friend)
-  }
-
   if (!isSocialOpen) return null
 
-  return <div className="social-overlay" role="dialog" aria-modal="true" aria-label="Amigos y comunidad" onClick={e => e.target === e.currentTarget && closeSocialModal()}>
-    <section className="social-modal">
-      <header className="social-header"><div><span className="social-kicker">COMUNIDAD</span><h2>Entrenadores</h2></div><button className="social-close" onClick={closeSocialModal} aria-label="Cerrar">×</button></header>
-      <nav className="social-tabs">
-        <button className={tab === 'friends' ? 'active' : ''} onClick={() => setTab('friends')}>Amigos <b>{friends.length}</b></button>
-        <button className={tab === 'requests' ? 'active' : ''} onClick={() => setTab('requests')}>Solicitudes <b>{incoming.length}</b></button>
-      </nav>
-      {error && <p className="social-error">{error}</p>}
-      {tab === 'friends' && <div className="social-content"><label className="social-search"><span>⌕</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Busca un entrenador…" /></label>{results.map(person => { const label = requestLabel(person.id); const disabled = label !== 'Agregar' || sendingTo === person.id; return <div className="social-row" key={person.id}><Avatar person={person} online={onlineIds.has(person.id)}/><strong>@{person.username}</strong><button className={disabled ? 'social-request-state' : ''} disabled={disabled} onClick={() => handleSendRequest(person.id)}>{sendingTo === person.id ? 'Enviando…' : label}</button></div>})}<h3>Mis amigos</h3>{friends.length ? friends.map(friend => {
-        const relation = relations.find(r => r.status === 'accepted' && (r.requester_id === friend.id || r.recipient_id === friend.id))
-        return (
-          <div className="social-row" key={friend.id}>
-            <Avatar person={friend} online={onlineIds.has(friend.id)}/>
-            <strong>@{friend.username}</strong>
-            <span className="social-presence">{onlineIds.has(friend.id) ? 'Conectado' : 'Desconectado'}</span>
-            <button className="social-chat-button" onClick={() => handleStartChat(friend)} title="Chatear con este entrenador">Chat</button>
-            {relation && <button className="social-text-button" onClick={() => action(() => removeRelationship(relation.id))} title="Eliminar amigo">✕</button>}
+  function handleUserClick(targetUser) {
+    playHoverBubbleSound()
+    closeSocialModal()
+    openUserProfile(targetUser.username || targetUser.id)
+  }
+
+  return (
+    <div
+      className="social-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Comunidad de entrenadores"
+      onClick={(e) => e.target === e.currentTarget && closeSocialModal()}
+    >
+      <section className="social-modal">
+        <header className="social-header">
+          <div>
+            <span className="social-kicker">COMUNIDAD</span>
+            <h2>Entrenadores</h2>
           </div>
-        )
-      }) : <p className="social-empty">Aún no tienes amigos. Busca un entrenador para enviarle una solicitud.</p>}</div>}
-      {tab === 'requests' && <div className="social-content">{incoming.length ? incoming.map(request => <div className="social-row" key={request.id}><Avatar person={request.requester}/><strong>@{request.requester?.username}</strong><button onClick={() => action(() => respondToRequest(request.id, 'accepted'))}>Aceptar</button><button className="social-text-button" onClick={() => action(() => respondToRequest(request.id, 'rejected'))}>Rechazar</button></div>) : <p className="social-empty">No tienes solicitudes pendientes.</p>}</div>}
-    </section>
-  </div>
+          <button className="social-close" onClick={closeSocialModal} aria-label="Cerrar">
+            ×
+          </button>
+        </header>
+
+        <nav className="social-tabs">
+          <button
+            className={tab === 'following' ? 'active' : ''}
+            onClick={() => setTab('following')}
+          >
+            Siguiendo <b>{following.length}</b>
+          </button>
+          <button
+            className={tab === 'requests' ? 'active' : ''}
+            onClick={() => setTab('requests')}
+          >
+            Solicitudes <b>{incoming.length}</b>
+          </button>
+        </nav>
+
+        {error && <p className="social-error">{error}</p>}
+
+        {tab === 'following' && (
+          <div className="social-content">
+            <label className="social-search">
+              <span>⌕</span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Busca un entrenador por @username…"
+              />
+            </label>
+
+            {results.map((person) => (
+              <div
+                className="social-row"
+                key={person.id}
+                onClick={() => handleUserClick(person)}
+                style={{ cursor: 'pointer' }}
+              >
+                <Avatar person={person} online={onlineIds.has(person.id)} />
+                <div style={{ flex: 1 }}>
+                  <strong>@{person.username}</strong>
+                  {person.bio && (
+                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--muted)' }}>
+                      {person.bio}
+                    </span>
+                  )}
+                </div>
+                <FollowButton
+                  targetUserId={person.id}
+                  targetUsername={person.username}
+                  isTargetPrivate={person.profile_visibility === 'private'}
+                  initialStatus="none"
+                  size="small"
+                />
+              </div>
+            ))}
+
+            <h3>Entrenadores que sigues</h3>
+            {following.length ? (
+              following.map((friend) => (
+                <div
+                  className="social-row"
+                  key={friend.id}
+                  onClick={() => handleUserClick(friend)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Avatar person={friend} online={onlineIds.has(friend.id)} />
+                  <div style={{ flex: 1 }}>
+                    <strong>@{friend.username}</strong>
+                    {friend.bio && (
+                      <span style={{ display: 'block', fontSize: '11px', color: 'var(--muted)' }}>
+                        {friend.bio}
+                      </span>
+                    )}
+                  </div>
+                  <FollowButton
+                    targetUserId={friend.id}
+                    targetUsername={friend.username}
+                    initialStatus="accepted"
+                    size="small"
+                  />
+                </div>
+              ))
+            ) : (
+              <p className="social-empty">
+                Aún no sigues a ningún entrenador. ¡Busca un entrenador para seguirlo!
+              </p>
+            )}
+          </div>
+        )}
+
+        {tab === 'requests' && (
+          <div className="social-content">
+            {incoming.length ? (
+              incoming.map((request) => {
+                const requester = request.follower
+                return (
+                  <div className="social-row" key={request.id}>
+                    <Avatar person={requester} />
+                    <div
+                      style={{ flex: 1, cursor: 'pointer' }}
+                      onClick={() => handleUserClick(requester)}
+                    >
+                      <strong>@{requester?.username}</strong>
+                      {requester?.bio && (
+                        <span style={{ display: 'block', fontSize: '11px', color: 'var(--muted)' }}>
+                          {requester.bio}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        playClickUserSound()
+                        await acceptFollowRequest(request.id, user.id)
+                        playBubbleSound()
+                        reload()
+                      }}
+                    >
+                      Aceptar
+                    </button>
+                    <button
+                      className="social-text-button"
+                      onClick={async () => {
+                        playClickUserSound()
+                        await rejectFollowRequest(request.id, user.id)
+                        reload()
+                      }}
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                )
+              })
+            ) : (
+              <p className="social-empty">No tienes solicitudes pendientes.</p>
+            )}
+          </div>
+        )}
+      </section>
+    </div>
+  )
 }

@@ -41,6 +41,18 @@ export function AuthProvider({ children }) {
   const [activeChatFriend, setActiveChatFriend] = useState(null)
   const [hasUnreadChat, setHasUnreadChat] = useState(false)
 
+  // Estados del sistema social de Seguidores / Siguiendo
+  const [viewingUser, setViewingUser] = useState(null)
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false)
+  const [isFollowersOpen, setIsFollowersOpen] = useState(false)
+  const [followersTargetUserId, setFollowersTargetUserId] = useState(null)
+  const [isFollowingOpen, setIsFollowingOpen] = useState(false)
+  const [followingTargetUserId, setFollowingTargetUserId] = useState(null)
+  const [isFollowRequestsOpen, setIsFollowRequestsOpen] = useState(false)
+  const [isUserSearchOpen, setIsUserSearchOpen] = useState(false)
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0)
+
   const openAuthModal = useCallback((view = 'login') => {
     setAuthModal({ isOpen: true, view })
   }, [])
@@ -72,6 +84,60 @@ export function AuthProvider({ children }) {
 
   const openSocialModal = useCallback(() => setIsSocialOpen(true), [])
   const closeSocialModal = useCallback(() => setIsSocialOpen(false), [])
+
+  const openUserProfile = useCallback((usernameOrUser = null) => {
+    setViewingUser(usernameOrUser)
+    setIsUserProfileOpen(true)
+  }, [])
+
+  const closeUserProfile = useCallback(() => {
+    setIsUserProfileOpen(false)
+    setViewingUser(null)
+  }, [])
+
+  const openFollowers = useCallback((userId) => {
+    setFollowersTargetUserId(userId)
+    setIsFollowersOpen(true)
+  }, [])
+
+  const closeFollowers = useCallback(() => {
+    setIsFollowersOpen(false)
+    setFollowersTargetUserId(null)
+  }, [])
+
+  const openFollowing = useCallback((userId) => {
+    setFollowingTargetUserId(userId)
+    setIsFollowingOpen(true)
+  }, [])
+
+  const closeFollowing = useCallback(() => {
+    setIsFollowingOpen(false)
+    setFollowingTargetUserId(null)
+  }, [])
+
+  const openFollowRequests = useCallback(() => {
+    setIsFollowRequestsOpen(true)
+  }, [])
+
+  const closeFollowRequests = useCallback(() => {
+    setIsFollowRequestsOpen(false)
+  }, [])
+
+  const openUserSearch = useCallback(() => {
+    setIsUserSearchOpen(true)
+  }, [])
+
+  const closeUserSearch = useCallback(() => {
+    setIsUserSearchOpen(false)
+  }, [])
+
+  const openPrivacyModal = useCallback(() => {
+    setIsPrivacyModalOpen(true)
+  }, [])
+
+  const closePrivacyModal = useCallback(() => {
+    setIsPrivacyModalOpen(false)
+  }, [])
 
   const openChatWithFriend = useCallback((friend) => {
     setActiveChatFriend(friend)
@@ -118,16 +184,16 @@ export function AuthProvider({ children }) {
       setIsCheckingProfile(true)
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, created_at, updated_at')
+        .select('id, username, avatar_url, bio, featured_pokemon, profile_visibility, favorites_visibility, follow_list_visibility, created_at, updated_at')
         .eq('id', userId)
         .maybeSingle()
 
       if (error) {
-        // Si la columna avatar_url aún no existe en Supabase (código 42703), reintentar sin avatar_url
-        if (error.code === '42703' || error.message?.includes('avatar_url')) {
+        // Fallback si las nuevas columnas aún no existen en Supabase
+        if (error.code === '42703' || error.message?.includes('column') || error.message?.includes('avatar_url')) {
           const fallback = await supabase
             .from('profiles')
-            .select('id, username, created_at, updated_at')
+            .select('id, username, avatar_url, created_at, updated_at')
             .eq('id', userId)
             .maybeSingle()
 
@@ -734,6 +800,99 @@ export function AuthProvider({ children }) {
     }
   }, [user])
 
+  // Actualizar biografía y Pokémon destacado
+  const updateBioAndFeaturedPokemon = useCallback(async (bio, featuredPokemon) => {
+    if (!user || !supabase) return { success: false, error: 'No hay usuario autenticado.' }
+
+    try {
+      const updates = {
+        bio: typeof bio === 'string' ? bio.slice(0, 250).trim() : '',
+        featured_pokemon: typeof featuredPokemon === 'string' ? featuredPokemon.trim().toLowerCase() : 'charizard',
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      setProfile(data)
+      return { success: true, profile: data }
+    } catch (err) {
+      console.error('[PokeGuide Auth] Error al actualizar biografía/pokemon destacado:', err)
+      return { success: false, error: 'Error inesperado al actualizar perfil.' }
+    }
+  }, [user])
+
+  // Actualizar configuraciones de privacidad
+  const updateProfilePrivacy = useCallback(async (settings) => {
+    if (!user || !supabase) return { success: false, error: 'No hay usuario autenticado.' }
+
+    try {
+      const updates = {}
+      if (settings.profile_visibility) updates.profile_visibility = settings.profile_visibility
+      if (settings.favorites_visibility) updates.favorites_visibility = settings.favorites_visibility
+      if (settings.follow_list_visibility) updates.follow_list_visibility = settings.follow_list_visibility
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      setProfile(data)
+      return { success: true, profile: data }
+    } catch (err) {
+      console.error('[PokeGuide Auth] Error al actualizar privacidad:', err)
+      return { success: false, error: 'Error inesperado al guardar privacidad.' }
+    }
+  }, [user])
+
+  // Escuchar en tiempo real solicitudes de seguimiento entrantes
+  useEffect(() => {
+    if (!user?.id || !supabase) return undefined
+
+    async function refreshPendingCount() {
+      try {
+        const { count, error } = await supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', user.id)
+          .eq('status', 'pending')
+        if (!error && typeof count === 'number') {
+          setPendingRequestsCount(count)
+        }
+      } catch {
+        // Silencioso
+      }
+    }
+
+    refreshPendingCount()
+
+    const channel = supabase
+      .channel(`social-follows-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'follows' },
+        refreshPendingCount
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
   const isAuthenticated = Boolean(user)
   const isProfileComplete = Boolean(user && profile?.username)
 
@@ -763,6 +922,31 @@ export function AuthProvider({ children }) {
       isSocialOpen,
       openSocialModal,
       closeSocialModal,
+      viewingUser,
+      isUserProfileOpen,
+      openUserProfile,
+      closeUserProfile,
+      isFollowersOpen,
+      followersTargetUserId,
+      openFollowers,
+      closeFollowers,
+      isFollowingOpen,
+      followingTargetUserId,
+      openFollowing,
+      closeFollowing,
+      isFollowRequestsOpen,
+      openFollowRequests,
+      closeFollowRequests,
+      isUserSearchOpen,
+      openUserSearch,
+      closeUserSearch,
+      isPrivacyModalOpen,
+      openPrivacyModal,
+      closePrivacyModal,
+      pendingRequestsCount,
+      setPendingRequestsCount,
+      updateBioAndFeaturedPokemon,
+      updateProfilePrivacy,
       isChatOpen,
       isChatMinimized,
       activeChatFriend,
@@ -812,6 +996,30 @@ export function AuthProvider({ children }) {
       isSocialOpen,
       openSocialModal,
       closeSocialModal,
+      viewingUser,
+      isUserProfileOpen,
+      openUserProfile,
+      closeUserProfile,
+      isFollowersOpen,
+      followersTargetUserId,
+      openFollowers,
+      closeFollowers,
+      isFollowingOpen,
+      followingTargetUserId,
+      openFollowing,
+      closeFollowing,
+      isFollowRequestsOpen,
+      openFollowRequests,
+      closeFollowRequests,
+      isUserSearchOpen,
+      openUserSearch,
+      closeUserSearch,
+      isPrivacyModalOpen,
+      openPrivacyModal,
+      closePrivacyModal,
+      pendingRequestsCount,
+      updateBioAndFeaturedPokemon,
+      updateProfilePrivacy,
       isChatOpen,
       isChatMinimized,
       activeChatFriend,
