@@ -21,10 +21,10 @@ const QUICK_CATEGORY_MAP = {
   balls: ['balls', 'standard-balls', 'special-balls', 'apricorn-balls'],
   healing: ['healing', 'status-cures', 'revival', 'pp-recovery', 'medicine'],
   battle: ['battle', 'held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items', 'species-specific'],
-  evolution: ['evolution', 'mega-stones', 'tera-shard', 'dynamax-crystals', 'z-crystals'],
+  evolution: ['evolution', 'mega-stones', 'tera-shard', 'z-crystals'],
   berries: ['berries', 'picky-healing', 'in-a-pinch', 'type-protection', 'baking-only', 'effort-drop'],
   vitamins: ['vitamins', 'nature-mints', 'effort-training', 'training'],
-  key: ['key', 'gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles'],
+  key: ['key', 'plot-advancement', 'event-items', 'gameplay', 'dex-completion', 'collectibles'],
 }
 
 function getActivePillId(category) {
@@ -212,9 +212,10 @@ function Items({ onItemClick, onBack, t, locale, onLocaleChange }) {
 
   const activePillId = useMemo(() => getActivePillId(selectedCategory), [selectedCategory])
 
-  // Lista de todas las categorías disponibles traducidas
+  // Lista de todas las categorías disponibles traducidas (excluyendo obsoletas / stubs)
   const allCategoryOptions = useMemo(() => {
     return Object.entries(itemCategoriesEs)
+      .filter(([slug]) => slug !== 'dynamax-crystals')
       .map(([slug, esName]) => ({
         slug,
         name: locale.startsWith('es')

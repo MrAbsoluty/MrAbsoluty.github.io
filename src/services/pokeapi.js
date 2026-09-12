@@ -53,12 +53,12 @@ function normalizeItemQuery(query) {
   return query.trim().toLowerCase().replace(/[\s_-]+/g, '-').replace(/^-|-$/g, '')
 }
 
-function getErrorMessage(code, query, messages) {
-  if (code === 'empty') return messages.empty
-  if (code === 'network') return messages.network
-  if (code === 'not-found') return messages.notFound.replace('{query}', query.trim())
-  if (code === 'invalid') return messages.invalid
-  return messages.api
+function getErrorMessage(code, query, messages = {}) {
+  if (code === 'empty') return messages?.empty || 'Ingresa un término de búsqueda.'
+  if (code === 'network') return messages?.network || 'Error de conexión con el servidor.'
+  if (code === 'not-found') return messages?.notFound?.replace('{query}', (query || '').trim()) || `No se encontró el objeto "${query}".`
+  if (code === 'invalid') return messages?.invalid || 'Respuesta no válida del servidor.'
+  return messages?.api || 'Ocurrió un error al consultar la PokéAPI.'
 }
 
 function getLocalizedName(names, locale, fallback) {
@@ -1285,25 +1285,113 @@ const RETRO_PGL_ITEMS = new Set([
   'growth-mulch', 'damp-mulch', 'stable-mulch', 'gooey-mulch',
 ])
 
-function getCleanSerebiiSlug(name) {
+export const SEREBII_SLUG_OVERRIDES = {
+  'heavy-duty-boots': 'heavy-dutyboots',
+  'exp-share': 'exp.share',
+  'never-melt-ice': 'never-meltice',
+  'x-sp-atk': 'xsp.atk',
+  'x-sp-def': 'xsp.def',
+  'kings-rock': "king'srock",
+  'up-grade': 'upgrade',
+  'miraidons-poke-ball': "miraidon'spokeball",
+  'koraidons-poke-ball': "koraidon'spokeball",
+  'kofus-wallet': "kofu'swallet",
+  'fresh-start-mochi': 'fresh-startmochi',
+  'jangmo-o-scales': 'jangmo-oscales',
+  'bobs-food-tin': "bob'sfoodtin",
+  'bachs-food-tin': "bach'sfoodtin",
+  'sonias-book': "sonia'sbook",
+  'hi-tech-earbuds': 'hi-techearbuds',
+  'roto-stick': 'roto-stick',
+  'pika-pika-pick': 'pika-pikapick',
+  'vee-vee-pick': 'vee-veepick',
+  'blue-flag-pick': 'blue-flagpick',
+  'red-flag-pick': 'red-flagpick',
+  'polka-dot-cup': 'polka-dotcup',
+  'polka-dot-bottle': 'polka-dotbottle',
+  'polka-dot-tablecloth': 'polka-dottablecloth',
+  'steel-bottle-r': 'steelbottle(r)',
+  'steel-bottle-b': 'steelbottle(b)',
+  'steel-bottle-y': 'steelbottle(y)',
+  'plaid-tablecloth-y': 'plaidtablecloth(y)',
+  'plaid-tablecloth-b': 'plaidtablecloth(b)',
+  'plaid-tablecloth-r': 'plaidtablecloth(r)',
+  'bw-grass-tablecloth': 'b&wgrasstablecloth',
+  'blue-sky-flower-pick': 'blue-skyflowerpick',
+  'smoke-poke-tail': 'smoke-poketail',
+  'legendary-clue-question': 'legendaryclue',
+  'farfetchd-candy': "farfetch'dcandy",
+  'mr-mime-candy': 'mr.mimecandy',
+  // Poké Balls de Hisui
+  'origin-ball': 'originball',
+  'feather-ball': 'featherball',
+  'wing-ball': 'wingball',
+  'jet-ball': 'jetball',
+  'leaden-ball': 'leadenball',
+  'gigaton-ball': 'gigatonball',
+}
+
+export function getCleanSerebiiSlug(name) {
   if (!name) return ''
-  if (name === 'x-sp-atk') return 'xsp.atk'
-  if (name === 'x-sp-def') return 'xsp.def'
-  return name.replace(/[^a-z0-9]/g, '')
+
+  // 1. Quitar sufijo de variante interna de PokeAPI (--held, --split, --merge, --letsgo, etc.)
+  const baseName = name.split('--')[0]
+
+  // 2. Revisar diccionario de mapeos específicos
+  if (SEREBII_SLUG_OVERRIDES[baseName]) return SEREBII_SLUG_OVERRIDES[baseName]
+  if (SEREBII_SLUG_OVERRIDES[name]) return SEREBII_SLUG_OVERRIDES[name]
+
+  // 3. Normalizar Caramelos Exp (exp-candy-s -> exp.candys)
+  if (baseName.startsWith('exp-candy-')) {
+    return 'exp.candy' + baseName.replace('exp-candy-', '')
+  }
+
+  // 4. Limpieza por defecto
+  return baseName.replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Inspecciona y valida la resolución nativa de un sprite en tiempo de desarrollo.
+ */
+export function validateItemSpriteResolution(item, imgElement) {
+  if (typeof window !== 'undefined' && import.meta.env?.DEV && imgElement) {
+    const { naturalWidth, naturalHeight, src } = imgElement
+    if (naturalWidth > 0 && naturalWidth < 80 && !src.startsWith('data:image/svg')) {
+      console.warn(`[ItemSprite] Low resolution sprite detected for ${item?.name || 'item'}: ${naturalWidth}x${naturalHeight} (${src})`)
+    }
+  }
+}
+
+// Registro de sprites cargados en desarrollo para detectar duplicaciones anómalas
+const loadedSpritesRegistry = new Map()
+
+export function trackLoadedSprite(item, src) {
+  if (typeof window !== 'undefined' && import.meta.env?.DEV && src) {
+    if (src.startsWith('data:image/svg')) {
+      return
+    }
+    const name = item?.name || 'unknown'
+    if (!loadedSpritesRegistry.has(src)) {
+      loadedSpritesRegistry.set(src, new Set())
+    }
+    const set = loadedSpritesRegistry.get(src)
+    set.add(name)
+    if (set.size > 5 && set.size % 5 === 0) {
+      console.warn(`[ItemSprite] Duplicación inusual detectada (${set.size} objetos apuntan a la misma URL ${src}):`, Array.from(set).join(', '))
+    }
+  }
 }
 
 /**
  * Construye y centraliza las URLs de los sprites de un objeto
  * siguiendo el sistema de prioridades y fallback.
  *
- * 1. Fuente HD: Serebii SV (160x160 px render oficial de 9ª Gen).
- *    Para ultra-ball y great-ball, esto garantiza ultraball.png y greatball.png
- *    de forma unívoca, resolviendo cualquier repetición.
- * 2. Fuente alternativa PGL: Pokémon Global Link (160x160 px oficial).
- *    Para objetos clásicos (lava-cookie, berry-juice, sacred-ash) se usa PGL como primaria
- *    para que nunca queden pixelados.
- * 3. Dream World: arte vectorial oficial de PokeAPI.
- * 4. Placeholder: SVG estilizado de PokéGuide.
+ * 1. Render HD Local Dedicado (/public/items/)
+ * 2. Serebii SV (160x160 px render oficial de 9ª Gen).
+ * 3. Serebii PGL (160x160 px / 80x80 px render oficial HD de Gen 5-7).
+ * 4. Serebii Base (sprite canónico específico del objeto para cartas, abonos, MTs).
+ * 5. PokéAPI Sprites (sprite oficial de respaldo).
+ * 6. Placeholder Oficial estilizado de PokeGuide (SVG, ÚLTIMO RECURSO).
  */
 export const KNOWN_STUB_ITEMS = new Set([
   'clefablite', 'victreebelite', 'starminite', 'dragoninite', 'meganiumite',
@@ -1315,6 +1403,69 @@ export const KNOWN_STUB_ITEMS = new Set([
   'raichunite-y', 'chimechite', 'absolite-z', 'staraptite', 'garchompite-z',
   'lucarionite-z', 'golurkite', 'meowsticite', 'crabominite', 'golisopite',
   'magearnite', 'scovillainite', 'baxcalibrite', 'tatsugirinite', 'glimmoranite',
+  // Contenedores/Bolsillos internos de UI de Let's Go (sin sprite físico de inventario)
+  'candy-jar', 'pokemon-box', 'medicine-pocket', 'power-up-pocket',
+  'clothing-trunk', 'catching-pocket', 'battle-pocket',
+])
+
+export function isExcludedItem(name) {
+  if (!name) return true
+  if (KNOWN_STUB_ITEMS.has(name)) return true
+  if (name.startsWith('dynamax-crystal')) return true
+  return false
+}
+
+export const CUSTOM_ITEM_SPRITES = {
+  'linking-cord': {
+    primary: '/items/linking-cord.png',
+    fallback: '/items/linking-cord.png',
+    defaultImage: ITEM_PLACEHOLDER_SVG,
+    quaternary: ITEM_PLACEHOLDER_SVG,
+  },
+  'black-augurite': {
+    primary: '/items/black-augurite.png',
+    fallback: 'https://www.serebii.net/itemdex/sprites/sv/blackaugurite.png',
+    defaultImage: ITEM_PLACEHOLDER_SVG,
+    quaternary: ITEM_PLACEHOLDER_SVG,
+  },
+  'peat-block': {
+    primary: '/items/peat-block.png',
+    fallback: 'https://www.serebii.net/itemdex/sprites/sv/peatblock.png',
+    defaultImage: ITEM_PLACEHOLDER_SVG,
+    quaternary: ITEM_PLACEHOLDER_SVG,
+  },
+  'leader-crest': {
+    primary: '/items/leaders-crest.png',
+    fallback: '/items/leaders-crest.png',
+    defaultImage: ITEM_PLACEHOLDER_SVG,
+    quaternary: ITEM_PLACEHOLDER_SVG,
+  },
+  'leaders-crest': {
+    primary: '/items/leaders-crest.png',
+    fallback: '/items/leaders-crest.png',
+    defaultImage: ITEM_PLACEHOLDER_SVG,
+    quaternary: ITEM_PLACEHOLDER_SVG,
+  },
+  'town-map': {
+    primary: '/items/town-map.png',
+    fallback: '/items/town-map.png',
+    defaultImage: ITEM_PLACEHOLDER_SVG,
+    quaternary: ITEM_PLACEHOLDER_SVG,
+  },
+}
+
+export const HISUI_ITEMS = new Set([
+  'linking-cord', 'black-augurite', 'peat-block',
+  'aux-power', 'aux-guard', 'aux-evasion', 'aux-powerguard',
+  'choice-dumpling', 'twice-spice', 'swap-snack',
+  'stealth-spray', 'scatter-bang', 'smoke-bomb', 'sticky-ball',
+  'jubilife-muffin', 'remedy', 'fine-remedy', 'superb-remedy',
+  'snowball', 'dazzling-honey', 'hearty-grains', 'plump-beans',
+  'springy-mushroom', 'crunchy-salt', 'wood', 'iron-chunk',
+  'origin-ball', 'feather-ball', 'wing-ball', 'jet-ball',
+  'leaden-ball', 'gigaton-ball', 'legend-plate',
+  'tumble-stone', 'black-tumblestone', 'sky-tumblestone',
+  'bean-cake', 'grain-cake', 'honey-cake', 'mushroom-cake', 'salt-cake',
 ])
 
 export function getItemSprite(itemData) {
@@ -1323,36 +1474,55 @@ export function getItemSprite(itemData) {
       primary: ITEM_PLACEHOLDER_SVG,
       fallback: ITEM_PLACEHOLDER_SVG,
       defaultImage: ITEM_PLACEHOLDER_SVG,
+      quaternary: ITEM_PLACEHOLDER_SVG,
       placeholder: ITEM_PLACEHOLDER_SVG,
     }
   }
 
   const name = itemData.name || ''
+
+  // 1. Objetos con render local HD dedicado en /public/items/
+  if (CUSTOM_ITEM_SPRITES[name]) {
+    return {
+      ...CUSTOM_ITEM_SPRITES[name],
+      placeholder: ITEM_PLACEHOLDER_SVG,
+    }
+  }
+
   const serebiiSlug = getCleanSerebiiSlug(name)
   const isRetro = RETRO_PGL_ITEMS.has(name)
   const isMegaStone = name.endsWith('ite') || name.endsWith('ite-x') || name.endsWith('ite-y') || name === 'red-orb' || name === 'blue-orb'
   const pokeApiSprite = itemData.sprites?.default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${name}.png`
+  const baseSerebiiSprite = `https://www.serebii.net/itemdex/sprites/${serebiiSlug}.png`
 
   let primary
   let fallback
   let defaultImage
+  let quaternary
 
   if (isMegaStone || isRetro) {
-    // Para megapiedras y objetos retro, Pokémon Global Link (PGL) tiene renders oficiales HD 160x160 px
+    // Para megapiedras y objetos retro, Pokémon Global Link (PGL) tiene renders oficiales HD
     primary = `https://www.serebii.net/itemdex/sprites/pgl/${serebiiSlug}.png`
-    fallback = pokeApiSprite
-    defaultImage = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dream-world/${name}.png`
+    fallback = `https://www.serebii.net/itemdex/sprites/sv/${serebiiSlug}.png`
+    defaultImage = baseSerebiiSprite
+    quaternary = pokeApiSprite
   } else {
-    // Para objetos modernos, Serebii SV (160x160 px render 9ª Gen) como primario
+    // Para objetos generales:
+    // 1. Serebii SV (160x160 px render 9ª Gen moderno HD)
+    // 2. Serebii PGL (160x160 px / 80x80 px render oficial Global Link HD de Gen 5-7)
+    // 3. Serebii Base (sprite canónico específico del objeto)
+    // 4. PokéAPI Sprites (sprite oficial de respaldo)
     primary = `https://www.serebii.net/itemdex/sprites/sv/${serebiiSlug}.png`
     fallback = `https://www.serebii.net/itemdex/sprites/pgl/${serebiiSlug}.png`
-    defaultImage = pokeApiSprite
+    defaultImage = baseSerebiiSprite
+    quaternary = pokeApiSprite
   }
 
   return {
     primary,
     fallback,
     defaultImage,
+    quaternary,
     placeholder: ITEM_PLACEHOLDER_SVG,
   }
 }
@@ -1620,6 +1790,7 @@ export async function getItem(query, locale = 'en', messages = {}) {
     image: sprites.primary,
     fallbackImage: sprites.fallback,
     defaultImage: sprites.defaultImage,
+    quaternaryImage: sprites.quaternary,
     placeholderImage: sprites.placeholder,
 
     category,
@@ -1640,15 +1811,18 @@ export const QUICK_ITEM_CATEGORIES = {
   balls: ['standard-balls', 'special-balls', 'apricorn-balls'],
   healing: ['healing', 'status-cures', 'revival', 'pp-recovery', 'medicine'],
   battle: ['held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items'],
-  evolution: ['evolution', 'mega-stones', 'tera-shard', 'dynamax-crystals'],
+  evolution: ['evolution', 'mega-stones', 'tera-shard'],
   berries: ['picky-healing', 'in-a-pinch', 'type-protection', 'baking-only', 'effort-drop'],
   vitamins: ['vitamins', 'nature-mints', 'effort-training', 'training'],
-  key: ['gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles'],
+  key: ['plot-advancement', 'event-items', 'gameplay', 'dex-completion', 'collectibles'],
 }
 
 const categoryItemNamesCache = new Map()
 
 export async function getItemNamesForCategory(categorySlug) {
+  if (categorySlug === 'dynamax-crystals') {
+    return []
+  }
   if (categoryItemNamesCache.has(categorySlug)) {
     return categoryItemNamesCache.get(categorySlug)
   }
@@ -1662,7 +1836,7 @@ export async function getItemNamesForCategory(categorySlug) {
     const data = await res.json()
     const names = (data.items || [])
       .map((item) => item.name)
-      .filter((name) => !KNOWN_STUB_ITEMS.has(name))
+      .filter((name) => !isExcludedItem(name))
     categoryItemNamesCache.set(categorySlug, names)
     return names
   } catch {
@@ -1734,6 +1908,16 @@ const COMMON_ITEM_SLUGS_ES = {
   'restaura todo': 'full-restore',
   'revivir': 'revive',
   'revivir maximo': 'max-revive',
+  'cordon union': 'linking-cord',
+  'cordon': 'linking-cord',
+  'mineral negro': 'black-augurite',
+  'augurita': 'black-augurite',
+  'augurita negra': 'black-augurite',
+  'bloque de turba': 'peat-block',
+  'bloque turba': 'peat-block',
+  'turba': 'peat-block',
+  'distintivo de lider': 'leader-crest',
+  'distintivo lider': 'leader-crest',
 }
 
 export async function searchItemDirect(query, locale = 'en', messages = {}) {
@@ -1761,7 +1945,7 @@ export async function getAllItemSlugs() {
     const data = await res.json()
     allItemsCache = (data.results || [])
       .map((r) => r.name)
-      .filter((name) => !KNOWN_STUB_ITEMS.has(name))
+      .filter((name) => !isExcludedItem(name))
     return allItemsCache
   } catch {
     return []
@@ -1991,8 +2175,9 @@ export async function getItems({
     )
   }
 
+  const validResults = (data.results || []).filter(({ name }) => !isExcludedItem(name))
   const itemsResults = await Promise.allSettled(
-    data.results.map(({ name }) =>
+    validResults.map(({ name }) =>
       getItem(name, locale, messages),
     ),
   )

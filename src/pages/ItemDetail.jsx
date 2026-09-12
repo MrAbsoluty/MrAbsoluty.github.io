@@ -1,6 +1,7 @@
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
 import { playButtonSound } from '../utils/audio'
+import { validateItemSpriteResolution, trackLoadedSprite } from '../services/pokeapi'
 
 function ItemDetail({ item, error, isLoading, onBack, t, locale, onLocaleChange }) {
   function handleBackClick() {
@@ -8,23 +9,41 @@ function ItemDetail({ item, error, isLoading, onBack, t, locale, onLocaleChange 
     onBack?.()
   }
 
+  function handleImageLoad(event) {
+    const img = event.currentTarget
+    validateItemSpriteResolution(item, img)
+    trackLoadedSprite(item, img.currentSrc || img.src)
+  }
+
   function handleImageError(event) {
     const img = event.currentTarget
     const step = Number(img.dataset.fallbackStep || '0')
 
+    // Paso 1: Intentar Fallback HD (PGL / SV)
     if (step === 0 && item?.fallbackImage && img.src !== item.fallbackImage) {
       img.dataset.fallbackStep = '1'
       img.src = item.fallbackImage
       return
     }
+    // Paso 2: Intentar Fuente Canónica Específica (Serebii Base)
     if (step <= 1 && item?.defaultImage && img.src !== item.defaultImage) {
       img.dataset.fallbackStep = '2'
       img.src = item.defaultImage
       return
     }
-    if (step <= 2 && item?.placeholderImage) {
+    // Paso 3: Intentar PokéAPI Raw Sprite de Respaldo
+    if (step <= 2 && item?.quaternaryImage && img.src !== item.quaternaryImage) {
       img.dataset.fallbackStep = '3'
+      img.src = item.quaternaryImage
+      return
+    }
+    // Paso 4: ÚLTIMO RECURSO ABSOLUTO: Placeholder SVG
+    if (step <= 3 && item?.placeholderImage && img.src !== item.placeholderImage) {
+      img.dataset.fallbackStep = '4'
       img.src = item.placeholderImage
+      if (import.meta.env?.DEV) {
+        console.warn(`[ItemSprite] FALLBACK: ${item?.name} (ID: ${item?.id || 'unknown'}, sources tried: [${[item?.image, item?.fallbackImage, item?.defaultImage, item?.quaternaryImage].filter(Boolean).join(', ')}])`)
+      }
     }
   }
 
@@ -88,6 +107,7 @@ function ItemDetail({ item, error, isLoading, onBack, t, locale, onLocaleChange 
                 src={item.image}
                 alt={item.localizedName || item.name}
                 className="item-showcase-sprite"
+                onLoad={handleImageLoad}
                 onError={handleImageError}
               />
             </div>

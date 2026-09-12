@@ -314,12 +314,14 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
 }
 
 .item-card-image img {
-  height: 112px;
+  max-height: 112px;
+  max-width: 112px;
+  width: auto;
+  height: auto;
   image-rendering: auto;
   object-fit: contain;
   filter: drop-shadow(0 6px 12px rgba(23, 39, 51, 0.12));
   transition: transform 0.25s ease, filter 0.25s ease;
-  width: 112px;
 }
 
 .item-card:hover .item-card-image img {
@@ -436,8 +438,10 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
     height: 125px;
   }
   .item-card-image img {
-    height: 85px;
-    width: 85px;
+    max-height: 85px;
+    max-width: 85px;
+    width: auto;
+    height: auto;
   }
   .item-card-name h3 {
     font-size: 15px;
