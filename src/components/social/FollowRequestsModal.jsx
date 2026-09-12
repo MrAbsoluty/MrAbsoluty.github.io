@@ -108,7 +108,7 @@ export default function FollowRequestsModal({ t }) {
       <div className="social-list-modal-card" ref={modalRef}>
         <div className="social-list-header">
           <div>
-            <span className="social-kicker">NOTIFICACIONES</span>
+            <span className="social-kicker">{t?.social?.notifications || 'NOTIFICACIONES'}</span>
             <h3 id="follow-requests-title" className="social-list-title">
               {title}
             </h3>
@@ -127,7 +127,7 @@ export default function FollowRequestsModal({ t }) {
           {isLoading ? (
             <div className="social-loading-state">
               <span className="auth-spinner" aria-hidden="true" />
-              <span>Cargando solicitudes...</span>
+              <span>{t?.social?.loadingRequests || 'Cargando solicitudes...'}</span>
             </div>
           ) : requests.length === 0 ? (
             <div className="social-empty-state">

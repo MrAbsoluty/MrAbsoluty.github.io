@@ -93,7 +93,7 @@ export default function UserSearchModal({ t }) {
       <div className="social-list-modal-card user-search-modal-card" ref={modalRef}>
         <div className="social-list-header">
           <div>
-            <span className="social-kicker">COMUNIDAD</span>
+            <span className="social-kicker">{t?.social?.community || 'COMUNIDAD'}</span>
             <h3 id="user-search-title" className="social-list-title">
               {title}
             </h3>

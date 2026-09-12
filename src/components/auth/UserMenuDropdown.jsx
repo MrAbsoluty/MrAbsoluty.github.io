@@ -15,6 +15,7 @@ function UserMenuDropdown({
   locale,
   onLocaleChange,
   onFavoritesClick,
+  onProfileClick,
   unseenCount = 0,
   markFavoritesAsSeen,
   signOut,
@@ -73,8 +74,11 @@ function UserMenuDropdown({
   function handleProfileClick() {
     playClickUserSound()
     setIsOpen(false)
-    if (openUserProfile) {
-      openUserProfile()
+    const targetUsername = profile?.username || user?.user_metadata?.username
+    if (onProfileClick && targetUsername) {
+      onProfileClick(targetUsername)
+    } else if (openUserProfile) {
+      openUserProfile(targetUsername)
     }
   }
 

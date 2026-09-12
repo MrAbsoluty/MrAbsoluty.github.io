@@ -10,6 +10,7 @@ function Navbar({
   onPokedexClick,
   onHomeClick,
   onFavoritesClick,
+  onProfileClick,
   activeNav = 'home',
 }) {
   const { unseenCount, markFavoritesAsSeen } = useFavorites()
@@ -114,6 +115,7 @@ function Navbar({
                     locale={locale}
                     onLocaleChange={onLocaleChange}
                     onFavoritesClick={onFavoritesClick}
+                    onProfileClick={onProfileClick}
                     unseenCount={unseenCount}
                     markFavoritesAsSeen={markFavoritesAsSeen}
                     signOut={signOut}

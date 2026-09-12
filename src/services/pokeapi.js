@@ -16,6 +16,14 @@ import {
   canonicalItemCosts,
   getLocalizedCategoryName,
 } from '../locales/itemCatalogEs.js'
+import {
+  cleanPokemonSlug,
+  getPokemonDisplayName,
+  POKEMON_ID_TO_SLUG,
+  SPANISH_NAME_TO_CANONICAL,
+} from '../utils/pokemonNames.js'
+
+export { cleanPokemonSlug, getPokemonDisplayName }
 
 const API_URL = 'https://pokeapi.co/api/v2/pokemon/'
 const SPECIES_LIST_URL = 'https://pokeapi.co/api/v2/pokemon-species?limit=2000'
@@ -426,7 +434,11 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
     ? normalizedSearchQuery
     : null
 
-  let normalizedQuery = numericQuery || normalizePokemonQuery(query)
+  // Limpiar y resolver posibles nombres truncados (ej. 'roaring' -> 'roaring-moon', 'gouging' -> 'gouging-fire')
+  // o nombres en español (ej. 'bramaluna' -> 'roaring-moon', 'flamariete' -> 'gouging-fire')
+  const cleanedSlug = !numericQuery ? cleanPokemonSlug(query) : null
+
+  let normalizedQuery = numericQuery || cleanedSlug || normalizePokemonQuery(query)
 
   if (!normalizedSearchQuery) {
     throw new PokeApiError(
@@ -436,19 +448,23 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
   }
 
   if (!numericQuery) {
-    const index = await getPokemonIndex(locale)
+    if (cleanedSlug && cleanedSlug !== normalizePokemonQuery(query)) {
+      normalizedQuery = cleanedSlug
+    } else {
+      const index = await getPokemonIndex(locale)
 
-    const match = index.find(({ names, apiName }) =>
-      [apiName, names.en, names.es]
-        .filter(Boolean)
-        .some(
-          (name) =>
-            normalizeSearchText(name) === normalizedSearchQuery,
-        ),
-    )
+      const match = index.find(({ names, apiName }) =>
+        [apiName, names.en, names.es]
+          .filter(Boolean)
+          .some(
+            (name) =>
+              normalizeSearchText(name) === normalizedSearchQuery,
+          ),
+      )
 
-    if (match) {
-      normalizedQuery = match.id ? String(match.id) : match.apiName
+      if (match) {
+        normalizedQuery = match.id ? String(match.id) : match.apiName
+      }
     }
   }
 
@@ -540,6 +556,7 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
       const species = await speciesResponse.json()
 
       speciesName =
+        getPokemonDisplayName(data.id, locale) ||
         species.names.find(
           ({ language }) =>
             language.name === locale ||
@@ -552,9 +569,11 @@ export async function getPokemon(query, locale = 'en', messages = {}) {
         data.id,
         data.name,
       )
+    } else {
+      speciesName = getPokemonDisplayName(data.id, locale) || data.name
     }
   } catch {
-    speciesName = data.name
+    speciesName = getPokemonDisplayName(data.id, locale) || data.name
     pokedexDescription = null
   }
 
@@ -2643,6 +2662,7 @@ export async function getPokedexCard(id, locale = 'es') {
 
     const isSpanish = locale.startsWith('es')
     const localizedName =
+      getPokemonDisplayName(id, locale) ||
       speciesData?.names?.find(
         (n) =>
           n?.language?.name === locale ||

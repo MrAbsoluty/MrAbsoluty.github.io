@@ -11,7 +11,7 @@ import MusicPlayer from './components/MusicPlayer'
 import AuthModal from './components/auth/AuthModal'
 import UsernameSetupModal from './components/auth/UsernameSetupModal'
 import ProfileModal from './components/profile/ProfileModal'
-import UserProfileModal from './components/profile/UserProfileModal'
+import Profile from './pages/Profile'
 import SettingsModal from './components/profile/SettingsModal'
 import SocialModal from './components/social/SocialModal'
 import SocialToast from './components/social/SocialToast'
@@ -34,6 +34,7 @@ function getInitialLocale() {
 function App() {
   const { openUserProfile } = useAuth()
   const [view, setView] = useState('home')
+  const [profileUsername, setProfileUsername] = useState(null)
   const [pokemon, setPokemon] = useState(null)
   const [item, setItem] = useState(null)
   const [itemReturnView, setItemReturnView] = useState('home')
@@ -53,13 +54,13 @@ function App() {
       const result = await getPokemon(query, locale, t.errors)
       setPokemon(result)
       if (pushHistory) {
-        window.history.pushState({}, '', `#pokemon/${result.name}`)
+        window.history.pushState({}, '', `/#pokemon/${result.name}`)
       }
     } catch (searchError) {
       console.error('SEARCH ERROR IN APP:', searchError)
       setError(searchError)
       if (pushHistory) {
-        window.history.pushState({}, '', '#pokemon/not-found')
+        window.history.pushState({}, '', '/#pokemon/not-found')
       }
     } finally {
       setIsLoading(false)
@@ -76,12 +77,12 @@ function App() {
       const result = await getItem(name, locale, t.errors)
       setItem(result)
       if (pushHistory) {
-        window.history.pushState({}, '', `#item/${result.name}`)
+        window.history.pushState({}, '', `/#item/${result.name}`)
       }
     } catch (itemError) {
       setError(itemError)
       if (pushHistory) {
-        window.history.pushState({}, '', '#item/not-found')
+        window.history.pushState({}, '', '/#item/not-found')
       }
     } finally {
       setIsLoading(false)
@@ -98,7 +99,36 @@ function App() {
 
   useEffect(() => {
     function handlePopState() {
+      // 1. Verificar ruta en pathname: /profile/:username
+      const pathname = window.location.pathname
+      const profilePathMatch = pathname.match(/^\/profile\/([^/]+)/i)
+      if (profilePathMatch) {
+        const username = decodeURIComponent(profilePathMatch[1].trim())
+        if (username) {
+          setView('profile')
+          setProfileUsername(username)
+          setPokemon(null)
+          setItem(null)
+          setError(null)
+          return
+        }
+      }
+
+      // 2. Verificar ruta en hash: #profile/:username o #/profile/:username
       const hash = window.location.hash
+      const profileHashMatch = hash.match(/^#\/?profile\/([^/]+)/i)
+      if (profileHashMatch) {
+        const username = decodeURIComponent(profileHashMatch[1].trim())
+        if (username) {
+          setView('profile')
+          setProfileUsername(username)
+          setPokemon(null)
+          setItem(null)
+          setError(null)
+          return
+        }
+      }
+
       if (hash.startsWith('#pokemon/')) {
         const query = decodeURIComponent(hash.slice('#pokemon/'.length).trim())
         if (query && query !== 'not-found') {
@@ -110,13 +140,6 @@ function App() {
         const itemName = decodeURIComponent(hash.slice('#item/'.length).trim())
         if (itemName && itemName !== 'not-found') {
           loadItemByName(itemName, false)
-          return
-        }
-      }
-      if (hash.startsWith('#profile/')) {
-        const username = decodeURIComponent(hash.slice('#profile/'.length).trim())
-        if (username) {
-          openUserProfile(username)
           return
         }
       }
@@ -149,9 +172,19 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [locale])
 
+  function handleProfileOpen(username) {
+    if (!username) return
+    setView('profile')
+    setProfileUsername(username)
+    setPokemon(null)
+    setItem(null)
+    setError(null)
+    window.history.pushState({}, '', `/profile/${encodeURIComponent(username)}`)
+  }
+
   function handleItemsOpen() {
     setView('items')
-    window.history.pushState({}, '', '#items')
+    window.history.pushState({}, '', '/#items')
   }
 
   function handlePokedexOpen() {
@@ -159,7 +192,7 @@ function App() {
     setPokemon(null)
     setItem(null)
     setError(null)
-    window.history.pushState({}, '', '#pokedex')
+    window.history.pushState({}, '', '/#pokedex')
   }
 
   function handleFavoritesOpen() {
@@ -167,7 +200,7 @@ function App() {
     setPokemon(null)
     setItem(null)
     setError(null)
-    window.history.pushState({}, '', '#favorites')
+    window.history.pushState({}, '', '/#favorites')
   }
 
   function handleHome() {
@@ -175,7 +208,7 @@ function App() {
     setPokemon(null)
     setItem(null)
     setError(null)
-    window.history.pushState({}, '', '#top')
+    window.history.pushState({}, '', '/#top')
   }
 
   function handlePokemonFromPokedex(query) {
@@ -185,6 +218,11 @@ function App() {
 
   function handlePokemonFromFavorites(query) {
     setPokemonReturnView('favorites')
+    handleSearch(query)
+  }
+
+  function handlePokemonFromProfile(query) {
+    setPokemonReturnView('profile')
     handleSearch(query)
   }
 
@@ -223,32 +261,47 @@ function App() {
   }
 
   function handleBack() {
+    if (view === 'profile') {
+      handleHome()
+      return
+    }
     if (view === 'item-detail' && itemReturnView === 'items') {
       setView('items')
       setItem(null)
       setError(null)
-      window.history.pushState({}, '', '#items')
+      window.history.pushState({}, '', '/#items')
+      return
+    }
+    if (view === 'detail' && pokemonReturnView === 'profile') {
+      setView('profile')
+      setPokemon(null)
+      setError(null)
+      if (profileUsername) {
+        window.history.pushState({}, '', `/profile/${encodeURIComponent(profileUsername)}`)
+      } else {
+        window.history.pushState({}, '', '/#top')
+      }
       return
     }
     if (view === 'detail' && pokemonReturnView === 'pokedex') {
       setView('pokedex')
       setPokemon(null)
       setError(null)
-      window.history.pushState({}, '', '#pokedex')
+      window.history.pushState({}, '', '/#pokedex')
       return
     }
     if (view === 'detail' && pokemonReturnView === 'favorites') {
       setView('favorites')
       setPokemon(null)
       setError(null)
-      window.history.pushState({}, '', '#favorites')
+      window.history.pushState({}, '', '/#favorites')
       return
     }
     setView('home')
     setPokemon(null)
     setItem(null)
     setError(null)
-    window.history.pushState({}, '', '#top')
+    window.history.pushState({}, '', '/#top')
   }
 
   function handleItemFromItems(name) {
@@ -258,7 +311,21 @@ function App() {
 
   let currentView = null
 
-  if (view === 'pokedex') {
+  if (view === 'profile') {
+    currentView = (
+      <Profile
+        username={profileUsername}
+        onPokemonClick={handlePokemonFromProfile}
+        onBack={handleBack}
+        onHomeClick={handleHome}
+        onPokedexClick={handlePokedexOpen}
+        onFavoritesClick={handleFavoritesOpen}
+        t={t}
+        locale={locale}
+        onLocaleChange={handleLocaleChange}
+      />
+    )
+  } else if (view === 'pokedex') {
     currentView = (
       <Pokedex
         onPokemonClick={handlePokemonFromPokedex}
@@ -326,7 +393,6 @@ function App() {
       <AuthModal />
       <UsernameSetupModal />
       <ProfileModal />
-      <UserProfileModal onPokemonClick={handleSearch} t={t} />
       <SettingsModal locale={locale} onLocaleChange={handleLocaleChange} t={t} />
       <FollowersModal t={t} />
       <FollowingModal t={t} />

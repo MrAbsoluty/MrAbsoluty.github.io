@@ -1,4 +1,9 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import {
+  cleanPokemonSlug,
+  POKEMON_ID_TO_SLUG,
+  POKEMON_SLUG_TO_ID,
+} from '../utils/pokemonNames'
 
 const PROFILE_FIELDS = 'id, username, username_normalized, avatar_url, bio, featured_pokemon, profile_visibility, favorites_visibility, follow_list_visibility, created_at, updated_at'
 
@@ -597,11 +602,15 @@ export async function getUserFavorites(targetUserId) {
       return []
     }
 
-    return (data || []).map((fav) => ({
-      id: fav.pokemon_id,
-      name: fav.pokemon_name,
-      addedAt: fav.added_at,
-    }))
+    return (data || []).map((fav) => {
+      const repairedName = cleanPokemonSlug(fav.pokemon_name, fav.pokemon_id)
+      const repairedId = fav.pokemon_id || POKEMON_SLUG_TO_ID[repairedName] || null
+      return {
+        id: repairedId,
+        name: repairedName || fav.pokemon_name,
+        addedAt: fav.added_at,
+      }
+    })
   } catch (err) {
     console.error('[Social] Excepción en getUserFavorites:', err)
     return []
@@ -619,12 +628,16 @@ export async function syncFavoritesToSupabase(userId, favoritesList) {
   try {
     const rows = favoritesList
       .filter((f) => f && (f.id || f.name))
-      .map((f) => ({
-        user_id: userId,
-        pokemon_id: typeof f.id === 'number' ? f.id : null,
-        pokemon_name: (f.name || String(f.id)).toLowerCase(),
-        added_at: typeof f.addedAt === 'number' ? f.addedAt : Date.now(),
-      }))
+      .map((f) => {
+        const cleanedName = cleanPokemonSlug(f.name || '', f.id)
+        const pokemonId = typeof f.id === 'number' ? f.id : (POKEMON_SLUG_TO_ID[cleanedName] || null)
+        return {
+          user_id: userId,
+          pokemon_id: pokemonId,
+          pokemon_name: (cleanedName || String(pokemonId)).toLowerCase(),
+          added_at: typeof f.addedAt === 'number' ? f.addedAt : Date.now(),
+        }
+      })
 
     if (rows.length === 0) return
 
@@ -650,8 +663,8 @@ export async function addFavoriteToSupabase(userId, pokemon) {
   if (!sb) return
 
   try {
-    const name = (pokemon.name || String(pokemon.id)).toLowerCase()
-    const pokemonId = typeof pokemon.id === 'number' ? pokemon.id : null
+    const cleanedName = cleanPokemonSlug(pokemon.name || '', pokemon.id)
+    const pokemonId = typeof pokemon.id === 'number' ? pokemon.id : (POKEMON_SLUG_TO_ID[cleanedName] || null)
 
     await sb
       .from('user_favorites')
@@ -660,7 +673,7 @@ export async function addFavoriteToSupabase(userId, pokemon) {
           {
             user_id: userId,
             pokemon_id: pokemonId,
-            pokemon_name: name,
+            pokemon_name: (cleanedName || String(pokemonId)).toLowerCase(),
             added_at: Date.now(),
           },
         ],
@@ -680,14 +693,18 @@ export async function removeFavoriteFromSupabase(userId, pokemonOrName) {
   if (!sb) return
 
   try {
-    const name = (typeof pokemonOrName === 'string' ? pokemonOrName : pokemonOrName.name || '').toLowerCase()
-    if (!name) return
+    const rawName = (typeof pokemonOrName === 'string' ? pokemonOrName : pokemonOrName.name || '').toLowerCase()
+    const id = typeof pokemonOrName === 'object' ? pokemonOrName.id : null
+    const cleaned = cleanPokemonSlug(rawName, id)
+    const namesToDelete = Array.from(new Set([rawName, cleaned].filter(Boolean)))
 
-    await sb
-      .from('user_favorites')
-      .delete()
-      .eq('user_id', userId)
-      .eq('pokemon_name', name)
+    let query = sb.from('user_favorites').delete().eq('user_id', userId)
+    if (namesToDelete.length === 1) {
+      query = query.eq('pokemon_name', namesToDelete[0])
+    } else {
+      query = query.in('pokemon_name', namesToDelete)
+    }
+    await query
   } catch {
     // Silencioso
   }

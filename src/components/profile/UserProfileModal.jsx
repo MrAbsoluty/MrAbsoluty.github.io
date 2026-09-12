@@ -8,9 +8,13 @@ import {
   updateProfileDetails,
 } from '../../services/social'
 import FollowButton from '../social/FollowButton'
-import { playClickUserSound, playHoverBubbleSound } from '../../utils/audio'
+import { playHoverBubbleSound } from '../../utils/audio'
+import {
+  cleanPokemonSlug,
+  getPokemonDisplayName,
+} from '../../utils/pokemonNames'
 
-export default function UserProfileModal({ onPokemonClick, t }) {
+export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
   const {
     isUserProfileOpen,
     closeUserProfile,
@@ -182,18 +186,22 @@ export default function UserProfileModal({ onPokemonClick, t }) {
     })
   }
 
-  function handlePokemonCardClick(pokemonName) {
+  function handlePokemonCardClick(fav) {
     playHoverBubbleSound()
     closeUserProfile()
     if (onPokemonClick) {
-      onPokemonClick(pokemonName)
+      // Priorizar el ID numérico canónico si está presente para una búsqueda exacta en PokeAPI,
+      // o el slug canónico reparado sin truncar
+      const targetQuery = fav?.id ? String(fav.id) : cleanPokemonSlug(fav?.name || '')
+      onPokemonClick(targetQuery)
     }
   }
 
   const username = profileData?.username || currentAuthProfile?.username || 'Entrenador'
   const initial = username.charAt(0).toUpperCase()
-  const featuredPokemonName = (profileData?.featured_pokemon || 'charizard').toLowerCase()
-  const featuredSpriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${featuredPokemonName === 'charizard' ? '6' : featuredPokemonName}.png`
+  const featuredPokemonRaw = (profileData?.featured_pokemon || 'charizard').toLowerCase()
+  const featuredSlug = cleanPokemonSlug(featuredPokemonRaw)
+  const featuredDisplayName = getPokemonDisplayName(featuredSlug, locale)
 
   return (
     <div
@@ -254,13 +262,13 @@ export default function UserProfileModal({ onPokemonClick, t }) {
         {isLoading ? (
           <div className="profile-loading-box">
             <span className="auth-spinner" aria-hidden="true" />
-            <span>Cargando perfil...</span>
+            <span>{t?.social?.loadingProfile || 'Cargando perfil...'}</span>
           </div>
         ) : !profileData ? (
           <div className="profile-error-box">
             <span className="profile-error-icon">⚠️</span>
-            <h4>Entrenador no encontrado</h4>
-            <p>No existe ningún perfil público con ese nombre de usuario.</p>
+            <h4>{t?.social?.userNotFound || 'Entrenador no encontrado'}</h4>
+            <p>{t?.social?.userNotFoundDesc || 'No existe ningún perfil público con ese nombre de usuario.'}</p>
           </div>
         ) : (
           <div className="user-profile-scroll-content">
@@ -291,24 +299,24 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                 <form onSubmit={handleSaveEdit} className="user-profile-edit-form">
                   {editError && <div className="auth-alert alert-error">{editError}</div>}
                   <div className="auth-field">
-                    <label className="auth-label">Biografía</label>
+                    <label className="auth-label">{t?.social?.bio || 'Biografía'}</label>
                     <textarea
                       className="user-profile-bio-textarea"
                       value={editBio}
                       onChange={(e) => setEditBio(e.target.value)}
-                      placeholder="Escribe algo sobre ti..."
+                      placeholder={t?.social?.bioPlaceholder || 'Escribe algo sobre ti...'}
                       maxLength={250}
                       rows={3}
                     />
                   </div>
                   <div className="auth-field" style={{ marginTop: '10px' }}>
-                    <label className="auth-label">Pokémon principal</label>
+                    <label className="auth-label">{t?.social?.featuredPokemon || 'Pokémon principal'}</label>
                     <input
                       type="text"
                       className="auth-input"
                       value={editFeaturedPokemon}
                       onChange={(e) => setEditFeaturedPokemon(e.target.value)}
-                      placeholder="Ej: charizard, gengar, pikachu..."
+                      placeholder="Ej: charizard, gengar, pikachu, bramaluna..."
                       maxLength={30}
                     />
                   </div>
@@ -318,7 +326,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                       className="modal-btn-cancel"
                       onClick={() => setIsEditing(false)}
                     >
-                      Cancelar
+                      {t?.social?.cancel || 'Cancelar'}
                     </button>
                     <button
                       type="submit"
@@ -326,7 +334,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                       style={{ width: 'auto', padding: '8px 20px', margin: 0 }}
                       disabled={isSavingEdit}
                     >
-                      {isSavingEdit ? 'Guardando...' : 'Guardar'}
+                      {isSavingEdit ? (t?.social?.saving || 'Guardando...') : (t?.social?.save || 'Guardar')}
                     </button>
                   </div>
                 </form>
@@ -334,7 +342,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                 <>
                   <p className="user-profile-bio">
                     {profileData.bio ? `"${profileData.bio}"` : (
-                      <em className="user-profile-bio-empty">Sin biografía</em>
+                      <em className="user-profile-bio-empty">{t?.social?.noBio || 'Sin biografía'}</em>
                     )}
                   </p>
 
@@ -343,7 +351,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                     <span className="featured-badge-icon">🔥</span>
                     <div className="featured-badge-text">
                       <strong className="featured-badge-name">
-                        {featuredPokemonName.charAt(0).toUpperCase() + featuredPokemonName.slice(1)}
+                        {featuredDisplayName}
                       </strong>
                       <span className="featured-badge-label">
                         {t?.social?.featuredPokemon || 'Pokémon principal'}
@@ -365,7 +373,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                   type="button"
                   className="user-stat-card is-clickable"
                   onClick={() => openFollowing(profileData.id)}
-                  title="Ver siguiendo"
+                  title={t?.social?.viewFollowing || 'Ver siguiendo'}
                 >
                   <span className="stat-icon">👤</span>
                   <strong className="stat-number">{profileData.followingCount || 0}</strong>
@@ -376,7 +384,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                   type="button"
                   className="user-stat-card is-clickable"
                   onClick={() => openFollowers(profileData.id)}
-                  title="Ver seguidores"
+                  title={t?.social?.viewFollowers || 'Ver seguidores'}
                 >
                   <span className="stat-icon">👥</span>
                   <strong className="stat-number">{profileData.followersCount || 0}</strong>
@@ -405,7 +413,7 @@ export default function UserProfileModal({ onPokemonClick, t }) {
                         openProfileModal()
                       }}
                     >
-                      📷 Cambiar foto / username
+                      📷 {t?.social?.changePhotoOrUsername || 'Cambiar foto / username'}
                     </button>
                   </div>
                 ) : (
@@ -446,32 +454,38 @@ export default function UserProfileModal({ onPokemonClick, t }) {
               ) : (
                 <div className="user-profile-favorites-grid">
                   {favoritesList.map((fav) => {
-                    const pokeName = (fav.name || '').toLowerCase()
                     const pokeId = fav.id
+                    const pokeSlug = cleanPokemonSlug(fav.name || '', pokeId)
+                    const displayName = getPokemonDisplayName(pokeId || pokeSlug, locale)
                     // Sprites canónicos
                     const spriteUrl = pokeId
                       ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokeId}.png`
                       : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png`
 
+                    const cardTitle = (t?.social?.viewPokemonDetails || 'Ver detalles de {name}').replace(
+                      '{name}',
+                      displayName,
+                    )
+
                     return (
                       <div
-                        key={pokeName || pokeId}
+                        key={pokeId || pokeSlug}
                         className="profile-fav-card"
-                        onClick={() => handlePokemonCardClick(pokeName || String(pokeId))}
+                        onClick={() => handlePokemonCardClick(fav)}
                         role="button"
                         tabIndex={0}
-                        title={`Ver detalles de ${pokeName}`}
+                        title={cardTitle}
                       >
                         <div className="profile-fav-img-wrap">
                           <img
                             src={spriteUrl}
-                            alt={pokeName}
+                            alt={displayName}
                             className="profile-fav-img"
                             loading="lazy"
                           />
                         </div>
                         <strong className="profile-fav-name">
-                          {pokeName.charAt(0).toUpperCase() + pokeName.slice(1)}
+                          {displayName}
                         </strong>
                         {pokeId && (
                           <span className="profile-fav-id">

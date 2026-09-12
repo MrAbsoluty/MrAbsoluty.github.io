@@ -101,11 +101,13 @@ export default function FollowersModal({ t }) {
       <div className="social-list-modal-card" ref={modalRef}>
         <div className="social-list-header">
           <div>
-            <span className="social-kicker">COMUNIDAD</span>
+            <span className="social-kicker">{t?.social?.community || 'COMUNIDAD'}</span>
             <h3 id="followers-modal-title" className="social-list-title">
               {title}
               {targetProfile?.username && (
-                <span className="social-list-target"> de @{targetProfile.username}</span>
+                <span className="social-list-target">
+                  {' ' + (t?.social?.ofUser?.replace('{username}', targetProfile.username) || `de @${targetProfile.username}`)}
+                </span>
               )}
             </h3>
           </div>
@@ -123,7 +125,7 @@ export default function FollowersModal({ t }) {
           {isLoading ? (
             <div className="social-loading-state">
               <span className="auth-spinner" aria-hidden="true" />
-              <span>Cargando seguidores...</span>
+              <span>{t?.social?.loadingFollowers || 'Cargando seguidores...'}</span>
             </div>
           ) : isPrivacyRestricted ? (
             <div className="social-private-box">

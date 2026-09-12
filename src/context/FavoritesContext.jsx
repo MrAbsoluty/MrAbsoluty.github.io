@@ -6,57 +6,18 @@ import {
   syncFavoritesToSupabase,
   getUserFavorites,
 } from '../services/social'
+import {
+  cleanPokemonSlug,
+  POKEMON_ID_TO_SLUG,
+  POKEMON_SLUG_TO_ID,
+} from '../utils/pokemonNames'
 
 const FAVORITES_STORAGE_KEY = 'pokeguide-favorites'
 const LAST_VIEWED_KEY = 'pokeguide-favorites-last-viewed'
 
 export const FavoritesContext = createContext(null)
-
-/**
- * Normaliza cualquier objeto Pokémon o referencia (incluso Megaevoluciones,
- * Formas Regionales o Shiny) para identificar inequívocamente al Pokémon base.
- */
-export function normalizePokemonForFavorite(pokemon) {
-  if (!pokemon) return null
-
-  if (typeof pokemon === 'number') {
-    return { id: pokemon, name: String(pokemon) }
-  }
-
-  if (typeof pokemon === 'string') {
-    const parsed = parseInt(pokemon, 10)
-    if (!Number.isNaN(parsed) && parsed > 0) {
-      return { id: parsed, name: String(parsed) }
-    }
-    const cleanName = pokemon.toLowerCase().trim().split('-')[0]
-    return { id: null, name: cleanName }
-  }
-
-  let baseId = null
-
-  // 1. Extraer ID canónico desde la URL de especie si está presente
-  const speciesUrl = pokemon.speciesUrl || pokemon.species?.url
-  if (typeof speciesUrl === 'string') {
-    const match = speciesUrl.match(/\/pokemon-species\/(\d+)\/?/)
-    if (match) {
-      baseId = parseInt(match[1], 10)
-    }
-  }
-
-  // 2. Si no tiene speciesUrl pero tiene ID nacional estándar (1 a 1025)
-  if (!baseId && typeof pokemon.id === 'number' && pokemon.id > 0 && pokemon.id <= 1025) {
-    baseId = pokemon.id
-  }
-
-  // 3. Extraer nombre canónico base (eliminando sufijos como -alola, -galar, -hisui, -mega, -mega-x, etc.)
-  const rawName = (pokemon.species?.name || pokemon.apiName || pokemon.name || '').toLowerCase()
-  const baseName = rawName.split('-')[0] || rawName
-
-  return {
-    id: baseId || pokemon.id || null,
-    name: baseName || rawName,
-  }
-}
+export { normalizePokemonForFavorite } from '../utils/pokemonNames'
+import { normalizePokemonForFavorite } from '../utils/pokemonNames'
 
 function loadInitialFavorites() {
   if (typeof window === 'undefined' || !window.localStorage) return []
@@ -65,13 +26,31 @@ function loadInitialFavorites() {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) {
-      return parsed
+      let hasRepaired = false
+      const list = parsed
         .filter((item) => item && (typeof item.id === 'number' || typeof item.name === 'string'))
-        .map((item) => ({
-          id: item.id || null,
-          name: (item.name || '').toLowerCase(),
-          addedAt: typeof item.addedAt === 'number' ? item.addedAt : 0,
-        }))
+        .map((item) => {
+          const norm = normalizePokemonForFavorite(item)
+          const repairedName = norm?.name || (item.name || '').toLowerCase()
+          const repairedId = norm?.id || item.id || null
+          if (repairedName !== item.name || repairedId !== item.id) {
+            hasRepaired = true
+          }
+          return {
+            id: repairedId,
+            name: repairedName,
+            addedAt: typeof item.addedAt === 'number' ? item.addedAt : 0,
+          }
+        })
+
+      if (hasRepaired) {
+        try {
+          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(list))
+        } catch {
+          // Silencioso
+        }
+      }
+      return list
     }
     return []
   } catch (err) {
@@ -127,21 +106,33 @@ export function FavoritesProvider({ children }) {
         const remoteFavorites = await getUserFavorites(user.id)
         if (!isMounted) return
 
-        // Combinar favoritos remotos con locales existentes sin duplicados
+        // Combinar favoritos remotos con locales existentes sin duplicados y normalizados
         const local = loadInitialFavorites()
         const combinedMap = new Map()
 
-        // Primero agregar locales
+        // Primero agregar locales normalizados
         local.forEach((item) => {
-          const key = (item.name || String(item.id)).toLowerCase()
-          combinedMap.set(key, item)
+          const norm = normalizePokemonForFavorite(item)
+          if (!norm) return
+          const itemKey = (norm.id ? String(norm.id) : norm.name).toLowerCase()
+          combinedMap.set(itemKey, {
+            id: norm.id,
+            name: norm.name,
+            addedAt: typeof item.addedAt === 'number' ? item.addedAt : Date.now(),
+          })
         })
 
-        // Luego agregar o actualizar con remotos
+        // Luego agregar o actualizar con remotos normalizados
         remoteFavorites.forEach((item) => {
-          const key = (item.name || String(item.id)).toLowerCase()
-          if (!combinedMap.has(key)) {
-            combinedMap.set(key, item)
+          const norm = normalizePokemonForFavorite(item)
+          if (!norm) return
+          const itemKey = (norm.id ? String(norm.id) : norm.name).toLowerCase()
+          if (!combinedMap.has(itemKey)) {
+            combinedMap.set(itemKey, {
+              id: norm.id,
+              name: norm.name,
+              addedAt: typeof item.addedAt === 'number' ? item.addedAt : Date.now(),
+            })
           }
         })
 

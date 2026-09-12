@@ -86,7 +86,7 @@ export default function PrivacySettingsModal({ t }) {
       <div className="social-privacy-modal-card" ref={modalRef}>
         <div className="social-list-header">
           <div>
-            <span className="social-kicker">SEGURIDAD Y CONTROL</span>
+            <span className="social-kicker">{t?.social?.privacyKicker || 'SEGURIDAD Y CONTROL'}</span>
             <h3 id="privacy-modal-title" className="social-list-title">
               {t?.social?.privacySettings || 'Configuración de privacidad'}
             </h3>

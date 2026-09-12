@@ -657,3 +657,824 @@
   width: 16px;
   height: 16px;
 }
+
+/* ================================================================
+   PÁGINA INDEPENDIENTE DE PERFIL (/profile/:username)
+   Diseño estilo "Trainer Card" Moderna de PokéGuide
+   ================================================================ */
+
+.profile-page {
+  padding: 30px clamp(20px, 5vw, 80px) 100px;
+  min-height: calc(100vh - 84px - 100px);
+}
+
+.profile-back-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: 600 13px var(--display);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.profile-back-btn:hover {
+  color: var(--navy);
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateX(-3px);
+}
+
+/* --- TRAINER CARD HERO --- */
+.trainer-card {
+  background: #ffffff;
+  border: 1.5px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 16px 36px rgba(23, 39, 51, 0.07), 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow 0.3s ease;
+  margin-bottom: 40px;
+}
+
+.trainer-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--coral), #ff9068, #fd746c, var(--navy));
+}
+
+.trainer-card-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px 12px;
+  border-bottom: 1px solid rgba(223, 228, 223, 0.6);
+  background: #fafbf9;
+}
+
+.trainer-card-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trainer-pokeball-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--navy);
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.trainer-pokeball-mark::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: var(--coral);
+}
+
+.trainer-pokeball-mark::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1.5px);
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--navy);
+}
+
+.trainer-card-badge-text {
+  font: 700 11px var(--display);
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.trainer-card-meta-tags {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trainer-private-badge {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font: 600 11px var(--display);
+}
+
+.trainer-id-badge {
+  font: 700 11px monospace;
+  color: var(--muted);
+  background: #edf1ec;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+
+/* --- Layout Principal de la Trainer Card --- */
+.trainer-card-main-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 32px;
+  padding: 32px 36px 36px;
+  align-items: center;
+}
+
+/* Columna Avatar */
+.trainer-avatar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.trainer-avatar-halo-wrap {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(135deg, rgba(237, 109, 93, 0.4), rgba(23, 39, 51, 0.15));
+  box-shadow: 0 8px 24px rgba(23, 39, 51, 0.12);
+}
+
+.trainer-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--navy);
+  border: 3px solid #ffffff;
+}
+
+.trainer-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.trainer-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font: 700 48px var(--display);
+  background: var(--navy);
+}
+
+.trainer-online-pip {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+}
+
+.trainer-avatar-edit-chip {
+  background: #edf1ec;
+  border: 1px solid #d4ded7;
+  color: var(--navy);
+  font: 600 11.5px var(--display);
+  padding: 5px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trainer-avatar-edit-chip:hover {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Columna Central */
+.trainer-info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.trainer-identity-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trainer-name {
+  font: 700 clamp(24px, 3vw, 34px) var(--display);
+  color: var(--navy);
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  word-break: break-word;
+}
+
+.trainer-handle {
+  font: 600 14px var(--display);
+  color: var(--coral);
+  letter-spacing: -0.01em;
+}
+
+.trainer-bio-quote {
+  max-width: 580px;
+}
+
+.trainer-bio-text {
+  font: 400 14.5px/1.55 var(--sans);
+  color: #334155;
+  margin: 0;
+  font-style: italic;
+}
+
+.trainer-bio-empty {
+  font: 400 13.5px var(--sans);
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Pokémon Principal (Partner Pokémon) */
+.trainer-partner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #f7f9f7;
+  border: 1.5px solid var(--line);
+  padding: 8px 16px 8px 10px;
+  border-radius: 100px;
+  max-width: fit-content;
+  transition: all 0.2s ease;
+}
+
+.trainer-partner-pill.is-interactive {
+  cursor: pointer;
+}
+
+.trainer-partner-pill.is-interactive:hover {
+  background: #ffffff;
+  border-color: var(--coral);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(237, 109, 93, 0.18);
+}
+
+.trainer-partner-art-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.trainer-partner-art {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.trainer-partner-pill:hover .trainer-partner-art {
+  transform: scale(1.15);
+}
+
+.trainer-partner-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.trainer-partner-kicker {
+  font: 700 9.5px var(--display);
+  letter-spacing: 0.08em;
+  color: var(--coral);
+  text-transform: uppercase;
+}
+
+.trainer-partner-name {
+  font: 700 14px var(--display);
+  color: var(--navy);
+  letter-spacing: -0.01em;
+}
+
+.trainer-partner-arrow {
+  color: var(--muted);
+  font-size: 14px;
+  margin-left: 4px;
+  transition: transform 0.2s;
+}
+
+.trainer-partner-pill:hover .trainer-partner-arrow {
+  color: var(--coral);
+  transform: translate(2px, -2px);
+}
+
+/* Columna Derecha: Contadores y Botones */
+.trainer-actions-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-end;
+  min-width: 220px;
+}
+
+.trainer-stats-trio {
+  display: flex;
+  gap: 8px;
+}
+
+.trainer-stat-pill {
+  background: #fafbf9;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+  text-align: center;
+  transition: all 0.18s ease;
+}
+
+.trainer-stat-pill.is-clickable {
+  cursor: pointer;
+}
+
+.trainer-stat-pill.is-clickable:hover {
+  background: #ffffff;
+  border-color: var(--navy);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(23, 39, 51, 0.08);
+}
+
+.stat-symbol {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.stat-val {
+  font: 700 18px var(--display);
+  color: var(--navy);
+}
+
+.stat-tag {
+  font: 600 10.5px var(--display);
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.trainer-action-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.trainer-owner-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.trainer-action-btn {
+  border-radius: 100px;
+  font: 600 13px var(--display);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-edit-profile {
+  background: var(--navy);
+  color: #ffffff;
+  border: none;
+}
+
+.btn-edit-profile:hover {
+  background: var(--coral);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(237, 109, 93, 0.3);
+}
+
+.btn-privacy-settings {
+  background: #ffffff;
+  color: var(--navy);
+  border: 1px solid var(--line);
+}
+
+.btn-privacy-settings:hover {
+  border-color: var(--navy);
+  background: #fafbf9;
+  transform: translateY(-1px);
+}
+
+.btn-requests-alert {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.btn-requests-alert:hover {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+/* Edición Formulario */
+.trainer-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.trainer-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trainer-form-label {
+  font: 600 12px var(--display);
+  color: var(--navy);
+}
+
+.trainer-bio-input,
+.trainer-featured-input {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: 14px/1.5 var(--sans);
+  color: var(--ink);
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.trainer-bio-input:focus,
+.trainer-featured-input:focus {
+  outline: none;
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px rgba(237, 109, 93, 0.12);
+}
+
+.trainer-input-hint {
+  font: 400 11px var(--sans);
+  color: var(--muted);
+}
+
+.trainer-edit-btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.trainer-btn-cancel {
+  background: #edf1ec;
+  border: 1px solid var(--line);
+  color: var(--navy);
+  border-radius: 8px;
+  font: 600 13px var(--display);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.trainer-btn-save {
+  background: var(--coral);
+  border: none;
+  color: #ffffff;
+  border-radius: 8px;
+  font: 600 13px var(--display);
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.trainer-btn-save:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+/* --- SECCIÓN INFERIOR & TABS --- */
+.trainer-body-container {
+  margin-top: 24px;
+}
+
+.trainer-tabs-bar {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 32px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.trainer-tab-item {
+  background: none;
+  border: none;
+  font: 600 14px var(--display);
+  color: var(--muted);
+  padding: 12px 18px;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+}
+
+.trainer-tab-item.is-active {
+  color: var(--navy);
+  border-bottom-color: var(--coral);
+}
+
+.trainer-tab-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.trainer-tab-counter {
+  background: #edf1ec;
+  color: var(--navy);
+  font: 700 11px var(--display);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.trainer-tab-item.is-active .trainer-tab-counter {
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.trainer-tab-soon {
+  background: #f1f5f9;
+  color: #64748b;
+  font: 600 9px var(--display);
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* --- GRID DE FAVORITOS EN LA TRAINER CARD --- */
+.trainer-fav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 20px;
+}
+
+.trainer-fav-card {
+  background: #ffffff;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: all 0.22s ease;
+  box-shadow: 0 4px 12px rgba(23, 39, 51, 0.03);
+}
+
+.trainer-fav-card.is-interactive {
+  cursor: pointer;
+}
+
+.trainer-fav-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--coral);
+  box-shadow: 0 16px 28px rgba(23, 39, 51, 0.09);
+}
+
+.trainer-fav-img-wrap {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.trainer-fav-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
+  transition: transform 0.25s ease;
+}
+
+.trainer-fav-card:hover .trainer-fav-img {
+  transform: scale(1.1);
+}
+
+.trainer-fav-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  text-align: center;
+}
+
+.trainer-fav-id {
+  font: 700 11px var(--display);
+  color: var(--coral);
+  letter-spacing: 0.05em;
+}
+
+.trainer-fav-name {
+  font: 700 15px var(--display);
+  color: var(--navy);
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+/* Estados Vacíos y Privados */
+.trainer-privacy-box,
+.trainer-empty-favorites-box {
+  background: #ffffff;
+  border: 2px dashed var(--line);
+  border-radius: 20px;
+  padding: 48px 24px;
+  text-align: center;
+  max-width: 520px;
+  margin: 20px auto;
+}
+
+.trainer-lock-icon,
+.empty-star-icon {
+  font-size: 38px;
+  margin-bottom: 12px;
+}
+
+.trainer-privacy-box h3,
+.trainer-empty-favorites-box h3 {
+  font: 700 18px var(--display);
+  color: var(--navy);
+  margin: 0 0 8px;
+}
+
+.trainer-privacy-box p,
+.trainer-empty-favorites-box p {
+  font: 400 14px/1.55 var(--sans);
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.trainer-explore-btn {
+  border-radius: 100px;
+  padding: 10px 24px;
+  font: 600 13.5px var(--display);
+  cursor: pointer;
+}
+
+/* Skeletons */
+.trainer-card-skeleton {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 40px;
+}
+
+.trainer-card-skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.skeleton-badge {
+  width: 120px;
+  height: 16px;
+  background: #edf1ec;
+  border-radius: 4px;
+}
+
+.skeleton-avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: #edf1ec;
+}
+
+.trainer-card-skeleton-body {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+.trainer-card-skeleton-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.skeleton-stat-box {
+  width: 90px;
+  height: 60px;
+  background: #edf1ec;
+  border-radius: 12px;
+}
+
+.trainer-not-found-card {
+  text-align: center;
+  padding: 64px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.trainer-not-found-icon {
+  font-size: 48px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 960px) {
+  .trainer-card-main-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .trainer-avatar-column {
+    margin: 0 auto;
+  }
+
+  .trainer-partner-pill {
+    margin: 0 auto;
+  }
+
+  .trainer-actions-column {
+    align-items: center;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .trainer-action-buttons {
+    justify-content: center;
+  }
+
+  .trainer-owner-controls {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .trainer-card-ribbon {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .trainer-stats-trio {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .trainer-stat-pill {
+    min-width: 0;
+    flex: 1;
+    padding: 10px 6px;
+  }
+
+  .trainer-fav-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .trainer-fav-img-wrap {
+    width: 90px;
+    height: 90px;
+  }
+}

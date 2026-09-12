@@ -334,6 +334,10 @@ function PokemonDetail({
     )
   }
 
+  if (!pokemon) {
+    return null
+  }
+
   const matchedRegionalForm = activeRegionalForm
     ? regionalForms.find(
         (f) => f.id === activeRegionalForm.id || f.name === activeRegionalForm.name,

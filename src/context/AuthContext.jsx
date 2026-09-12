@@ -86,9 +86,20 @@ export function AuthProvider({ children }) {
   const closeSocialModal = useCallback(() => setIsSocialOpen(false), [])
 
   const openUserProfile = useCallback((usernameOrUser = null) => {
-    setViewingUser(usernameOrUser)
-    setIsUserProfileOpen(true)
-  }, [])
+    let targetUsername = null
+    if (typeof usernameOrUser === 'string') {
+      targetUsername = usernameOrUser.trim().replace(/^@+/, '')
+    } else if (usernameOrUser?.username) {
+      targetUsername = usernameOrUser.username
+    } else if (profile?.username) {
+      targetUsername = profile.username
+    }
+
+    if (targetUsername) {
+      window.history.pushState({}, '', `/profile/${encodeURIComponent(targetUsername)}`)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }
+  }, [profile?.username])
 
   const closeUserProfile = useCallback(() => {
     setIsUserProfileOpen(false)
