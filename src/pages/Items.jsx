@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Footer from '../components/Footer'
 import ItemCard from '../components/ItemCard'
 import Navbar from '../components/Navbar'
-import { getItems, normalizeSearchText, searchItemsCatalog } from '../services/pokeapi'
+import { getItems, QUICK_ITEM_CATEGORIES, searchItemsCatalog } from '../services/pokeapi'
 import { itemCategoriesEs } from '../locales/itemCatalogEs'
 import { playBuscarSound, playButtonSound } from '../utils/audio'
 
@@ -17,14 +17,12 @@ const PILL_OPTIONS = [
   { id: 'key', icon: '🗝️' },
 ]
 
+// Se mantiene una sola fuente para la relación entre filtros rápidos y las
+// categorías reales de PokéAPI. Antes esta lista y la del servicio podían
+// divergir, dejando objetos fuera de una píldora aunque sí pertenecieran al
+// grupo.
 const QUICK_CATEGORY_MAP = {
-  balls: ['balls', 'standard-balls', 'special-balls', 'apricorn-balls'],
-  healing: ['healing', 'status-cures', 'revival', 'pp-recovery', 'medicine'],
-  battle: ['battle', 'held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items', 'species-specific'],
-  evolution: ['evolution', 'mega-stones', 'tera-shard', 'dynamax-crystals', 'z-crystals'],
-  berries: ['berries', 'picky-healing', 'in-a-pinch', 'type-protection', 'baking-only', 'effort-drop'],
-  vitamins: ['vitamins', 'nature-mints', 'effort-training', 'training'],
-  key: ['key', 'gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles'],
+  ...QUICK_ITEM_CATEGORIES,
 }
 
 function getActivePillId(category) {
@@ -224,18 +222,11 @@ function Items({ onItemClick, onBack, t, locale, onLocaleChange }) {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [locale])
 
-  // Filtrado reactivo en memoria por texto de búsqueda
-  const filteredItems = useMemo(() => {
-    const normalizedQuery = normalizeSearchText(query)
-    if (!normalizedQuery) return items
-
-    return items.filter((item) => {
-      const searchCorpus = normalizeSearchText(
-        `${item.name} ${item.localizedName} ${item.category} ${item.description || ''}`
-      )
-      return searchCorpus.includes(normalizedQuery)
-    })
-  }, [items, query])
+  // La búsqueda ya se resuelve en el catálogo (incluye nombres en español,
+  // alias y búsquedas por categoría). Volver a filtrar aquí con el slug inglés
+  // eliminaba resultados válidos como “stone” → “Piedra Solar” o consultas
+  // semánticas como “fuego”.
+  const filteredItems = items
 
   const hasActiveFilters = Boolean(query.trim() || (selectedCategory && selectedCategory !== 'all'))
 
@@ -350,7 +341,7 @@ function Items({ onItemClick, onBack, t, locale, onLocaleChange }) {
             <div className="items-toolbar-meta">
               <div className="items-count-badge" aria-live="polite">
                 <strong>
-                  {hasActiveFilters
+                  {query.trim()
                     ? (t.items.countFiltered || '{count} objetos encontrados').replace(
                         '{count}',
                         filteredItems.length.toLocaleString()
