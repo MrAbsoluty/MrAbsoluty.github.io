@@ -10,12 +10,19 @@ import {
 import { getRegionalDescriptionEs } from '../locales/regionalDescriptions.js'
 import { gen9AbilitiesEs } from '../locales/gen9AbilitiesEs.js'
 import { abilityCatalogEs } from '../locales/abilityCatalogEs.js'
+import {
+  itemCategoriesEs,
+  itemEffectsEs,
+  canonicalItemCosts,
+  getLocalizedCategoryName,
+} from '../locales/itemCatalogEs.js'
 
 const API_URL = 'https://pokeapi.co/api/v2/pokemon/'
 const SPECIES_LIST_URL = 'https://pokeapi.co/api/v2/pokemon-species?limit=2000'
 const INDEX_CACHE_KEY = 'pokeguide-pokemon-search-index-v2'
 let pokemonIndexPromise
 const itemPageCache = new Map()
+const itemDetailCache = new Map()
 
 export class PokeApiError extends Error {
   constructor(message, code) {
@@ -1268,14 +1275,86 @@ export async function getRegionalForms(pokemonIdOrName, locale = 'en') {
   }
 }
 
-/*
- * Imagen de alta resolución para objetos.
+export const ITEM_PLACEHOLDER_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="44" stroke="%23ed6d5d" stroke-width="6" stroke-dasharray="4 2" opacity="0.45"/><circle cx="50" cy="50" r="14" stroke="%23172733" stroke-width="5" opacity="0.6"/><line x1="6" y1="50" x2="36" y2="50" stroke="%23172733" stroke-width="5" opacity="0.6"/><circle cx="50" cy="50" r="6" fill="%23ed6d5d"/></svg>`
+
+const RETRO_PGL_ITEMS = new Set([
+  'lava-cookie', 'berry-juice', 'sacred-ash', 'rage-candy-bar', 'old-gateau',
+  'casteliacone', 'lumiose-galette', 'shalour-sable', 'big-malasada',
+  'blue-flute', 'yellow-flute', 'red-flute', 'black-flute', 'white-flute',
+  'shoal-salt', 'shoal-shell', 'red-shard', 'blue-shard', 'yellow-shard', 'green-shard',
+  'growth-mulch', 'damp-mulch', 'stable-mulch', 'gooey-mulch',
+])
+
+function getCleanSerebiiSlug(name) {
+  if (!name) return ''
+  if (name === 'x-sp-atk') return 'xsp.atk'
+  if (name === 'x-sp-def') return 'xsp.def'
+  return name.replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Construye y centraliza las URLs de los sprites de un objeto
+ * siguiendo el sistema de prioridades y fallback.
  *
- * Scarlet/Violet utiliza imágenes de 256x256 px
- * dentro del repositorio oficial de sprites de PokeAPI.
+ * 1. Fuente HD: Serebii SV (160x160 px render oficial de 9ª Gen).
+ *    Para ultra-ball y great-ball, esto garantiza ultraball.png y greatball.png
+ *    de forma unívoca, resolviendo cualquier repetición.
+ * 2. Fuente alternativa PGL: Pokémon Global Link (160x160 px oficial).
+ *    Para objetos clásicos (lava-cookie, berry-juice, sacred-ash) se usa PGL como primaria
+ *    para que nunca queden pixelados.
+ * 3. Dream World: arte vectorial oficial de PokeAPI.
+ * 4. Placeholder: SVG estilizado de PokéGuide.
  */
-function getItemImageUrl(name) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/gen9/scarlet-violet/${name}.png`
+export const KNOWN_STUB_ITEMS = new Set([
+  'clefablite', 'victreebelite', 'starminite', 'dragoninite', 'meganiumite',
+  'feraligite', 'skarmorite', 'froslassite', 'heatranite', 'darkranite',
+  'emboarite', 'excadrite', 'scolipite', 'scraftinite', 'eelektrossite',
+  'chandelurite', 'chesnaughtite', 'delphoxite', 'greninjite', 'pyroarite',
+  'floettite', 'malamarite', 'barbaracite', 'dragalgite', 'hawluchanite',
+  'zygardite', 'drampanite', 'zeraorite', 'falinksite', 'raichunite-x',
+  'raichunite-y', 'chimechite', 'absolite-z', 'staraptite', 'garchompite-z',
+  'lucarionite-z', 'golurkite', 'meowsticite', 'crabominite', 'golisopite',
+  'magearnite', 'scovillainite', 'baxcalibrite', 'tatsugirinite', 'glimmoranite',
+])
+
+export function getItemSprite(itemData) {
+  if (!itemData) {
+    return {
+      primary: ITEM_PLACEHOLDER_SVG,
+      fallback: ITEM_PLACEHOLDER_SVG,
+      defaultImage: ITEM_PLACEHOLDER_SVG,
+      placeholder: ITEM_PLACEHOLDER_SVG,
+    }
+  }
+
+  const name = itemData.name || ''
+  const serebiiSlug = getCleanSerebiiSlug(name)
+  const isRetro = RETRO_PGL_ITEMS.has(name)
+  const isMegaStone = name.endsWith('ite') || name.endsWith('ite-x') || name.endsWith('ite-y') || name === 'red-orb' || name === 'blue-orb'
+  const pokeApiSprite = itemData.sprites?.default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${name}.png`
+
+  let primary
+  let fallback
+  let defaultImage
+
+  if (isMegaStone || isRetro) {
+    // Para megapiedras y objetos retro, Pokémon Global Link (PGL) tiene renders oficiales HD 160x160 px
+    primary = `https://www.serebii.net/itemdex/sprites/pgl/${serebiiSlug}.png`
+    fallback = pokeApiSprite
+    defaultImage = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dream-world/${name}.png`
+  } else {
+    // Para objetos modernos, Serebii SV (160x160 px render 9ª Gen) como primario
+    primary = `https://www.serebii.net/itemdex/sprites/sv/${serebiiSlug}.png`
+    fallback = `https://www.serebii.net/itemdex/sprites/pgl/${serebiiSlug}.png`
+    defaultImage = pokeApiSprite
+  }
+
+  return {
+    primary,
+    fallback,
+    defaultImage,
+    placeholder: ITEM_PLACEHOLDER_SVG,
+  }
 }
 
 const itemCategoryCache = new Map()
@@ -1286,9 +1365,6 @@ const itemCategoryCache = new Map()
  *
  * Prioridad: locale exacto → es (si locale empieza por "es") → en →
  * cualquier entrada disponible (última versión) → null.
- *
- * Si hay varias entradas para el mismo idioma (p. ej. flavor_text por
- * versión), se queda con la última (versión más reciente).
  */
 function getLocalizedEntry(entries, locale) {
   if (!Array.isArray(entries) || entries.length === 0) return null
@@ -1298,7 +1374,7 @@ function getLocalizedEntry(entries, locale) {
   if (exact) return exact
 
   if (locale.startsWith('es')) {
-    const es = candidates.find((e) => e.language?.name === 'es')
+    const es = candidates.find((e) => e.language?.name === 'es' || e.language?.name === 'es-419')
     if (es) return es
   }
 
@@ -1327,9 +1403,6 @@ function cleanItemText(text) {
 /*
  * Normaliza un texto para compararlo contra otro ignorando diferencias
  * sin importancia: acentos, mayúsculas, puntuación, espacios.
- *
- * Usado para detectar descripción === efecto cuando PokeAPI repite
- * el mismo contenido en ambos campos.
  */
 function normalizeComparisonText(text) {
   const cleaned = cleanItemText(text)
@@ -1346,8 +1419,6 @@ function normalizeComparisonText(text) {
 
 /*
  * Convierte un slug tipo "standard-balls" en "Standard Balls".
- * Se usa como fallback cuando no hay traducción de categoría, para
- * mantener capitalización consistente con formatName() en componentes.
  */
 function humanizeSlug(slug) {
   return String(slug ?? '')
@@ -1359,12 +1430,14 @@ function humanizeSlug(slug) {
 
 /*
  * Resuelve el costo del objeto.
- *
- * PokeAPI ha cambiado del campo legacy `cost` a `prices[]` con precios
- * por versión. Si `cost` es válido lo usa; sino busca el último
- * `purchase_price` útil en prices. Si no hay nada útil devuelve null.
+ * Considera precios canónicos para objetos de tienda comunes si PokeAPI no los tiene,
+ * y devuelve 0 para objetos no comprables (como la Master Ball).
  */
 function getItemCost(data) {
+  if (canonicalItemCosts[data.name] !== undefined) {
+    return canonicalItemCosts[data.name]
+  }
+
   if (Number.isFinite(data.cost) && data.cost > 0) return data.cost
 
   if (Array.isArray(data.prices) && data.prices.length > 0) {
@@ -1377,13 +1450,11 @@ function getItemCost(data) {
     if (latest) return latest.purchase_price
   }
 
-  return null
+  return 0
 }
 
 /*
  * Obtiene el nombre localizado de una categoría (fetchea category.url).
- * Devuelve { name, lang } para poder determinar si el resultado está
- * realmente en el idioma solicitado o es un fallback.
  */
 async function getItemCategoryMeta(categoryUrl, locale) {
   if (!categoryUrl) return { name: null, lang: null }
@@ -1410,7 +1481,7 @@ async function getItemCategoryMeta(categoryUrl, locale) {
 function entryLanguageMatches(entryLang, locale) {
   if (!entryLang) return false
   if (entryLang === locale) return true
-  if (locale.startsWith('es') && entryLang === 'es') return true
+  if (locale.startsWith('es') && (entryLang === 'es' || entryLang === 'es-419')) return true
   if (locale.startsWith('fr') && entryLang === 'fr') return true
   return false
 }
@@ -1423,6 +1494,11 @@ export async function getItem(query, locale = 'en', messages = {}) {
       getErrorMessage('empty', query, messages),
       'empty',
     )
+  }
+
+  const cacheKey = `${normalizedQuery}:${locale}`
+  if (itemDetailCache.has(cacheKey)) {
+    return itemDetailCache.get(cacheKey)
   }
 
   let response
@@ -1463,26 +1539,52 @@ export async function getItem(query, locale = 'en', messages = {}) {
     )
   }
 
+  if (KNOWN_STUB_ITEMS.has(data.name)) {
+    throw new PokeApiError('Item is an unreleased stub', 'stub')
+  }
+
+  const hasNoSprites = !data.sprites?.default
+  const hasNoNames = !data.names || data.names.length === 0
+  const hasNoFlavor = !data.flavor_text_entries || data.flavor_text_entries.length === 0
+  const hasNoGameIndices = !data.game_indices || data.game_indices.length === 0
+
+  if (hasNoSprites && hasNoNames && hasNoFlavor && hasNoGameIndices) {
+    throw new PokeApiError('Item is an unreleased stub', 'stub')
+  }
+
   const nameEntry = getLocalizedEntry(data.names, locale)
   const localizedName = nameEntry?.name || data.name
 
   /*
-   * DESCRIPCIÓN  ←  flavor_text_entries (SIEMPRE, nunca effect_entries)
+   * DESCRIPCIÓN  ←  flavor_text_entries en el idioma seleccionado.
    */
   const flavorEntry = getLocalizedEntry(data.flavor_text_entries, locale)
   const description = cleanItemText(flavorEntry?.text)
 
   /*
-   * EFECTO  ←  effect_entries.short_effect || effect_entries.effect (SIEMPRE)
+   * EFECTO  ←  itemEffectsEs en español; effect_entries en inglés.
    */
-  const effectEntry = getLocalizedEntry(data.effect_entries, locale)
-  const effect = cleanItemText(
-    effectEntry?.short_effect || effectEntry?.effect,
-  )
+  let effect = null
+  if (locale.startsWith('es')) {
+    if (itemEffectsEs[data.name]) {
+      effect = itemEffectsEs[data.name]
+    } else {
+      const esEffect = data.effect_entries?.find(
+        (e) => e.language?.name === 'es' || e.language?.name === 'es-419'
+      )
+      if (esEffect) {
+        effect = cleanItemText(esEffect.short_effect || esEffect.effect)
+      }
+    }
+  } else {
+    const effectEntry = getLocalizedEntry(data.effect_entries, locale)
+    effect = cleanItemText(
+      effectEntry?.short_effect || effectEntry?.effect,
+    )
+  }
 
   /*
    * Detección de duplicado para que la UI no repita el mismo texto.
-   * getItem() NUNCA elimina campos: devuelve ambos + el flag.
    */
   const hasDuplicateText = Boolean(
     description &&
@@ -1491,59 +1593,373 @@ export async function getItem(query, locale = 'en', messages = {}) {
         normalizeComparisonText(effect),
   )
 
-  // Categoría: si PokeAPI no la tradujo al locale del usuario,
-  // humanizamos el slug para mantener la consistencia visual.
+  // Categoría: traducción centralizada al español con fallback
   const categoryMeta = await getItemCategoryMeta(data.category?.url, locale)
-  const categoryIsLocalized = entryLanguageMatches(categoryMeta.lang, locale)
+  const categorySlug = data.category?.name || ''
+  let category = ''
 
-  let category
-  if (categoryIsLocalized && categoryMeta.name) {
-    category = categoryMeta.name
-  } else if (categoryMeta.name) {
-    if (locale === 'en' || locale.startsWith('fr')) {
-      category = categoryMeta.name
-    } else {
-      category = humanizeSlug(data.category?.name || '')
-    }
+  if (locale.startsWith('es')) {
+    category =
+      itemCategoriesEs[categorySlug] ||
+      (categoryMeta.name && entryLanguageMatches(categoryMeta.lang, locale)
+        ? categoryMeta.name
+        : humanizeSlug(categorySlug))
   } else {
-    category = humanizeSlug(data.category?.name || '')
+    category = categoryMeta.name || humanizeSlug(categorySlug)
   }
 
   const cost = getItemCost(data)
+  const sprites = getItemSprite(data)
 
-  return {
+  const result = {
     id: data.id,
     name: data.name,
     localizedName,
 
-    // Imagen grande de Scarlet/Violet.
-    image: getItemImageUrl(data.name),
-
-    // Sprite original de PokeAPI para usar como fallback.
-    fallbackImage: data.sprites.default,
+    // Sprites con jerarquía de calidad
+    image: sprites.primary,
+    fallbackImage: sprites.fallback,
+    defaultImage: sprites.defaultImage,
+    placeholderImage: sprites.placeholder,
 
     category,
+    categorySlug,
     cost,
 
-    // Campos de texto: independientes, nunca se mezclan.
+    // Campos de texto diferenciados
     description,
     effect,
     hasDuplicateText,
   }
+
+  itemDetailCache.set(cacheKey, result)
+  return result
+}
+
+export const QUICK_ITEM_CATEGORIES = {
+  balls: ['standard-balls', 'special-balls', 'apricorn-balls'],
+  healing: ['healing', 'status-cures', 'revival', 'pp-recovery', 'medicine'],
+  battle: ['held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items'],
+  evolution: ['evolution', 'mega-stones', 'tera-shard', 'dynamax-crystals'],
+  berries: ['picky-healing', 'in-a-pinch', 'type-protection', 'baking-only', 'effort-drop'],
+  vitamins: ['vitamins', 'nature-mints', 'effort-training', 'training'],
+  key: ['gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles'],
+}
+
+const categoryItemNamesCache = new Map()
+
+export async function getItemNamesForCategory(categorySlug) {
+  if (categoryItemNamesCache.has(categorySlug)) {
+    return categoryItemNamesCache.get(categorySlug)
+  }
+
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/item-category/${encodeURIComponent(categorySlug)}`)
+    if (!res.ok) {
+      categoryItemNamesCache.set(categorySlug, [])
+      return []
+    }
+    const data = await res.json()
+    const names = (data.items || [])
+      .map((item) => item.name)
+      .filter((name) => !KNOWN_STUB_ITEMS.has(name))
+    categoryItemNamesCache.set(categorySlug, names)
+    return names
+  } catch {
+    categoryItemNamesCache.set(categorySlug, [])
+    return []
+  }
+}
+
+export async function resolveCategoryItemNames(category) {
+  if (!category || category === 'all') return null
+
+  const slugs = QUICK_ITEM_CATEGORIES[category] || [category]
+  const allNames = []
+  const seen = new Set()
+
+  for (const slug of slugs) {
+    const names = await getItemNamesForCategory(slug)
+    for (const name of names) {
+      if (!seen.has(name)) {
+        seen.add(name)
+        allNames.push(name)
+      }
+    }
+  }
+
+  return allNames
+}
+
+const COMMON_ITEM_SLUGS_ES = {
+  'piedra solar': 'sun-stone',
+  'solar': 'sun-stone',
+  'sol': 'sun-stone',
+  'piedra lunar': 'moon-stone',
+  'lunar': 'moon-stone',
+  'piedra fuego': 'fire-stone',
+  'piedra trueno': 'thunder-stone',
+  'piedra agua': 'water-stone',
+  'piedra hoja': 'leaf-stone',
+  'piedra dia': 'shiny-stone',
+  'piedra noche': 'dusk-stone',
+  'piedra alba': 'dawn-stone',
+  'piedra hielo': 'ice-stone',
+  'piedra oval': 'oval-stone',
+  'galleta lava': 'lava-cookie',
+  'zumo de baya': 'berry-juice',
+  'ceniza sagrada': 'sacred-ash',
+  'caramelo raro': 'rare-candy',
+  'caramelo': 'rare-candy',
+  'restos': 'leftovers',
+  'cinta eleccion': 'choice-band',
+  'gafas eleccion': 'choice-specs',
+  'panuelo eleccion': 'choice-scarf',
+  'vidasfera': 'life-orb',
+  'chaleco asalto': 'assault-vest',
+  'mineral evolutivo': 'eviolite',
+  'banda focus': 'focus-sash',
+  'cinta focus': 'focus-band',
+  'casco dentado': 'rocky-helmet',
+  'botas gruesas': 'heavy-duty-boots',
+  'super ball': 'great-ball',
+  'ultra ball': 'ultra-ball',
+  'master ball': 'master-ball',
+  'master': 'master-ball',
+  'pocion': 'potion',
+  'superpocion': 'super-potion',
+  'hyperpocion': 'hyper-potion',
+  'hiperpocion': 'hyper-potion',
+  'pocion maxima': 'max-potion',
+  'restaura todo': 'full-restore',
+  'revivir': 'revive',
+  'revivir maximo': 'max-revive',
+}
+
+export async function searchItemDirect(query, locale = 'en', messages = {}) {
+  const norm = normalizeSearchText(query)
+  if (!norm) return null
+
+  const resolvedSlug = COMMON_ITEM_SLUGS_ES[norm] || norm.replace(/\s+/g, '-')
+
+  try {
+    return await getItem(resolvedSlug, locale, messages)
+  } catch {
+    return null
+  }
+}
+
+let allItemsCache = null
+
+export async function getAllItemSlugs() {
+  if (allItemsCache && allItemsCache.length > 0) {
+    return allItemsCache
+  }
+  try {
+    const res = await fetch('https://pokeapi.co/api/v2/item?limit=2500')
+    if (!res.ok) return []
+    const data = await res.json()
+    allItemsCache = (data.results || [])
+      .map((r) => r.name)
+      .filter((name) => !KNOWN_STUB_ITEMS.has(name))
+    return allItemsCache
+  } catch {
+    return []
+  }
+}
+
+const SEARCH_KEYWORD_CATEGORIES = {
+  piedra: 'evolution',
+  piedras: 'evolution',
+  evolucion: 'evolution',
+  stone: 'evolution',
+  stones: 'evolution',
+  mega: 'mega-stones',
+  megapiedra: 'mega-stones',
+  megapiedras: 'mega-stones',
+  baya: 'berries',
+  bayas: 'berries',
+  berry: 'berries',
+  berries: 'berries',
+  ball: 'balls',
+  balls: 'balls',
+  bola: 'balls',
+  bolas: 'balls',
+  pokeball: 'balls',
+  pocion: 'healing',
+  pociones: 'healing',
+  cura: 'healing',
+  curacion: 'healing',
+  medicina: 'healing',
+  revivir: 'revival',
+  vitamina: 'vitamins',
+  vitaminas: 'vitamins',
+  menta: 'nature-mints',
+  mentas: 'nature-mints',
+  combate: 'battle',
+  batalla: 'battle',
+  tabla: 'plates',
+  tablas: 'plates',
+  clave: 'key',
+  historia: 'key',
+}
+
+const ES_EN_ITEM_KEYWORDS = {
+  fuego: 'fire',
+  agua: 'water',
+  trueno: 'thunder',
+  rayo: 'thunder',
+  hoja: 'leaf',
+  planta: 'leaf',
+  luna: 'moon',
+  lunar: 'moon',
+  sol: 'sun',
+  solar: 'sun',
+  dia: 'shiny',
+  noche: 'dusk',
+  alba: 'dawn',
+  hielo: 'ice',
+  nieve: 'ice',
+  oval: 'oval',
+  caramelo: 'candy',
+  restos: 'leftovers',
+  cinta: 'band',
+  gafas: 'specs',
+  chaleco: 'vest',
+  mineral: 'eviolite',
+  casco: 'helmet',
+  escama: 'scale',
+  diente: 'tooth',
+  garra: 'claw',
+  colmillo: 'fang',
+  roca: 'rock',
+  arena: 'sand',
+  perla: 'pearl',
+  polvo: 'powder',
+  hierba: 'herb',
+  bota: 'boots',
+  botas: 'boots',
+}
+
+export async function searchItemsCatalog(query, locale = 'en', messages = {}) {
+  const norm = normalizeSearchText(query)
+  if (!norm) return { items: [], totalCount: 0 }
+
+  // 1. Si la palabra clave mapea a una categoría (ej. "piedra", "bayas", "bolas", "cura")
+  const matchedCategory = SEARCH_KEYWORD_CATEGORIES[norm]
+  if (matchedCategory) {
+    return await getItems({
+      category: matchedCategory,
+      limit: 40,
+      offset: 0,
+      locale,
+      messages,
+    })
+  }
+
+  // 2. Si coincide directamente con el diccionario de traducción al español
+  if (COMMON_ITEM_SLUGS_ES[norm]) {
+    try {
+      const item = await getItem(COMMON_ITEM_SLUGS_ES[norm], locale, messages)
+      if (item) return { items: [item], totalCount: 1 }
+    } catch {
+      // continuar con búsqueda amplia
+    }
+  }
+
+  // 3. Búsqueda amplia de candidatos por slug y catálogo
+  const allSlugs = await getAllItemSlugs()
+  const candidateSet = new Set()
+
+  // a) Slugs del diccionario ES que contienen la palabra buscada
+  for (const [esKey, slug] of Object.entries(COMMON_ITEM_SLUGS_ES)) {
+    if (esKey.includes(norm) || norm.includes(esKey)) {
+      candidateSet.add(slug)
+    }
+  }
+
+  // b) Slugs de PokéAPI que contienen la palabra buscada
+  const slugQuery = norm.replace(/\s+/g, '-')
+  for (const slug of allSlugs) {
+    if (slug.includes(slugQuery)) {
+      candidateSet.add(slug)
+    }
+  }
+
+  // c) Traducción semántica ES -> EN
+  for (const [esWord, enWord] of Object.entries(ES_EN_ITEM_KEYWORDS)) {
+    if (norm.includes(esWord)) {
+      for (const slug of allSlugs) {
+        if (slug.includes(enWord)) {
+          candidateSet.add(slug)
+        }
+      }
+    }
+  }
+
+  const candidateSlugs = Array.from(candidateSet).slice(0, 40)
+  if (candidateSlugs.length === 0) {
+    try {
+      const direct = await getItem(slugQuery, locale, messages)
+      if (direct) return { items: [direct], totalCount: 1 }
+    } catch {
+      return { items: [], totalCount: 0 }
+    }
+    return { items: [], totalCount: 0 }
+  }
+
+  const results = await Promise.allSettled(
+    candidateSlugs.map((slug) => getItem(slug, locale, messages))
+  )
+
+  const items = results
+    .filter((r) => r.status === 'fulfilled' && r.value)
+    .map((r) => r.value)
+
+  return {
+    items,
+    totalCount: items.length,
+  }
 }
 
 export async function getItems({
-  limit = 24,
+  category = 'all',
+  limit = 40,
   offset = 0,
   locale = 'en',
   messages = {},
 } = {}) {
-  const cacheKey = `${locale}:${limit}:${offset}`
+  const cacheKey = `${category}:${locale}:${limit}:${offset}`
 
   if (itemPageCache.has(cacheKey)) {
     return itemPageCache.get(cacheKey)
   }
 
+  // 1. Paginación por categoría o grupo de categorías (ej. 'evolution', 'berries', 'held-items')
+  if (category && category !== 'all') {
+    const categoryItemNames = await resolveCategoryItemNames(category)
+    const totalCount = categoryItemNames.length
+    const pageSlice = categoryItemNames.slice(offset, offset + limit)
+
+    const itemsResults = await Promise.allSettled(
+      pageSlice.map((name) => getItem(name, locale, messages)),
+    )
+
+    const items = itemsResults
+      .filter((r) => r.status === 'fulfilled' && r.value)
+      .map((r) => r.value)
+
+    const result = {
+      items,
+      totalCount,
+      nextOffset: offset + limit < totalCount ? offset + limit : null,
+    }
+
+    itemPageCache.set(cacheKey, result)
+    return result
+  }
+
+  // 2. Paginación global ('all')
   let response
 
   try {
@@ -1575,14 +1991,19 @@ export async function getItems({
     )
   }
 
-  const items = await Promise.all(
+  const itemsResults = await Promise.allSettled(
     data.results.map(({ name }) =>
       getItem(name, locale, messages),
     ),
   )
 
+  const items = itemsResults
+    .filter((r) => r.status === 'fulfilled' && r.value)
+    .map((r) => r.value)
+
   const result = {
     items,
+    totalCount: data.count || 0,
     nextOffset: data.next ? offset + limit : null,
   }
 
