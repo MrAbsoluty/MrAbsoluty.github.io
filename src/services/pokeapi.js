@@ -1348,6 +1348,21 @@ export const KNOWN_STUB_ITEMS = new Set([
   'magearnite', 'scovillainite', 'baxcalibrite', 'tatsugirinite', 'glimmoranite',
 ])
 
+// PokéAPI also exposes one internal, parameterized record for every possible
+// Dynamax encounter. Their names are values such as "★And458", they have no
+// sprite, and they are not user-facing inventory items. They must not leak
+// into the catalogue as if they were real objects.
+const HIDDEN_ITEM_PREFIXES = ['dynamax-crystal-']
+export const HIDDEN_ITEM_CATEGORIES = new Set(['dynamax-crystals'])
+
+export function isDisplayableItemName(name) {
+  return Boolean(
+    name &&
+      !KNOWN_STUB_ITEMS.has(name) &&
+      !HIDDEN_ITEM_PREFIXES.some((prefix) => name.startsWith(prefix)),
+  )
+}
+
 export function getItemSprite(itemData) {
   if (!itemData) {
     return {
@@ -1613,8 +1628,8 @@ export async function getItem(query, locale = 'en', messages = {}) {
     )
   }
 
-  if (KNOWN_STUB_ITEMS.has(data.name)) {
-    throw new PokeApiError('Item is an unreleased stub', 'stub')
+  if (!isDisplayableItemName(data.name)) {
+    throw new PokeApiError('Item is not a displayable catalogue item', 'unsupported')
   }
 
   const hasNoSprites = !data.sprites?.default
@@ -1729,7 +1744,7 @@ export const QUICK_ITEM_CATEGORIES = {
   balls: ['standard-balls', 'special-balls', 'apricorn-balls'],
   healing: ['healing', 'status-cures', 'revival', 'pp-recovery', 'medicine'],
   battle: ['held-items', 'choice', 'stat-boosts', 'type-enhancement', 'plates', 'bad-held-items', 'species-specific'],
-  evolution: ['evolution', 'mega-stones', 'memories', 'z-crystals', 'tera-shard', 'dynamax-crystals'],
+  evolution: ['evolution', 'mega-stones', 'memories', 'z-crystals', 'tera-shard'],
   berries: ['picky-healing', 'in-a-pinch', 'type-protection', 'baking-only', 'effort-drop'],
   vitamins: ['vitamins', 'nature-mints', 'effort-training', 'training'],
   key: ['gameplay', 'plot-advancement', 'event-items', 'dex-completion', 'collectibles', 'catching-bonus'],
@@ -1787,7 +1802,7 @@ export async function getItemNamesForCategory(categorySlug) {
 
     const names = (Array.isArray(data.items) ? data.items : [])
       .map((item) => item?.name)
-      .filter((name) => name && !KNOWN_STUB_ITEMS.has(name))
+      .filter(isDisplayableItemName)
 
     categoryItemNamesCache.set(categorySlug, names)
     return names
@@ -1897,7 +1912,7 @@ export async function getAllItemSlugs() {
       const data = await res.json()
       allItemsCache = (Array.isArray(data.results) ? data.results : [])
         .map((resource) => resource?.name)
-        .filter((name) => name && !KNOWN_STUB_ITEMS.has(name))
+        .filter(isDisplayableItemName)
       return allItemsCache
     } catch {
       return []
@@ -2113,6 +2128,32 @@ export async function getItems({
   }
 
   // 2. Paginación global ('all')
+  // Paginar directamente la lista de PokéAPI deja huecos cuando una página
+  // contiene registros internos (por ejemplo, los Dynamax cristalizados).
+  // Construimos las páginas sobre el catálogo ya saneado para que “Cargar
+  // más” siempre entregue objetos visibles y no una pantalla vacía.
+  const allItemSlugs = await getAllItemSlugs()
+  if (allItemSlugs.length > 0) {
+    const pageSlice = allItemSlugs.slice(offset, offset + limit)
+    const itemsResults = await Promise.allSettled(
+      pageSlice.map((name) => getItem(name, locale, messages)),
+    )
+    const items = itemsResults
+      .filter((result) => result.status === 'fulfilled' && result.value)
+      .map((result) => result.value)
+
+    const result = {
+      items,
+      totalCount: allItemSlugs.length,
+      nextOffset: offset + limit < allItemSlugs.length ? offset + limit : null,
+    }
+
+    itemPageCache.set(cacheKey, result)
+    return result
+  }
+
+  // Fallback para que un servidor que no permita la consulta grande siga
+  // pudiendo entregar la primera página mediante el endpoint paginado.
   let response
 
   try {

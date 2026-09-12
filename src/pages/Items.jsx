@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Footer from '../components/Footer'
 import ItemCard from '../components/ItemCard'
 import Navbar from '../components/Navbar'
-import { getItems, QUICK_ITEM_CATEGORIES, searchItemsCatalog } from '../services/pokeapi'
+import {
+  getItems,
+  HIDDEN_ITEM_CATEGORIES,
+  QUICK_ITEM_CATEGORIES,
+  searchItemsCatalog,
+} from '../services/pokeapi'
 import { itemCategoriesEs } from '../locales/itemCatalogEs'
 import { playBuscarSound, playButtonSound } from '../utils/audio'
 
@@ -213,6 +218,7 @@ function Items({ onItemClick, onBack, t, locale, onLocaleChange }) {
   // Lista de todas las categorías disponibles traducidas
   const allCategoryOptions = useMemo(() => {
     return Object.entries(itemCategoriesEs)
+      .filter(([slug]) => !HIDDEN_ITEM_CATEGORIES.has(slug))
       .map(([slug, esName]) => ({
         slug,
         name: locale.startsWith('es')
