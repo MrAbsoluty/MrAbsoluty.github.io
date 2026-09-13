@@ -8,18 +8,28 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   buildFullPrompt,
+  validateAbilityAnalysis,
   ABILITY_RESPONSE_SCHEMA,
   GROQ_ABILITY_RESPONSE_SCHEMA,
   type AnalysisRequestPayload,
 } from './promptBuilder.ts'
+import { buildVerifiedAbilityFacts } from './knowledgeLayer.ts'
+import { validateAndCorrectFacts } from './factValidator.ts'
+import {
+  getCachedAnalysis,
+  saveCachedAnalysis,
+  CURRENT_VALIDATION_VERSION,
+} from './cacheManager.ts'
+
+export { validateAbilityAnalysis }
 
 // Proveedor de IA configurable mediante Supabase Secrets ('groq' | 'gemini')
 // Por defecto se establece 'groq' para garantizar alta disponibilidad y mitigar límites de cuota
-const AI_PROVIDER = (Deno.env.get('AI_PROVIDER')?.trim() || 'groq').toLowerCase()
+const DEFAULT_AI_PROVIDER = (Deno.env.get('AI_PROVIDER')?.trim() || 'groq').toLowerCase()
 
 // Modelos configurables mediante variables de entorno en Supabase
 const GROQ_MODEL = Deno.env.get('GROQ_MODEL')?.trim() || 'openai/gpt-oss-120b'
-const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.6-flash'
+const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-2.0-flash'
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -177,66 +187,6 @@ export function sanitizeSpanishPokemonTerms<T>(input: T): T {
   }
 
   return input
-}
-
-/**
- * Valida que la estructura del análisis de habilidad devuelta por la IA contenga
- * todos los campos requeridos por el frontend de PokeGuide.
- */
-export function validateAbilityAnalysis(data: Record<string, unknown>): { valid: boolean; missingField?: string } {
-  if (!data || typeof data !== 'object') {
-    return { valid: false, missingField: 'root' }
-  }
-
-  if (typeof data.summary !== 'string' || !data.summary.trim()) {
-    return { valid: false, missingField: 'summary' }
-  }
-
-  if (!data.rating || typeof data.rating !== 'object') {
-    return { valid: false, missingField: 'rating' }
-  }
-
-  const rating = data.rating as Record<string, unknown>
-  if (typeof rating.score !== 'number' && isNaN(Number(rating.score))) {
-    return { valid: false, missingField: 'rating.score' }
-  }
-  if (typeof rating.label !== 'string' || !rating.label.trim()) {
-    return { valid: false, missingField: 'rating.label' }
-  }
-
-  if (!Array.isArray(data.strengths) || data.strengths.length === 0) {
-    return { valid: false, missingField: 'strengths' }
-  }
-
-  if (!Array.isArray(data.weaknesses) || data.weaknesses.length === 0) {
-    return { valid: false, missingField: 'weaknesses' }
-  }
-
-  if (!Array.isArray(data.synergies)) {
-    return { valid: false, missingField: 'synergies' }
-  }
-
-  if (typeof data.singles !== 'string' || !data.singles.trim()) {
-    return { valid: false, missingField: 'singles' }
-  }
-
-  if (typeof data.doubles !== 'string' || !data.doubles.trim()) {
-    return { valid: false, missingField: 'doubles' }
-  }
-
-  if (!Array.isArray(data.whenToUse)) {
-    return { valid: false, missingField: 'whenToUse' }
-  }
-
-  if (!Array.isArray(data.whenToAvoid)) {
-    return { valid: false, missingField: 'whenToAvoid' }
-  }
-
-  if (typeof data.competitiveTip !== 'string' || !data.competitiveTip.trim()) {
-    return { valid: false, missingField: 'competitiveTip' }
-  }
-
-  return { valid: true }
 }
 
 interface ProviderCallResult {
@@ -563,17 +513,90 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 5. Construcción modular del prompt (compartido idénticamente entre proveedores)
-    const fullPrompt = buildFullPrompt(payload)
+    // 5. Construcción de hechos verificados objetivos (Knowledge Layer)
+    const abilityName = payload.ability?.name || ''
+    const abilityDesc = payload.ability?.description || ''
+    const abilityLocalName = payload.ability?.localizedName || ''
+    const verifiedFacts = buildVerifiedAbilityFacts(abilityName, abilityDesc, abilityLocalName)
 
-    // 6. Despacho dinámico según el proveedor configurado en Supabase Secrets (AI_PROVIDER)
+    // 6. Normalización de identificadores estables para el contexto de caché compartido (Fase 2)
+    const pokemonId = String(payload.pokemon?.name || payload.pokemon?.id || '')
+      .toLowerCase()
+      .trim()
+    const abilityId = String(payload.ability?.name || payload.ability?.id || '')
+      .toLowerCase()
+      .trim()
+    const userLevel = String(payload.context?.userLevel || 'beginner')
+      .toLowerCase()
+      .trim()
+    const locale = String(payload.context?.locale || 'es')
+      .toLowerCase()
+      .trim()
+
+    // 7. Inicialización del cliente Supabase con privilegios backend para el caché
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseServiceKey =
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+      Deno.env.get('SUPABASE_ANON_KEY') ||
+      ''
+    const adminSupabase =
+      supabaseUrl && supabaseServiceKey
+        ? createClient(supabaseUrl, supabaseServiceKey)
+        : null
+
+    // 8. BÚSQUEDA CACHE-FIRST: Si existe un análisis válido vigente para este contexto, devolverlo de inmediato
+    if (adminSupabase && pokemonId && abilityId) {
+      const cached = await getCachedAnalysis(
+        adminSupabase,
+        { pokemonId, abilityId, userLevel, locale },
+        verifiedFacts,
+      )
+
+      if (cached.hit && cached.data) {
+        return jsonResponse(
+          {
+            success: true,
+            data: cached.data,
+            metadata: {
+              type: analysisType,
+              cached: true,
+              cache_hit: true,
+              cachedAt: cached.cachedAt,
+              provider: cached.provider || 'cache',
+              model: cached.model || 'cached',
+              userLevel,
+              validationVersion: cached.validationVersion || CURRENT_VALIDATION_VERSION,
+              factsEnforced: true,
+              factCorrectionsCount: 0,
+              authenticatedUser: Boolean(userId),
+              timestamp: Date.now(),
+            },
+          },
+          200,
+        )
+      }
+    }
+
+    // 9. Construcción modular del prompt adaptativo (ejecutado únicamente en caso de CACHE MISS)
+    const fullPrompt = buildFullPrompt(payload, verifiedFacts)
+
+    // 10. Despacho dinámico según el proveedor configurado (AI_PROVIDER o payload.provider)
     let providerResult: ProviderCallResult
     let activeProvider = ''
     let activeModel = ''
 
-    if (AI_PROVIDER === 'groq') {
+    const targetProvider = (
+      ((payload as Record<string, unknown>).provider as string) ||
+      Deno.env.get('AI_PROVIDER') ||
+      DEFAULT_AI_PROVIDER ||
+      'groq'
+    )
+      .trim()
+      .toLowerCase()
+
+    if (targetProvider === 'groq') {
       activeProvider = 'groq'
-      activeModel = GROQ_MODEL
+      activeModel = Deno.env.get('GROQ_MODEL')?.trim() || GROQ_MODEL
       const groqApiKey = Deno.env.get('GROQ_API_KEY')?.trim()
       if (!groqApiKey) {
         console.error('[Edge Function] ❌ GROQ_API_KEY no encontrada o vacía en Supabase Secrets.')
@@ -587,9 +610,9 @@ Deno.serve(async (req: Request) => {
         )
       }
       providerResult = await callGroqProvider(fullPrompt, activeModel, groqApiKey)
-    } else if (AI_PROVIDER === 'gemini') {
+    } else if (targetProvider === 'gemini') {
       activeProvider = 'gemini'
-      activeModel = GEMINI_MODEL
+      activeModel = Deno.env.get('GEMINI_MODEL')?.trim() || GEMINI_MODEL
       const geminiApiKey = Deno.env.get('GEMINI_API_KEY')?.trim()
       if (!geminiApiKey) {
         console.error('[Edge Function] ❌ GEMINI_API_KEY no encontrada o vacía en Supabase Secrets.')
@@ -604,11 +627,11 @@ Deno.serve(async (req: Request) => {
       }
       providerResult = await callGeminiProvider(fullPrompt, activeModel, geminiApiKey)
     } else {
-      console.error(`[Edge Function] ❌ Proveedor de IA desconocido: '${AI_PROVIDER}'.`)
+      console.error(`[Edge Function] ❌ Proveedor de IA desconocido: '${targetProvider}'.`)
       return jsonResponse(
         {
           success: false,
-          error: `Proveedor de IA no válido: '${AI_PROVIDER}'. Valores permitidos: 'groq' o 'gemini'.`,
+          error: `Proveedor de IA no válido: '${targetProvider}'. Valores permitidos: 'groq' o 'gemini'.`,
           code: 'UNKNOWN_AI_PROVIDER',
         },
         400,
@@ -628,7 +651,7 @@ Deno.serve(async (req: Request) => {
 
     const rawContent = providerResult.rawContent || ''
 
-    // 7. Parseo robusto y defensivo de respuesta estructurada
+    // 11. Parseo robusto y defensivo de respuesta estructurada
     const parsedResult = extractJsonObject(rawContent)
 
     if (!parsedResult) {
@@ -646,11 +669,22 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // 8. Sanitización de términos Pokémon oficiales en español (ej. Bolamadrastra -> Bola Luminosa)
+    // 12. Sanitización de términos Pokémon oficiales en español (ej. Bolamadrastra -> Bola Luminosa)
     const sanitizedResult = sanitizeSpanishPokemonTerms(parsedResult)
 
-    // 9. Validación de campos obligatorios requeridos por PokeGuide
-    const validation = validateAbilityAnalysis(sanitizedResult)
+    // 13. Validación y corrección de hechos objetivos contra Knowledge Layer (Fact Validator)
+    const factCheck = validateAndCorrectFacts(sanitizedResult, verifiedFacts)
+    const verifiedResult = factCheck.correctedResult
+
+    if (factCheck.wasCorrected) {
+      console.warn(
+        `[Edge Function] ⚠️ Fact Validator aplicó correcciones sobre la respuesta de ${activeProvider}:`,
+        factCheck.violationsFound,
+      )
+    }
+
+    // 14. Validación de campos obligatorios requeridos por PokeGuide
+    const validation = validateAbilityAnalysis(verifiedResult)
     if (!validation.valid) {
       console.error(
         `[Edge Function] ❌ Esquema incompleto en respuesta de ${activeProvider}. Campo faltante: '${validation.missingField}'`,
@@ -665,15 +699,34 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // 10. Respuesta final exitosa al cliente
+    // 15. Almacenamiento seguro en caché compartido (UPSERT atómico por contexto)
+    if (adminSupabase && pokemonId && abilityId) {
+      await saveCachedAnalysis(adminSupabase, {
+        pokemonId,
+        abilityId,
+        userLevel,
+        locale,
+        analysisJson: verifiedResult,
+        provider: activeProvider,
+        model: activeModel,
+      })
+    }
+
+    // 16. Respuesta final exitosa al cliente
     return jsonResponse(
       {
         success: true,
-        data: sanitizedResult,
+        data: verifiedResult,
         metadata: {
           type: analysisType,
+          cached: false,
+          cache_hit: false,
           provider: activeProvider,
           model: activeModel,
+          userLevel,
+          validationVersion: CURRENT_VALIDATION_VERSION,
+          factsEnforced: true,
+          factCorrectionsCount: factCheck.violationsFound.length,
           authenticatedUser: Boolean(userId),
           timestamp: Date.now(),
         },

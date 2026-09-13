@@ -11,6 +11,7 @@ function SettingsModal({ locale, onLocaleChange, t }) {
     user,
     profile,
     updateProfilePrivacy,
+    updateAiLevel,
     updateEmail,
     updatePasswordInSettings,
     signOut,
@@ -37,6 +38,11 @@ function SettingsModal({ locale, onLocaleChange, t }) {
   const [privacyMessage, setPrivacyMessage] = useState(null)
   const [privacyError, setPrivacyError] = useState(null)
 
+  // Estados para Nivel de IA
+  const [currentAiLevel, setCurrentAiLevel] = useState('beginner')
+  const [aiLevelMessage, setAiLevelMessage] = useState(null)
+  const [isSavingAiLevel, setIsSavingAiLevel] = useState(false)
+
   useEffect(() => {
     if (isSettingsOpen && profile) {
       setProfileVisibility(profile.profile_visibility || 'public')
@@ -44,6 +50,11 @@ function SettingsModal({ locale, onLocaleChange, t }) {
       setFollowListVisibility(profile.follow_list_visibility || 'public')
       setPrivacyMessage(null)
       setPrivacyError(null)
+    }
+    if (isSettingsOpen) {
+      const activeLvl = profile?.ai_level || window.localStorage.getItem('pokeguide_ai_level') || 'beginner'
+      setCurrentAiLevel(activeLvl)
+      setAiLevelMessage(null)
     }
   }, [isSettingsOpen, profile])
 
@@ -603,6 +614,84 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                         </div>
                         {isSelected && (
                           <span style={{ color: 'var(--coral)', fontWeight: 'bold' }}>✓</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* SECCIÓN: NIVEL DE ANÁLISIS DE IA */}
+              <div style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h4 style={{ font: '600 15px var(--display)', color: 'var(--navy)', margin: '0 0 6px' }}>
+                  {t?.aiLevel?.sectionTitle || 'Nivel de análisis de IA'}
+                </h4>
+                <p style={{ font: '12.5px var(--sans)', color: 'var(--muted)', margin: '0 0 14px' }}>
+                  {t?.aiLevel?.sectionSubtitle || 'Personaliza el lenguaje, profundidad y terminología de las explicaciones tácticas según tu experiencia.'}
+                </p>
+
+                {aiLevelMessage && (
+                  <div className="auth-alert alert-success" role="status" style={{ marginBottom: '12px' }}>
+                    {aiLevelMessage}
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                  {['beginner', 'intermediate', 'advanced', 'competitive'].map((lvl) => {
+                    const opt = t?.aiLevel?.options?.[lvl] || {}
+                    const isSelected = currentAiLevel === lvl
+
+                    return (
+                      <button
+                        key={lvl}
+                        type="button"
+                        className={`privacy-radio-card ${isSelected ? 'is-selected' : ''}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          border: isSelected ? '1.5px solid var(--coral)' : '1px solid var(--line)',
+                          background: isSelected ? '#fffafa' : '#ffffff',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.18s ease',
+                          position: 'relative',
+                        }}
+                        onClick={async () => {
+                          setCurrentAiLevel(lvl)
+                          setIsSavingAiLevel(true)
+                          setAiLevelMessage(null)
+                          try {
+                            const res = await updateAiLevel(lvl)
+                            if (res.success) {
+                              setAiLevelMessage(t?.aiLevel?.savedSuccess || 'Nivel de análisis de IA actualizado con éxito.')
+                              setTimeout(() => setAiLevelMessage(null), 3000)
+                            }
+                          } catch {
+                            // Silencioso
+                          } finally {
+                            setIsSavingAiLevel(false)
+                          }
+                        }}
+                        disabled={isSavingAiLevel}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                          <span style={{ font: '600 13.5px var(--display)', color: 'var(--navy)' }}>
+                            {opt.badge} {opt.name || lvl}
+                          </span>
+                          {isSelected && (
+                            <span style={{ color: 'var(--coral)', fontWeight: 'bold', fontSize: '13px' }}>✓</span>
+                          )}
+                        </div>
+                        <p style={{ margin: '0 0 4px', font: '500 12px var(--sans)', color: 'var(--ink)' }}>
+                          "{opt.description}"
+                        </p>
+                        {opt.details && (
+                          <small style={{ font: '11px var(--sans)', color: 'var(--muted)' }}>
+                            {opt.details}
+                          </small>
                         )}
                       </button>
                     )

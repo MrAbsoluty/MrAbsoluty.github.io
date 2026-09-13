@@ -27,7 +27,17 @@ const memoryCache = new Map()
 /**
  * Genera una clave de caché determinista según los parámetros de la consulta.
  */
+function getResolvedUserLevel(contextLevel) {
+  if (contextLevel) return contextLevel
+  try {
+    return window.localStorage.getItem('pokeguide_ai_level') || 'beginner'
+  } catch {
+    return 'beginner'
+  }
+}
+
 function getCacheKey(type, entityId, subId, context = {}) {
+  const resolvedLevel = getResolvedUserLevel(context.userLevel)
   const parts = [
     type,
     entityId?.toLowerCase(),
@@ -35,7 +45,7 @@ function getCacheKey(type, entityId, subId, context = {}) {
     context.platform || 'general',
     context.battleMode || 'singles',
     context.format || 'none',
-    context.userLevel || 'beginner',
+    resolvedLevel,
     context.locale || 'es',
   ]
   return parts.filter(Boolean).join(':')
@@ -98,7 +108,7 @@ export async function analyzeAbility({ pokemon, ability, context = {} }) {
       format: context.format || null,
       generation: context.generation || 9,
       battleMode: context.battleMode || 'singles',
-      userLevel: context.userLevel || 'beginner',
+      userLevel: getResolvedUserLevel(context.userLevel),
       locale: context.locale || 'es',
     },
   }

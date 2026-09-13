@@ -226,6 +226,39 @@ const es = {
     singlesTitle: 'Singles',
     doublesTitle: 'Doubles',
   },
+  aiLevel: {
+    sectionTitle: 'Nivel de análisis de IA',
+    sectionSubtitle: 'Personaliza el lenguaje, profundidad y terminología de las explicaciones tácticas según tu experiencia.',
+    savedSuccess: 'Nivel de análisis de IA actualizado con éxito.',
+    currentLevelBadge: 'Nivel activo',
+    options: {
+      beginner: {
+        name: 'Principiante',
+        badge: '🟢',
+        description: 'Estoy aprendiendo las bases del competitivo.',
+        details: 'Lenguaje sencillo, conceptos paso a paso y sin jerga innecesaria.',
+      },
+      intermediate: {
+        name: 'Intermedio',
+        badge: '🔵',
+        description: 'Conozco las mecánicas y quiero mejorar.',
+        details: 'Terminología competitiva estándar, roles y sinergias prácticas.',
+      },
+      advanced: {
+        name: 'Avanzado',
+        badge: '🟣',
+        description: 'Tengo experiencia en competitivo.',
+        details: 'Matchups, speed control, presión, setup y optimización.',
+      },
+      competitive: {
+        name: 'Competitivo',
+        badge: '🔴',
+        description: 'Quiero análisis técnico y profundo.',
+        details: 'Metajuego completo, teambuilding, cálculo de riesgos y tecnicismos.',
+      },
+    },
+  },
 }
 
 export default es
+

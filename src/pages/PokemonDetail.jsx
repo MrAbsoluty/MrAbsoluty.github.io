@@ -9,6 +9,7 @@ import PokemonFavoriteButton from '../components/PokemonFavoriteButton'
 import { getMegaForms, getRegionalForms, getAbilityDetails } from '../services/pokeapi'
 import { AbilityAIFocusMode } from '../components/AIAbilityAnalysis'
 import { analyzeAbility, AI_STATUS } from '../services/pokeguideAI'
+import { useAuth } from '../context/AuthContext'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
 import alolaFormSound from '../audio/alolaform.mp3'
@@ -38,6 +39,7 @@ function PokemonDetail({
   locale,
   onLocaleChange,
 }) {
+  const { profile } = useAuth()
   const [megaForms, setMegaForms] = useState([])
   const [isLoadingMegas, setIsLoadingMegas] = useState(false)
   const [activeForm, setActiveForm] = useState(null)
@@ -459,7 +461,13 @@ function PokemonDetail({
       context: {
         platform: 'general',
         battleMode: 'singles',
-        userLevel: 'beginner',
+        userLevel: profile?.ai_level || (() => {
+          try {
+            return window.localStorage.getItem('pokeguide_ai_level') || 'beginner'
+          } catch {
+            return 'beginner'
+          }
+        })(),
         locale: locale || 'es',
       },
     }

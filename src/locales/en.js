@@ -226,6 +226,39 @@ const en = {
     singlesTitle: 'Singles',
     doublesTitle: 'Doubles',
   },
+  aiLevel: {
+    sectionTitle: 'AI Analysis Level',
+    sectionSubtitle: 'Customize the language, depth, and terminology of tactical explanations according to your experience.',
+    savedSuccess: 'AI analysis level updated successfully.',
+    currentLevelBadge: 'Active level',
+    options: {
+      beginner: {
+        name: 'Beginner',
+        badge: '🟢',
+        description: 'I am learning the basics of competitive Pokémon.',
+        details: 'Simple language, step-by-step concepts, and no unnecessary jargon.',
+      },
+      intermediate: {
+        name: 'Intermediate',
+        badge: '🔵',
+        description: 'I know the mechanics and want to improve.',
+        details: 'Standard competitive terminology, roles, and practical synergies.',
+      },
+      advanced: {
+        name: 'Advanced',
+        badge: '🟣',
+        description: 'I have competitive battle experience.',
+        details: 'Matchups, speed control, pressure, setup, and optimization.',
+      },
+      competitive: {
+        name: 'Competitive',
+        badge: '🔴',
+        description: 'I want deep and highly technical analysis.',
+        details: 'Full metagame context, teambuilding, risk assessment, and technical jargon.',
+      },
+    },
+  },
 }
 
 export default en
+

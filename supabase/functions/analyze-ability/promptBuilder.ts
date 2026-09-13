@@ -3,8 +3,10 @@
  * Motor modular de construcción de prompts para PokeGuide AI.
  *
  * Separa conceptualmente:
- * MASTER_PROMPT + DYNAMIC_CONTEXT + POKEMON_DATA + ABILITY_DATA + FORMAT_CONTEXT
+ * MASTER_PROMPT + VERIFIED_FACTS (Knowledge Layer) + DYNAMIC_CONTEXT (User Level) + POKEMON_DATA + ABILITY_DATA + FORMAT_CONTEXT
  */
+
+import { type VerifiedAbilityFacts } from './knowledgeLayer.ts'
 
 export interface PokemonContextData {
   name: string
@@ -25,7 +27,7 @@ export interface AnalysisContext {
   format?: string | null // ej. "OU", "UU", "Ubers", "VGC", "Regulation H"
   generation?: number | string | null // ej. 9
   battleMode?: 'singles' | 'doubles' | 'vgc' | string | null
-  userLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert' | string
+  userLevel?: 'beginner' | 'intermediate' | 'advanced' | 'competitive' | string
   locale?: 'es' | 'es-419' | 'en' | string
 }
 
@@ -41,31 +43,39 @@ export interface AnalysisRequestPayload {
  * de metagames competitivos de PokeGuide AI.
  */
 export const MASTER_PROMPT = `
-Eres PokeGuide AI, el analista de élite especializado en Pokémon competitivo de la plataforma PokeGuide.
-Tu misión es proporcionar análisis tácticos profundos, pedagógicos y precisos sobre Pokémon, habilidades, movimientos, objetos y metagames.
+Eres PokeGuide AI, el analista y educador de élite especializado en Pokémon competitivo de la plataforma PokeGuide.
+Tu misión es interpretar, contextualizar y enseñar conocimiento verificado con rigor y precisión pedagógica.
+
+PRINCIPIO FUNDAMENTAL:
+"PokeGuide AI no debe inventar el conocimiento; debe interpretar, contextualizar y enseñar conocimiento verificado."
 
 REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
-1. DISTINCIÓN RIGUROSA DE FORMATOS:
+1. FUENTE DE VERDAD Y REGLAS FACTUALES:
+   - Los datos proporcionados en [HECHOS VERIFICADOS OBLIGATORIOS] son la verdad absoluta.
+   - NUNCA contradigas, alteres ni inventes efectos que no aparezcan en los hechos verificados.
+   - Si no tienes suficiente información para afirmar algo, indícalo claramente en lugar de especular.
+   - NUNCA atribuyas a una habilidad un cambio de estadística que no aparezca en los datos verificados.
+   - DISTINCIÓN ESTRICTA DE VELOCIDAD: NUNCA confundas una reducción de frecuencia de actuación (ej. turnos alternos) con una reducción de la estadística de Velocidad (Speed).
+     * En Truant (Ausente): El Pokémon NO puede atacar en turnos alternos (holgazanea en turnos pares). Esto NO reduce su estadística de Velocidad. Su Speed es idéntica y se calcula normalmente. Queda terminantemente PROHIBIDO decir "reduce la velocidad", "disminuye speed", "hace más lento" o expresiones similares.
+     * En Huge Power / Pure Power: Duplica ÚNICAMENTE el Ataque físico (x2), jamás la Velocidad ni el Ataque Especial.
+     * En Drought (Sequía): Activa Sol (Luz Solar Intensa), jamás lluvia ni tormentas.
+     * En Wonder Guard (Superguarda): Solo es vulnerable a daño directo de movimientos supereficaces; el daño indirecto le afecta con normalidad.
+     * En Intimidate (Intimidación): Reduce el Ataque físico del rival en 1 nivel, NO la Velocidad ni la Defensa.
+
+2. DISTINCIÓN RIGUROSA DE FORMATOS:
    - NUNCA asumas que las reglas de un formato aplican a otro.
-   - Singles (Individuales/Smogon): El combate se basa en ritmo, cambios continuos, control de trampas de rocas/púas (hazards), wallbreaking y sweepers.
-   - Doubles / VGC (Dobles Oficial): El combate se basa en control de velocidad (Tailwind, Trick Room), Protección (Protect), Fake Out, redirección (Follow Me) y daño en área.
-   - Pokémon Showdown: Respeta las cláusulas de Smogon (Sleep Clause, Evasion Clause, etc.) y tiers específicas si se indican.
-   - Pokémon Champions: Considera las mecánicas propias de dicho ecosistema.
-2. RIGOR MECÁNICO:
-   - No inventes interacciones ni estadísticas. Si la habilidad interactúa con climas, estados alterados o tipos específicos, explica exactamente cómo y por qué.
-3. ADAPTACIÓN AL NIVEL DEL USUARIO (userLevel):
-   - "beginner": Explicaciones didácticas, claras y motivadoras. Usa analogías sencillas, evita jerga cruda sin explicar o acompáñala de su significado.
-   - "intermediate": Enfoque práctico con terminología estándar (STAB, Pivot, Sweeper, Wall, Hazard, Check, Counter).
-   - "advanced" o "expert": Análisis minucioso de metagame, sinergias complejas, distribución de amenazas y cálculo de riesgo/recompensa.
-4. IDIOMA Y TERMINOLOGÍA OFICIAL DE POKÉMON EN ESPAÑOL:
+   - Singles (Individuales/Smogon): Ritmo, cambios continuos, control de hazards (trampas/púas), wallbreaking y sweepers.
+   - Doubles / VGC (Dobles Oficial): Control de velocidad (Tailwind, Trick Room), Protección (Protect), Fake Out, redirección (Follow Me), sinergia directa con el compañero y daño en área.
+
+3. IDIOMA Y TERMINOLOGÍA OFICIAL DE POKÉMON EN ESPAÑOL:
    - Responde SIEMPRE en el idioma especificado en el contexto (Español para "es" y "es-419", Inglés para "en").
    - Utiliza rigurosamente los nombres canónicos oficiales de Nintendo / Game Freak en español.
    - PROHIBIDAS TERMINANTEMENTE LAS TRADUCCIONES LITERALES O ALUCINADAS:
      * "Light Ball" NUNCA es "Bolamadrastra" ni "Bola ligera" -> DEBE SER SIEMPRE "Bola Luminosa".
      * "Life Orb" NUNCA es "Orbe de Vida" ni "Esfera de Vida" -> DEBE SER SIEMPRE "Vidasfera".
-     * "Choice Band" -> "Cinta Elección" o "Cinta Elegida".
-     * "Choice Specs" -> "Gafas Elección" o "Gafas Elegidas".
-     * "Choice Scarf" -> "Pañuelo Elección" o "Pañuelo Elegido".
+     * "Choice Band" -> "Cinta Elección".
+     * "Choice Specs" -> "Gafas Elección".
+     * "Choice Scarf" -> "Pañuelo Elección".
      * "Focus Sash" -> "Banda Focus".
      * "Focus Band" -> "Cinta Focus".
      * "Assault Vest" -> "Chaleco Asalto".
@@ -85,8 +95,9 @@ REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
      * "Weakness Policy" -> "Seguro Debilidad".
      * "Throat Spray" -> "Espray Bucal".
      * "Safety Goggles" -> "Gafas Protectoras".
-5. FORMATO DE SALIDA:
-   - La respuesta DEBE ser EXCLUSIVAMENTE un único objeto JSON válido sin sintaxis Markdown, sin bloques de código y sin explicaciones antes o después.
+
+4. FORMATO DE SALIDA:
+   - La respuesta DEBE ser EXCLUSIVAMENTE un único objeto JSON válido sin sintaxis Markdown, sin bloques de código y sin texto antes o después.
 `
 
 /**
@@ -109,6 +120,10 @@ export const ABILITY_RESPONSE_SCHEMA = {
         label: {
           type: 'STRING',
           description: 'Etiqueta cualitativa: Deficiente, Situacional, Buena, Muy buena, Excelente o Imprescindible.',
+        },
+        source: {
+          type: 'STRING',
+          description: 'Origen de la calificación: deterministic, hybrid o ai.',
         },
       },
       required: ['score', 'label'],
@@ -189,8 +204,12 @@ export const GROQ_ABILITY_RESPONSE_SCHEMA = {
             type: 'string',
             description: 'Etiqueta cualitativa: Deficiente, Situacional, Buena, Muy buena, Excelente o Imprescindible.',
           },
+          source: {
+            type: 'string',
+            description: 'Origen de la evaluación: deterministic, hybrid o ai.',
+          },
         },
-        required: ['score', 'label'],
+        required: ['score', 'label', 'source'],
         additionalProperties: false,
       },
       strengths: {
@@ -248,15 +267,16 @@ export const GROQ_ABILITY_RESPONSE_SCHEMA = {
 }
 
 /**
- * Instrucción explícita del esquema JSON esperado por el frontend (100% JSON puro, sin comentarios).
+ * Instrucción explícita del esquema JSON esperado por el frontend.
  */
 export const JSON_SCHEMA_INSTRUCTIONS = `
-Estructura JSON obligatoria de salida (DEBE ser un JSON estrictamente válido, sin comentarios):
+Estructura JSON obligatoria de salida (DEBE ser un JSON estrictamente válido, sin comentarios ni sintaxis Markdown):
 {
   "summary": "Resumen conciso y directo del impacto de la habilidad en combate.",
   "rating": {
     "score": 8,
-    "label": "Excelente"
+    "label": "Excelente",
+    "source": "deterministic"
   },
   "strengths": [
     "Punto fuerte 1 con contexto táctico",
@@ -283,20 +303,101 @@ Estructura JSON obligatoria de salida (DEBE ser un JSON estrictamente válido, s
 Reglas sobre los valores:
 - "rating.score": número del 1 al 10.
 - "rating.label": una de: "Deficiente", "Situacional", "Buena", "Muy buena", "Excelente", "Imprescindible".
-- NO incluyas comentarios con // ni /* */ dentro del JSON.
+- "rating.source": "deterministic", "hybrid" o "ai".
 `
 
+/**
+ * Construye la sección de Hechos Verificados provenientes del Knowledge Layer.
+ */
+export function buildVerifiedFactsSection(facts?: VerifiedAbilityFacts): string {
+  if (!facts) return ''
+
+  const statChangesStr = facts.statChanges.length > 0
+    ? facts.statChanges.map((s) => s.explanation).join('; ')
+    : 'Ninguno (Esta habilidad NO modifica directamente ninguna estadística base ni niveles de stats).'
+
+  const turnCycleStr = facts.turnCycle
+    ? `Ciclo de turnos: ${facts.turnCycle.pattern}. ${facts.turnCycle.explanation}`
+    : 'Ciclo de turnos: Estándar (actúa en cada turno según iniciativa).'
+
+  const prohibitedStr = facts.prohibitedClaims.length > 0
+    ? facts.prohibitedClaims.map((p) => `"${p}"`).join(', ')
+    : 'Ninguna adicional.'
+
+  const ratingHint = facts.deterministicRating
+    ? `- Calificación objetiva de referencia: ${facts.deterministicRating.score}/10 (${facts.deterministicRating.label})`
+    : ''
+
+  return `
+[HECHOS VERIFICADOS OBLIGATORIOS (KNOWLEDGE LAYER - VERIFIED FACTS)]
+Los siguientes datos son inmutables y la ÚNICA fuente de verdad para este análisis:
+- Habilidad: ${facts.canonicalName}
+- Efecto oficial en el juego: ${facts.officialEffect}
+- Modificaciones de estadísticas comprobadas: ${statChangesStr}
+- Interacción con la estadística Speed (Velocidad): ${facts.speedChanges.explanation}
+- ${turnCycleStr}
+- Activación: ${facts.activation}
+- Categoría táctica: ${facts.category}
+${ratingHint}
+- AFIRMACIONES ESTRICTAMENTE PROHIBIDAS: ${prohibitedStr}
+
+REGLAS FACTUALES OBLIGATORIAS:
+1. No puedes contradecir, modificar ni reinterpretar estos hechos verificados.
+2. NUNCA atribuyas a una habilidad un cambio de estadística que no aparezca en los datos verificados.
+3. NUNCA confundas una reducción de frecuencia de actuación (turnos alternos) con una reducción de la estadística Speed.
+`
+}
 
 /**
- * Construye la sección del contexto dinámico (plataforma, modo, nivel, idioma).
+ * Construye el contexto dinámico adaptado rigurosamente al nivel del usuario (Fase 1, 7 y 9).
  */
 export function buildDynamicContext(context: AnalysisContext = {}): string {
   const platform = context.platform || 'general'
   const battleMode = context.battleMode || 'singles'
   const format = context.format || 'Estándar'
   const generation = context.generation ? `Gen ${context.generation}` : 'Gen 9 (Actual)'
-  const userLevel = context.userLevel || 'beginner'
+  const userLevel = (context.userLevel || 'beginner').toLowerCase()
   const locale = context.locale || 'es'
+
+  let pedagogicalGuidance = ''
+
+  if (userLevel === 'beginner') {
+    pedagogicalGuidance = `
+DIRECTRICES DIDÁCTICAS PARA NIVEL PRINCIPIANTE (beginner):
+- Objetivo: Usuario que está aprendiendo Pokémon competitivo.
+- Utiliza lenguaje sencillo, claro y motivador.
+- Explica los términos competitivos siempre que los uses (ej. si mencionas qué es STAB, explícalo brevemente).
+- Utiliza ejemplos concretos y paso a paso (ej. qué ocurre exactamente en el turno 1 y en el turno 2).
+- Evita jerga técnica innecesaria ("speed tiers", "momentum", "wallbreaker", "spread", "hazard stacking").
+- En Truant: explica que el Pokémon puede atacar un turno y en el siguiente holgazanea descansando, sin complicar con términos abstractos.
+`
+  } else if (userLevel === 'intermediate') {
+    pedagogicalGuidance = `
+DIRECTRICES TÁCTICAS PARA NIVEL INTERMEDIO (intermediate):
+- Objetivo: Usuario que conoce las bases competitivas y mecánicas esenciales.
+- Utiliza terminología competitiva estándar: STAB, Sweeper, Muralla (Wall), Pivote, Check, Counter, Hazard, Sinergia.
+- Explica estrategias claras y cómo la habilidad define el rol del Pokémon en el equipo.
+- Reduce explicaciones demasiado básicas sobre qué es un tipo o qué es daño físico.
+- En Truant: explica que obliga a alternar turnos activos e inactivos, facilitando que el rival se prepare en el turno libre.
+`
+  } else if (userLevel === 'advanced') {
+    pedagogicalGuidance = `
+DIRECTRICES ESTRATÉGICAS PARA NIVEL AVANZADO (advanced):
+- Objetivo: Usuario con experiencia competitiva sólida.
+- Utiliza terminología competitiva avanzada: Matchups, control de velocidad (speed control), presión ofensiva (pressure), setup, condición de victoria (win condition), momentum.
+- Céntrate en optimización, escenarios de riesgo/recompensa y tempo de la partida.
+- En Truant: explica que impone un ciclo de acción/inacción que elimina la presión ofensiva constante y concede turnos de setup gratuitos al oponente.
+`
+  } else if (userLevel === 'competitive') {
+    pedagogicalGuidance = `
+DIRECTRICES DE ÉLITE PARA NIVEL COMPETITIVO (competitive):
+- Objetivo: Usuario avanzado/competitivo y jugador de torneos.
+- Utiliza terminología técnica completa y análisis profundo.
+- Analiza el metajuego específico, roles, teambuilding, distribución de amenazas, daño relativo y counterplay óptimo.
+- Asume conocimientos previos avanzados sin explicaciones introductorias.
+- En Truant: analiza el gravísimo déficit de tempo, la extrema vulnerabilidad frente a Protect/Substitute y las posibles opciones nicho (como Gastro Acid o Skill Swap/Entrainment en VGC).
+`
+  }
 
   return `
 [CONTEXTO DEL ANÁLISIS]
@@ -304,8 +405,9 @@ export function buildDynamicContext(context: AnalysisContext = {}): string {
 - Modalidad de Batalla: ${battleMode.toUpperCase()}
 - Formato / Tier: ${format}
 - Generación: ${generation}
-- Nivel de audiencia: ${userLevel}
+- Nivel de audiencia asignado: ${userLevel.toUpperCase()}
 - Idioma de respuesta requerido: ${locale === 'es-419' ? 'Español Latinoamericano' : locale === 'en' ? 'Inglés' : 'Español'}
+${pedagogicalGuidance}
 `
 }
 
@@ -381,10 +483,14 @@ ${notes}
 }
 
 /**
- * Ensambla el prompt completo para enviar a Gemini API.
+ * Ensambla el prompt completo para enviar al proveedor de IA.
  */
-export function buildFullPrompt(payload: AnalysisRequestPayload): string {
+export function buildFullPrompt(
+  payload: AnalysisRequestPayload,
+  verifiedFacts?: VerifiedAbilityFacts,
+): string {
   const master = MASTER_PROMPT.trim()
+  const facts = buildVerifiedFactsSection(verifiedFacts).trim()
   const dynamic = buildDynamicContext(payload.context).trim()
   const pokemon = buildPokemonData(payload.pokemon).trim()
   const ability = buildAbilityData(payload.ability).trim()
@@ -393,7 +499,7 @@ export function buildFullPrompt(payload: AnalysisRequestPayload): string {
 
   return `${master}
 
-${dynamic}
+${facts ? `${facts}\n\n` : ''}${dynamic}
 
 ${pokemon}
 
@@ -402,7 +508,68 @@ ${ability}
 ${formatCtx}
 
 INSTRUCCIÓN FINAL:
-Analiza en profundidad la habilidad indicada para el Pokémon especificado bajo el contexto anterior.
+Analiza en profundidad la habilidad indicada para el Pokémon especificado respetando rigurosamente los hechos verificados y adaptando la explicación al nivel de usuario indicado.
 ${schema}
 `
 }
+
+/**
+ * Valida que la estructura del análisis de habilidad devuelta por la IA contenga
+ * todos los campos requeridos por el frontend de PokeGuide.
+ */
+export function validateAbilityAnalysis(data: Record<string, unknown>): { valid: boolean; missingField?: string } {
+  if (!data || typeof data !== 'object') {
+    return { valid: false, missingField: 'root' }
+  }
+
+  if (typeof data.summary !== 'string' || !data.summary.trim()) {
+    return { valid: false, missingField: 'summary' }
+  }
+
+  if (!data.rating || typeof data.rating !== 'object') {
+    return { valid: false, missingField: 'rating' }
+  }
+
+  const rating = data.rating as Record<string, unknown>
+  if (typeof rating.score !== 'number' && isNaN(Number(rating.score))) {
+    return { valid: false, missingField: 'rating.score' }
+  }
+  if (typeof rating.label !== 'string' || !rating.label.trim()) {
+    return { valid: false, missingField: 'rating.label' }
+  }
+
+  if (!Array.isArray(data.strengths) || data.strengths.length === 0) {
+    return { valid: false, missingField: 'strengths' }
+  }
+
+  if (!Array.isArray(data.weaknesses) || data.weaknesses.length === 0) {
+    return { valid: false, missingField: 'weaknesses' }
+  }
+
+  if (!Array.isArray(data.synergies)) {
+    return { valid: false, missingField: 'synergies' }
+  }
+
+  if (typeof data.singles !== 'string' || !data.singles.trim()) {
+    return { valid: false, missingField: 'singles' }
+  }
+
+  if (typeof data.doubles !== 'string' || !data.doubles.trim()) {
+    return { valid: false, missingField: 'doubles' }
+  }
+
+  if (!Array.isArray(data.whenToUse)) {
+    return { valid: false, missingField: 'whenToUse' }
+  }
+
+  if (!Array.isArray(data.whenToAvoid)) {
+    return { valid: false, missingField: 'whenToAvoid' }
+  }
+
+  if (typeof data.competitiveTip !== 'string' || !data.competitiveTip.trim()) {
+    return { valid: false, missingField: 'competitiveTip' }
+  }
+
+  return { valid: true }
+}
+

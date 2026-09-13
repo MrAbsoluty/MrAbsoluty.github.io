@@ -195,13 +195,13 @@ export function AuthProvider({ children }) {
       setIsCheckingProfile(true)
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio, featured_pokemon, profile_visibility, favorites_visibility, follow_list_visibility, created_at, updated_at')
+        .select('id, username, avatar_url, bio, featured_pokemon, profile_visibility, favorites_visibility, follow_list_visibility, ai_level, created_at, updated_at')
         .eq('id', userId)
         .maybeSingle()
 
       if (error) {
         // Fallback si las nuevas columnas aún no existen en Supabase
-        if (error.code === '42703' || error.message?.includes('column') || error.message?.includes('avatar_url')) {
+        if (error.code === '42703' || error.message?.includes('column') || error.message?.includes('avatar_url') || error.message?.includes('ai_level')) {
           const fallback = await supabase
             .from('profiles')
             .select('id, username, avatar_url, created_at, updated_at')
@@ -226,6 +226,13 @@ export function AuthProvider({ children }) {
         return null
       }
 
+      if (data?.ai_level) {
+        try {
+          window.localStorage.setItem('pokeguide_ai_level', data.ai_level)
+        } catch {
+          // Silencioso
+        }
+      }
       setProfile(data || null)
       return data || null
     } catch (err) {
@@ -869,6 +876,47 @@ export function AuthProvider({ children }) {
     }
   }, [user])
 
+  // Actualizar nivel de análisis de IA (beginner, intermediate, advanced, competitive)
+  const updateAiLevel = useCallback(async (newLevel) => {
+    const validLevels = ['beginner', 'intermediate', 'advanced', 'competitive']
+    if (!validLevels.includes(newLevel)) {
+      return { success: false, error: 'Nivel de análisis de IA no válido.' }
+    }
+
+    try {
+      window.localStorage.setItem('pokeguide_ai_level', newLevel)
+    } catch {
+      // Silencioso
+    }
+
+    // Actualizar estado local inmediatamente para reactividad visual óptima
+    setProfile((prev) => (prev ? { ...prev, ai_level: newLevel } : { ai_level: newLevel }))
+
+    if (!user || !supabase) {
+      return { success: true, ai_level: newLevel }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ ai_level: newLevel })
+        .eq('id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.warn('[PokeGuide Auth] No se pudo guardar ai_level en Supabase (posible columna pendiente de migración):', error.message)
+        return { success: true, ai_level: newLevel, warning: error.message }
+      }
+
+      setProfile(data)
+      return { success: true, profile: data, ai_level: newLevel }
+    } catch (err) {
+      console.error('[PokeGuide Auth] Error al persistir ai_level en Supabase:', err)
+      return { success: true, ai_level: newLevel }
+    }
+  }, [user])
+
   // Escuchar en tiempo real solicitudes de seguimiento entrantes
   useEffect(() => {
     if (!user?.id || !supabase) return undefined
@@ -1031,6 +1079,7 @@ export function AuthProvider({ children }) {
       pendingRequestsCount,
       updateBioAndFeaturedPokemon,
       updateProfilePrivacy,
+      updateAiLevel,
       isChatOpen,
       isChatMinimized,
       activeChatFriend,
