@@ -4,6 +4,7 @@
 @import './styles/auth.css';
 @import './styles/profile.css';
 @import './styles/floating-chat.css';
+@import './styles/ai-ability-analysis.css';
 
 :root { --ink: #17212b; --muted: #6c747d; --paper: #f7f8f5; --line: #dfe4df; --coral: #ed6d5d; --navy: #172733; --serif: Georgia, 'Times New Roman', serif; --sans: 'DM Sans', 'Segoe UI', sans-serif; --display: 'Space Grotesk', 'Segoe UI', sans-serif; }
 * { box-sizing: border-box; }

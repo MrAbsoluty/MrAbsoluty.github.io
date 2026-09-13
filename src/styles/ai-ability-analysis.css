@@ -1,0 +1,1426 @@
+/* ==========================================================================
+   POKEGUIDE AI — ESTILOS DEL ANÁLISIS COMPETITIVO DE HABILIDADES
+   Integración armónica con la paleta de PokeGuide:
+   --coral (#ed6d5d), --navy (#172733), --ink (#17212b), --paper (#f7f8f5)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. BOTÓN DE DISPARO (TRIGGER) MEJORADO
+   -------------------------------------------------------------------------- */
+.ability-ai-btn.is-loading {
+  background: linear-gradient(135deg, #fff2ef 0%, #ffe5df 100%);
+  border-color: var(--coral);
+  color: var(--coral);
+  cursor: wait;
+  box-shadow: 0 0 0 3px rgba(237, 109, 93, 0.2);
+}
+
+.ability-ai-btn.is-loading .ability-ai-icon {
+  animation: aiButtonSpin 1s linear infinite;
+}
+
+.ability-ai-btn.is-active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(237, 109, 93, 0.4);
+}
+
+@keyframes aiButtonSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. CONTENEDOR PRINCIPAL DEL ANÁLISIS
+   -------------------------------------------------------------------------- */
+.ai-analysis-container {
+  margin-top: 14px;
+  width: 100%;
+  animation: aiSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes aiSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. ESTADO DE CARGA (LOADING / SKELETON)
+   -------------------------------------------------------------------------- */
+.ai-loading-card {
+  background: #ffffff;
+  border: 1px solid rgba(237, 109, 93, 0.28);
+  border-radius: 12px;
+  padding: 22px 20px;
+  box-shadow: 0 8px 24px rgba(23, 39, 51, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-loading-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--coral), transparent);
+  animation: aiTrackSweep 1.6s ease-in-out infinite;
+}
+
+@keyframes aiTrackSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.ai-loading-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ai-loading-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(237, 109, 93, 0.2);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  animation: aiButtonSpin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.ai-loading-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-loading-eyebrow {
+  font: 700 10px var(--display);
+  letter-spacing: 0.14em;
+  color: var(--coral);
+  text-transform: uppercase;
+}
+
+.ai-loading-title {
+  font: 600 14px var(--display);
+  color: var(--navy);
+  margin: 0;
+}
+
+.ai-loading-subtitle {
+  font: 400 12.5px/1.5 var(--sans);
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.ai-loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-skeleton-line {
+  height: 12px;
+  background: #f0f3ef;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-skeleton-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
+  animation: aiShimmer 1.5s infinite;
+}
+
+.ai-skeleton-line.w-full {
+  width: 100%;
+}
+
+.ai-skeleton-line.w-85 {
+  width: 85%;
+}
+
+.ai-skeleton-line.w-60 {
+  width: 60%;
+}
+
+.ai-skeleton-line.h-lg {
+  height: 28px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+@keyframes aiShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. ESTADO DE ERROR (ERROR CARD)
+   -------------------------------------------------------------------------- */
+.ai-error-card {
+  background: #fff8f6;
+  border: 1px solid #ffd8d1;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-error-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-error-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fed7d2;
+  color: #c93b2b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.ai-error-eyebrow {
+  font: 700 10px var(--display);
+  letter-spacing: 0.12em;
+  color: #c93b2b;
+  text-transform: uppercase;
+}
+
+.ai-error-title {
+  font: 600 14px var(--display);
+  color: var(--navy);
+  margin: 0;
+}
+
+.ai-error-message {
+  font: 400 13px/1.5 var(--sans);
+  color: #6b3e39;
+  margin: 0;
+}
+
+.ai-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ai-retry-btn {
+  background: var(--navy);
+  color: #ffffff;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font: 600 12px var(--display);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.ai-retry-btn:hover {
+  background: var(--coral);
+  transform: translateY(-1px);
+}
+
+.ai-retry-btn:active {
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   5. TARJETA DE ANÁLISIS PRINCIPAL (SUCCESS CARD)
+   -------------------------------------------------------------------------- */
+.ai-analysis-card {
+  background: #ffffff;
+  border: 1px solid rgba(23, 39, 51, 0.1);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(23, 39, 51, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Encabezado del Análisis */
+.ai-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf1ec;
+}
+
+.ai-card-heading-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-card-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #fff3f0 0%, #ffe9e4 100%);
+  color: var(--coral);
+  border: 1px solid rgba(237, 109, 93, 0.3);
+  border-radius: 100px;
+  padding: 3px 9px;
+  font: 700 10px var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-brand-badge .ai-spark-icon {
+  font-size: 11px;
+}
+
+.ai-context-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f4f0;
+  color: var(--muted);
+  border-radius: 100px;
+  padding: 3px 8px;
+  font: 600 10px var(--sans);
+  text-transform: capitalize;
+}
+
+.ai-card-title {
+  font: 700 16px/1.3 var(--display);
+  color: var(--navy);
+  margin: 4px 0 0;
+}
+
+.ai-card-close-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.ai-card-close-btn:hover {
+  background: #f3f6f3;
+  color: var(--navy);
+  border-color: var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   6. RATING COMPETITIVO
+   -------------------------------------------------------------------------- */
+.ai-rating-banner {
+  background: linear-gradient(135deg, #fafbf9 0%, #f4f7f3 100%);
+  border: 1px solid #e5ebe4;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ai-rating-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-score-box {
+  background: var(--navy);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  box-shadow: 0 4px 12px rgba(23, 39, 51, 0.15);
+}
+
+.ai-score-value {
+  font: 700 22px var(--display);
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.ai-score-max {
+  font: 500 11px var(--sans);
+  color: #a4b3be;
+}
+
+.ai-rating-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-rating-label {
+  font: 600 10.5px var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.ai-rating-qualifier {
+  font: 700 14px var(--display);
+  color: var(--navy);
+}
+
+.ai-rating-qualifier.score-high {
+  color: #1f8b4d;
+}
+
+.ai-rating-qualifier.score-medium {
+  color: #cf7c08;
+}
+
+.ai-rating-qualifier.score-low {
+  color: #c93b2b;
+}
+
+.ai-rating-bar-wrap {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-rating-bar-track {
+  flex: 1;
+  height: 6px;
+  background: #e2e8e1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ai-rating-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ed6d5d 0%, #1f8b4d 100%);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --------------------------------------------------------------------------
+   7. RESUMEN TÁCTICO
+   -------------------------------------------------------------------------- */
+.ai-section-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-section-title {
+  font: 700 11px var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.ai-section-title-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.ai-summary-text {
+  font: 400 13.5px/1.65 var(--sans);
+  color: var(--ink);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   8. GRILLA DE FORTALEZAS Y DEBILIDADES
+   -------------------------------------------------------------------------- */
+.ai-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ai-strengths-card,
+.ai-weaknesses-card {
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-strengths-card {
+  background: #f5fbf7;
+  border: 1px solid #d3ebd9;
+}
+
+.ai-strengths-card .ai-section-title {
+  color: #1c7a43;
+}
+
+.ai-weaknesses-card {
+  background: #fff8f7;
+  border: 1px solid #fedcd7;
+}
+
+.ai-weaknesses-card .ai-section-title {
+  color: #b53829;
+}
+
+.ai-bullet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-bullet-item {
+  font: 400 12.5px/1.55 var(--sans);
+  color: var(--ink);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ai-bullet-icon {
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ai-bullet-icon.green {
+  color: #1f8b4d;
+}
+
+.ai-bullet-icon.red {
+  color: #c93b2b;
+}
+
+/* --------------------------------------------------------------------------
+   9. SINERGIAS RECOMENDADAS (CHIPS)
+   -------------------------------------------------------------------------- */
+.ai-synergies-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.ai-synergy-pill {
+  background: #f3f6f3;
+  color: var(--navy);
+  border: 1px solid #dde3dc;
+  border-radius: 100px;
+  padding: 5px 12px;
+  font: 600 12px var(--sans);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.ai-synergy-pill:hover {
+  background: #ffffff;
+  border-color: var(--coral);
+  color: var(--coral);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(237, 109, 93, 0.15);
+}
+
+.ai-synergy-icon {
+  font-size: 11px;
+  color: var(--coral);
+}
+
+/* --------------------------------------------------------------------------
+   10. FORMATOS COMPETITIVOS (SINGLES VS DOUBLES / VGC)
+   -------------------------------------------------------------------------- */
+.ai-formats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ai-format-card {
+  background: #ffffff;
+  border: 1px solid #e6ebe5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(23, 39, 51, 0.03);
+}
+
+.ai-format-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 11px var(--display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+
+.ai-format-icon {
+  font-size: 14px;
+}
+
+.ai-format-text {
+  font: 400 12.5px/1.6 var(--sans);
+  color: var(--ink);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   11. CUÁNDO USARLA VS CUÁNDO EVITARLA
+   -------------------------------------------------------------------------- */
+.ai-usage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ai-usage-card {
+  background: #fafbf9;
+  border: 1px solid #e7ede6;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-usage-card .ai-section-title {
+  color: var(--navy);
+}
+
+/* --------------------------------------------------------------------------
+   12. CONSEJO PRO COMPETITIVO (HIGHLIGHT BOX)
+   -------------------------------------------------------------------------- */
+.ai-protip-box {
+  background: linear-gradient(135deg, #fff8f5 0%, #fff0eb 100%);
+  border: 1px solid rgba(237, 109, 93, 0.35);
+  border-left: 4px solid var(--coral);
+  border-radius: 10px;
+  padding: 15px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ai-protip-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ai-protip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-protip-label {
+  font: 700 11px var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--coral);
+}
+
+.ai-protip-text {
+  font: 500 13px/1.6 var(--sans);
+  color: var(--navy);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   13. PIE DE TARJETA & DISCLAIMER
+   -------------------------------------------------------------------------- */
+.ai-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid #edf1ec;
+  font: 500 11px var(--sans);
+  color: var(--muted);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ai-disclaimer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-disclaimer-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--coral);
+  opacity: 0.7;
+}
+
+/* --------------------------------------------------------------------------
+   14. RESPONSIVE DESIGN (< 768px y < 480px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .ai-split-grid,
+  .ai-formats-grid,
+  .ai-usage-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ai-rating-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .ai-rating-bar-wrap {
+    width: 100%;
+  }
+
+  .ai-analysis-card {
+    padding: 16px;
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-card-title {
+    font-size: 14.5px;
+  }
+
+  .ai-score-value {
+    font-size: 19px;
+  }
+
+  .ai-protip-box {
+    padding: 12px 14px;
+  }
+
+  .ai-synergies-wrap {
+    gap: 6px;
+  }
+
+  .ai-synergy-pill {
+    padding: 4px 9px;
+    font-size: 11.5px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   15. ACCESIBILIDAD — PREFERS-REDUCED-MOTION
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .ability-ai-btn.is-loading .ability-ai-icon,
+  .ai-loading-spinner,
+  .ai-skeleton-line::after,
+  .ai-loading-card::before,
+  .ability-ai-focus-backdrop,
+  .ability-ai-focus-card,
+  .ability-ai-focus-content {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .ai-analysis-container,
+  .ai-rating-bar-fill,
+  .ability-ai-focus-bar-fill {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   16. ABILITY AI FOCUS MODE — EXPANSIÓN HORIZONTAL + VERTICAL (FASE 1.3)
+   ========================================================================== */
+
+/* Backdrop difuminado y oscurecido */
+.ability-ai-focus-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 14, 24, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1040;
+  animation: abilityFocusBackdropFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  cursor: pointer;
+}
+
+@keyframes abilityFocusBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Tarjeta Focus Mode con dimensiones exactas desktop/móvil y animación de evolución */
+.ability-ai-focus-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1200px, 90vw);
+  height: min(850px, 88vh);
+  background: rgba(13, 22, 38, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+  z-index: 1045;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: abilityFocusCardExpand 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.4s ease, width 0.45s ease, height 0.45s ease, border-radius 0.45s ease, opacity 0.3s ease;
+}
+
+@keyframes abilityFocusCardExpand {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Encabezado del Focus Mode */
+.ability-ai-focus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 32px;
+  background: rgba(18, 30, 50, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.ability-ai-focus-header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ability-ai-focus-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ability-ai-focus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(237, 109, 93, 0.18);
+  border: 1px solid rgba(237, 109, 93, 0.35);
+  border-radius: 100px;
+  font: 700 11px var(--display, inherit);
+  letter-spacing: 0.12em;
+  color: var(--coral, #ed6d5d);
+  text-transform: uppercase;
+}
+
+.ability-ai-focus-spark {
+  font-size: 12px;
+}
+
+.ability-ai-focus-pokemon-pill,
+.ability-ai-focus-mode-pill {
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 100px;
+  font: 600 11px var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.04em;
+}
+
+.ability-ai-focus-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.ability-ai-focus-ability-name {
+  margin: 0;
+  font: 800 24px/1.2 var(--display, inherit);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.01em;
+}
+
+.ability-ai-focus-weather-icon {
+  font-size: 22px;
+}
+
+.ability-ai-focus-raw-name {
+  font: 500 15px var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.ability-ai-focus-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ability-ai-focus-esc-hint {
+  font: 500 11.5px var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.02em;
+}
+
+.ability-ai-focus-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ability-ai-focus-close-btn:hover {
+  background: rgba(237, 109, 93, 0.25);
+  border-color: var(--coral, #ed6d5d);
+  color: #ffffff;
+  transform: scale(1.08) rotate(90deg);
+}
+
+/* Contenido scrolleable interno */
+.ability-ai-focus-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px 36px;
+  display: flex;
+  flex-direction: column;
+  animation: abilityFocusContentFade 0.35s ease 0.1s both;
+}
+
+@keyframes abilityFocusContentFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar personalizado para el Focus Mode */
+.ability-ai-focus-content::-webkit-scrollbar {
+  width: 8px;
+}
+.ability-ai-focus-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+.ability-ai-focus-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+.ability-ai-focus-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Secciones y Grillas del Focus Mode */
+.ability-ai-focus-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ability-ai-focus-section {
+  background: rgba(22, 36, 58, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.ability-ai-focus-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ability-ai-focus-section-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ability-ai-focus-section-title {
+  margin: 0;
+  font: 700 14px var(--display, inherit);
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.95);
+  text-transform: uppercase;
+}
+
+/* Grilla de 2 columnas (desktop) / 1 columna (móvil) */
+.ability-ai-focus-grid.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Bloque 1: Valor Competitivo */
+.ability-ai-focus-rating-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.ability-ai-focus-rating-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.ability-ai-focus-score-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 18px;
+  border-radius: 14px;
+}
+
+.ability-ai-focus-score-number {
+  font: 800 32px/1 var(--display, inherit);
+  color: #ffffff;
+}
+
+.ability-ai-focus-score-max {
+  font: 600 14px var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ability-ai-focus-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ability-ai-focus-qualifier {
+  font: 700 16px var(--display, inherit);
+  letter-spacing: 0.02em;
+}
+
+.ability-ai-focus-qualifier.score-high {
+  color: #4ade80;
+}
+.ability-ai-focus-qualifier.score-medium {
+  color: #facc15;
+}
+.ability-ai-focus-qualifier.score-low {
+  color: var(--coral, #ed6d5d);
+}
+
+.ability-ai-focus-score-sub {
+  font: 400 12px var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ability-ai-focus-bar-wrap {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ability-ai-focus-bar-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.ability-ai-focus-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ability-ai-focus-bar-fill.score-high {
+  background: linear-gradient(90deg, #10b981, #4ade80);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+}
+.ability-ai-focus-bar-fill.score-medium {
+  background: linear-gradient(90deg, #d97706, #facc15);
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+}
+.ability-ai-focus-bar-fill.score-low {
+  background: linear-gradient(90deg, #dc2626, #ed6d5d);
+  box-shadow: 0 0 10px rgba(237, 109, 93, 0.4);
+}
+
+.ability-ai-focus-pips {
+  display: flex;
+  gap: 6px;
+}
+
+.ability-ai-focus-pip {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.3s ease;
+}
+
+.ability-ai-focus-pip.is-filled {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* Bloque 2: Resumen Táctico */
+.ability-ai-focus-summary-text {
+  margin: 0;
+  font: 400 15px/1.65 var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* Listas de Fortalezas, Debilidades, Uso y Precaución */
+.ability-ai-focus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ability-ai-focus-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font: 400 14px/1.55 var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.ability-ai-item-bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ability-ai-item-bullet.green {
+  background: rgba(74, 222, 128, 0.16);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.ability-ai-item-bullet.red {
+  background: rgba(237, 109, 93, 0.16);
+  color: var(--coral, #ed6d5d);
+  border: 1px solid rgba(237, 109, 93, 0.3);
+}
+
+/* Bloque 4: Sinergias */
+.ability-ai-focus-synergies-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ability-ai-focus-synergy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.ability-ai-focus-synergy-chip:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.ability-ai-synergy-spark {
+  color: var(--coral, #ed6d5d);
+  font-size: 12px;
+}
+
+.ability-ai-synergy-text {
+  font: 500 13px/1.4 var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* Bloque 5: Formatos (Singles vs Doubles) */
+.ability-ai-focus-format-text {
+  margin: 0;
+  font: 400 14px/1.6 var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+/* Bloque 8: Consejo Pro Competitivo */
+.ability-ai-focus-protip {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 26px;
+  background: linear-gradient(135deg, rgba(237, 109, 93, 0.15) 0%, rgba(250, 204, 21, 0.08) 100%);
+  border: 1px solid rgba(237, 109, 93, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(237, 109, 93, 0.12);
+}
+
+.ability-ai-protip-icon-col {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(237, 109, 93, 0.22);
+  border: 1px solid rgba(237, 109, 93, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ability-ai-protip-bulb {
+  font-size: 20px;
+}
+
+.ability-ai-protip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ability-ai-protip-eyebrow {
+  font: 700 11px var(--display, inherit);
+  letter-spacing: 0.12em;
+  color: #fbbf24;
+  text-transform: uppercase;
+}
+
+.ability-ai-protip-text {
+  margin: 0;
+  font: 500 14.5px/1.6 var(--sans, inherit);
+  color: #ffffff;
+}
+
+/* Pie del Focus Mode */
+.ability-ai-focus-footer {
+  padding: 14px 32px;
+  background: rgba(18, 30, 50, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ability-ai-focus-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 12px var(--sans, inherit);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ability-ai-disclaimer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--coral, #ed6d5d);
+  opacity: 0.8;
+}
+
+/* Adaptación de Loading y Error dentro del Focus Mode */
+.focus-loading-card,
+.focus-error-card {
+  background: rgba(22, 36, 58, 0.52) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  margin: auto 0;
+}
+
+.focus-loading-card .ai-loading-title {
+  color: #ffffff !important;
+}
+
+.focus-loading-card .ai-loading-subtitle {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.focus-loading-card .ai-skeleton-line {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.focus-error-card .ai-error-title {
+  color: #ffffff !important;
+}
+
+.focus-error-card .ai-error-message {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Responsive Focus Mode (< 768px y < 480px) */
+@media (max-width: 768px) {
+  .ability-ai-focus-card {
+    width: 95vw;
+    height: 90vh;
+    border-radius: 18px;
+  }
+
+  .ability-ai-focus-header {
+    padding: 16px 20px;
+  }
+
+  .ability-ai-focus-content {
+    padding: 18px 20px 24px;
+  }
+
+  .ability-ai-focus-grid.two-columns {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ability-ai-focus-ability-name {
+    font-size: 20px;
+  }
+
+  .ability-ai-focus-esc-hint {
+    display: none;
+  }
+
+  .ability-ai-focus-rating-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .ability-ai-focus-bar-wrap {
+    width: 100%;
+  }
+
+  .ability-ai-focus-protip {
+    padding: 16px 18px;
+    gap: 12px;
+  }
+
+  .ability-ai-protip-icon-col {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ability-ai-protip-bulb {
+    font-size: 17px;
+  }
+
+  .ability-ai-focus-footer {
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ability-ai-focus-ability-name {
+    font-size: 18px;
+  }
+
+  .ability-ai-focus-score-number {
+    font-size: 26px;
+  }
+
+  .ability-ai-focus-qualifier {
+    font-size: 14px;
+  }
+}
+

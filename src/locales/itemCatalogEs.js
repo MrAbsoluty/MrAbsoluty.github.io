@@ -126,6 +126,7 @@ export const canonicalItemCosts = {
   'zinc': 10000,
   'pp-up': 10000,
   'pp-max': 15000,
+  'light-ball': 1000,
 }
 
 export const itemEffectsEs = {
@@ -158,6 +159,7 @@ export const itemEffectsEs = {
   'beast-ball': 'Diseñada para atrapar Ultraentes (5×). Es muy ineficaz (0.1×) contra Pokémon ordinarios.',
 
   // Objetos competitivos y para llevar (Held Items)
+  'light-ball': 'Duplica el Ataque físico y el Ataque Especial de Pikachu cuando lo lleva equipado. Si Pikachu o Raichu la llevan en crianza, la cría Pichu nace con el movimiento Placaje Eléctrico (Volt Tackle).',
   'leftovers': 'Al final de cada turno en combate, el poseedor recupera 1/16 (6.25%) de sus PS máximos.',
   'choice-band': 'Aumenta el Ataque físico del portador en un 50% (1.5×), pero lo limita a usar solo el primer movimiento seleccionado.',
   'choice-specs': 'Aumenta el Ataque Especial del portador en un 50% (1.5×), pero lo limita a usar solo el primer movimiento seleccionado.',

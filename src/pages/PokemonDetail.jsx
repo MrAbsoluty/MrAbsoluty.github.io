@@ -7,6 +7,8 @@ import PokemonTypeAffinities from '../components/PokemonTypeAffinities'
 import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import PokemonFavoriteButton from '../components/PokemonFavoriteButton'
 import { getMegaForms, getRegionalForms, getAbilityDetails } from '../services/pokeapi'
+import { AbilityAIFocusMode } from '../components/AIAbilityAnalysis'
+import { analyzeAbility, AI_STATUS } from '../services/pokeguideAI'
 import megaSound from '../audio/mega.mp3'
 import megaRevertSound from '../audio/mega-revert.mp3'
 import alolaFormSound from '../audio/alolaform.mp3'
@@ -54,6 +56,11 @@ function PokemonDetail({
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [selectedAbility, setSelectedAbility] = useState(null)
   const [extraAbilityData, setExtraAbilityData] = useState({})
+  const [aiStatus, setAiStatus] = useState(AI_STATUS.IDLE)
+  const [aiData, setAiData] = useState(null)
+  const [aiError, setAiError] = useState(null)
+  const [aiTargetAbility, setAiTargetAbility] = useState(null)
+  const [isAiFocusOpen, setIsAiFocusOpen] = useState(false)
 
   // Reset active form and states safely when pokemon changes
   useEffect(() => {
@@ -72,6 +79,11 @@ function PokemonDetail({
     setIsFocusMode(false)
     setSelectedAbility(null)
     setExtraAbilityData({})
+    setAiStatus(AI_STATUS.IDLE)
+    setAiData(null)
+    setAiError(null)
+    setAiTargetAbility(null)
+    setIsAiFocusOpen(false)
   }, [pokemon?.id])
 
   // Fetch mega forms in background
@@ -151,6 +163,9 @@ function PokemonDetail({
     // Clear active regional form if mega-evolving
     if (activeRegionalForm) setActiveRegionalForm(null)
     setSelectedAbility(null)
+    setAiStatus(AI_STATUS.IDLE)
+    setAiTargetAbility(null)
+    setIsAiFocusOpen(false)
 
     // Revert to base form
     if (!targetForm || (activeForm && activeForm.id === targetForm.id)) {
@@ -219,6 +234,9 @@ function PokemonDetail({
     // Clear active mega form if transforming into a regional form
     if (activeForm) setActiveForm(null)
     setSelectedAbility(null)
+    setAiStatus(AI_STATUS.IDLE)
+    setAiTargetAbility(null)
+    setIsAiFocusOpen(false)
 
     setIsRegionalTransforming(true)
     setRegionalTransformRegion(region)
@@ -362,6 +380,7 @@ function PokemonDetail({
   const currentAbilities = currentData?.abilities || []
   const currentAbilityLabels = currentData?.abilityLabels || {}
   const currentAbilityDescriptions = currentData?.abilityDescriptions || {}
+  const currentStats = currentData?.stats || []
   const activeSelectedAbility = currentAbilities.includes(selectedAbility) ? selectedAbility : null
 
   function handleAbilityClick(ability) {
@@ -393,15 +412,91 @@ function PokemonDetail({
     }
   }
 
-  function handleAbilityAIAnalysis(event, _abilityName) {
+  function handleAbilityAIAnalysis(event, abilityKey) {
     event?.stopPropagation?.()
     playClickSound()
-    // Futura integración con IA:
-    // Esta función queda preparada para abrir el análisis profundo de la habilidad
-    // (sinergias, viability en singles/doubles, counters, objetos y aliados).
-    // Por ahora es solo visual y no ejecuta acciones ni llamadas.
+
+    const targetKey = abilityKey || activeSelectedAbility || aiTargetAbility
+    if (!targetKey) return
+
+    setIsAiFocusOpen(true)
+
+    // Si ya tenemos el análisis cargado exitosamente para esta misma habilidad, abrir directamente
+    if (aiStatus === AI_STATUS.SUCCESS && aiTargetAbility === targetKey && aiData) {
+      return
+    }
+
+    if (aiStatus === AI_STATUS.LOADING && aiTargetAbility === targetKey) {
+      return
+    }
+
+    const abilityName =
+      extraAbilityData[targetKey]?.name ||
+      currentAbilityLabels[targetKey] ||
+      formatName(targetKey?.replaceAll('-', ' ') || '')
+    const abilityDesc =
+      extraAbilityData[targetKey]?.description ||
+      currentAbilityDescriptions[targetKey] ||
+      ''
+
+    setAiStatus(AI_STATUS.LOADING)
+    setAiTargetAbility(targetKey)
+    setAiError(null)
+
+    const payload = {
+      pokemon: {
+        name: pokemon?.name || '',
+        localizedName: currentName || pokemon?.name || '',
+        types: currentTypes,
+        abilities: currentAbilities,
+        stats: currentStats,
+      },
+      ability: {
+        name: targetKey,
+        localizedName: abilityName,
+        description: abilityDesc,
+      },
+      context: {
+        platform: 'general',
+        battleMode: 'singles',
+        userLevel: 'beginner',
+        locale: locale || 'es',
+      },
+    }
+
+    analyzeAbility(payload)
+      .then((result) => {
+        if (result.success && result.data) {
+          setAiData(result.data)
+          setAiStatus(AI_STATUS.SUCCESS)
+        } else {
+          setAiError(result.error || 'No se pudo obtener el análisis táctico con IA.')
+          setAiStatus(AI_STATUS.ERROR)
+        }
+      })
+      .catch((err) => {
+        console.error('[PokeGuide AI] Error en análisis:', err)
+        setAiError(err?.message || 'Error inesperado al conectar con PokeGuide AI.')
+        setAiStatus(AI_STATUS.ERROR)
+      })
   }
-  const currentStats = currentData?.stats || []
+
+  function handleAiRetry() {
+    if (aiTargetAbility) {
+      setAiData(null)
+      handleAbilityAIAnalysis(null, aiTargetAbility)
+    }
+  }
+
+  function handleCloseAiFocus() {
+    setIsAiFocusOpen(false)
+  }
+
+  function handleAbilityClose() {
+    setSelectedAbility(null)
+    setIsAiFocusOpen(false)
+  }
+
   const currentHeight = currentData?.height
   const currentWeight = currentData?.weight
   const currentCry = matchedRegionalForm?.cry || activeForm?.cry || pokemon?.cry || null
@@ -652,18 +747,20 @@ function PokemonDetail({
                     <div className="ability-panel-actions">
                       <button
                         type="button"
-                        className="ability-ai-btn"
+                        className={`ability-ai-btn ${aiStatus === AI_STATUS.LOADING && aiTargetAbility === activeSelectedAbility ? 'is-loading' : ''} ${aiStatus === AI_STATUS.SUCCESS && aiTargetAbility === activeSelectedAbility ? 'is-active' : ''}`}
                         onClick={(e) => handleAbilityAIAnalysis(e, activeSelectedAbility)}
-                        title={t.detail.abilityAiTooltip || 'Analizar con IA (Próximamente)'}
-                        aria-label={t.detail.abilityAiTooltip || 'Analizar con IA (Próximamente)'}
+                        disabled={aiStatus === AI_STATUS.LOADING && aiTargetAbility === activeSelectedAbility}
+                        title={t.detail.abilityAiTooltip || 'Analizar viabilidad con IA'}
+                        aria-label={t.detail.abilityAiTooltip || 'Analizar viabilidad con IA'}
+                        aria-busy={aiStatus === AI_STATUS.LOADING && aiTargetAbility === activeSelectedAbility}
                       >
                         <span className="ability-ai-icon" aria-hidden="true">✦</span>
-                        <span className="ability-ai-tooltip">{t.detail.abilityAiTooltip || 'Analizar con IA (Próximamente)'}</span>
+                        <span className="ability-ai-tooltip">{t.detail.abilityAiTooltip || 'Analizar viabilidad con IA'}</span>
                       </button>
                       <button
                         type="button"
                         className="ability-panel-close"
-                        onClick={() => setSelectedAbility(null)}
+                        onClick={handleAbilityClose}
                         aria-label={t.detail.abilityClose || 'Cerrar explicación'}
                         title={t.detail.abilityClose || 'Cerrar explicación'}
                       >
@@ -682,6 +779,29 @@ function PokemonDetail({
                 </div>
               )
             })()}
+
+            {/* Ability AI Focus Mode (Expansión Horizontal + Vertical) */}
+            <AbilityAIFocusMode
+              isOpen={isAiFocusOpen}
+              onClose={handleCloseAiFocus}
+              pokemonName={currentName}
+              abilityName={
+                extraAbilityData[aiTargetAbility || activeSelectedAbility]?.name ||
+                currentAbilityLabels[aiTargetAbility || activeSelectedAbility] ||
+                formatName((aiTargetAbility || activeSelectedAbility)?.replaceAll('-', ' ') || '')
+              }
+              abilityRawName={aiTargetAbility || activeSelectedAbility}
+              status={aiStatus}
+              error={aiError}
+              data={aiData}
+              context={{
+                platform: 'general',
+                battleMode: 'singles',
+                locale,
+              }}
+              t={t}
+              onRetry={handleAiRetry}
+            />
           </div>
 
           <div className="stats-column">

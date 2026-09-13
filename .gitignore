@@ -24,3 +24,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Scratch & Temporary Testing Scripts
+scratch/
+supabase/.temp/

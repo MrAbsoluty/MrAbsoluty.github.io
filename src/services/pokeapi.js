@@ -1885,6 +1885,10 @@ export async function resolveCategoryItemNames(category) {
 }
 
 const COMMON_ITEM_SLUGS_ES = {
+  'bola luminosa': 'light-ball',
+  'bolaluminosa': 'light-ball',
+  'bola luz': 'light-ball',
+  'light ball': 'light-ball',
   'piedra solar': 'sun-stone',
   'solar': 'sun-stone',
   'sol': 'sun-stone',
@@ -2220,6 +2224,7 @@ const evolutionChainCache = new Map()
 const evolutionPokemonCache = new Map()
 
 const itemTranslationsEs = {
+  'light-ball': 'Bola Luminosa',
   'fire-stone': 'Piedra Fuego',
   'water-stone': 'Piedra Agua',
   'thunder-stone': 'Piedra Trueno',
