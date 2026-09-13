@@ -413,3 +413,132 @@ export function getStatExplanation(statName, value, stats, pokemonName = 'Pokém
     interpretation,
   }
 }
+
+/**
+ * Canonical maximum base stat total (BST) for playable Pokémon (Mega Rayquaza / Mega Mewtwo = 780).
+ */
+export const TOTAL_STAT_MAX = 780
+
+/**
+ * Calculates bar fill percentage for total stats based on max 780:
+ * @param {number|string} value
+ * @returns {number} Value between 0 and 100
+ */
+export function getTotalStatPercentage(value) {
+  const num = Number(value) || 0
+  return Math.min(Math.max((num / TOTAL_STAT_MAX) * 100, 0), 100)
+}
+
+/**
+ * Color interpolation for total base stats:
+ * Dynamically grades the Pokémon from baby stage (<300) up to legendary/mega (>670).
+ *
+ * @param {number|string} totalValue
+ * @returns {string} Hex color code
+ */
+export function getTotalStatColor(totalValue) {
+  const v = Math.max(0, Math.min(TOTAL_STAT_MAX, Number(totalValue) || 0))
+
+  const stops = [
+    { pos: 180, r: 237, g: 109, b: 93 },  // #ed6d5d Coral Red (Baby / Early stage)
+    { pos: 320, r: 243, g: 126, b: 75 },  // #f37e4b Coral Orange
+    { pos: 420, r: 245, g: 158, b: 11 },  // #f59e0b Warm Amber (Standard mid stage)
+    { pos: 490, r: 234, g: 179, b: 8 },   // #eab308 Golden Yellow
+    { pos: 535, r: 132, g: 204, b: 22 },  // #84cc16 Lime Green (High tier / Starters)
+    { pos: 580, r: 72,  g: 187, b: 120 }, // #48bb78 Vibrant Green (Paradox / Sublegendary)
+    { pos: 600, r: 16,  g: 185, b: 129 }, // #10b981 Teal Emerald (Pseudolegendary)
+    { pos: 680, r: 6,   g: 182, b: 212 }, // #06b6d4 Aqua Cyan (Legendary)
+    { pos: 780, r: 139, g: 92,  b: 246 }, // #8b5cf6 Royal Violet (Mega / Ultra Legendary)
+  ]
+
+  let lower = stops[0]
+  let upper = stops[stops.length - 1]
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (v >= stops[i].pos && v <= stops[i + 1].pos) {
+      lower = stops[i]
+      upper = stops[i + 1]
+      break
+    }
+  }
+
+  const range = upper.pos - lower.pos
+  const factor = range === 0 ? 0 : (v - lower.pos) / range
+
+  const r = Math.round(lower.r + factor * (upper.r - lower.r))
+  const g = Math.round(lower.g + factor * (upper.g - lower.g))
+  const b = Math.round(lower.b + factor * (upper.b - lower.b))
+
+  return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Educational breakdown and standing assessment for the Base Stat Total.
+ *
+ * @param {number|string} totalValue
+ * @param {string} pokemonName
+ * @param {string} locale
+ * @param {object} t
+ * @returns {{ title: string, definition: string, standing: string, badgeLabel: string, badgeIcon: string, interpretation: string }}
+ */
+export function getTotalStatExplanation(totalValue, pokemonName = 'Pokémon', locale = 'es', t) {
+  const isSpanish = locale ? locale.startsWith('es') : (!t?.languages || t?.languages?.en !== 'English')
+  const val = Number(totalValue) || 0
+
+  const title = isSpanish ? 'Estadísticas Totales (BST)' : 'Base Stat Total (BST)'
+  const definition = isSpanish
+    ? 'Suma acumulada de las seis estadísticas base del Pokémon (PS, Ataque, Defensa, Ataque Especial, Defensa Especial y Velocidad). Representa su potencial y calibre competitivo global.'
+    : 'Cumulative sum of all six base stats (HP, Attack, Defense, Special Attack, Special Defense, and Speed). Represents the overall power level and competitive caliber of the Pokémon.'
+
+  let standing = 'strength'
+  let badgeLabel = ''
+  let badgeIcon = ''
+  let interpretation = ''
+
+  if (val >= 670) {
+    standing = 'strength'
+    badgeIcon = '👑'
+    badgeLabel = isSpanish ? 'Calibre Legendario' : 'Legendary Caliber'
+    interpretation = isSpanish
+      ? `👑 En ${pokemonName}: Con un total de ${val}, se sitúa en la cúspide absoluta del poder Pokémon, reservado a grandes Legendarios y Megaevoluciones.`
+      : `👑 In ${pokemonName}: With a total of ${val}, it sits at the pinnacle of Pokémon power, reserved for major Legendaries and Mega Evolutions.`
+  } else if (val >= 580) {
+    standing = 'strength'
+    badgeIcon = '⭐'
+    badgeLabel = isSpanish ? 'Sobresaliente' : 'Outstanding'
+    interpretation = isSpanish
+      ? `⭐ En ${pokemonName}: Con un total de ${val}, cuenta con un poder extraordinario característico de Pokémon Paradoja, Pseudolegendarios y Sublegendarios.`
+      : `⭐ In ${pokemonName}: With a total of ${val}, it possesses extraordinary power typical of Paradox Pokémon, Pseudo-legendaries, and Sub-legendaries.`
+  } else if (val >= 500) {
+    standing = 'strength'
+    badgeIcon = '⚔️'
+    badgeLabel = isSpanish ? 'Nivel Competitivo' : 'Competitive Tier'
+    interpretation = isSpanish
+      ? `⚔️ En ${pokemonName}: Con un total de ${val}, ofrece un rendimiento sólido y competitivo, característico de etapas evolutivas finales consolidadas.`
+      : `⚔️ In ${pokemonName}: With a total of ${val}, it delivers strong and competitive performance typical of final evolution stages.`
+  } else if (val >= 420) {
+    standing = 'balanced'
+    badgeIcon = '⚖️'
+    badgeLabel = isSpanish ? 'Nivel Estándar' : 'Standard Tier'
+    interpretation = isSpanish
+      ? `⚖️ En ${pokemonName}: Con un total de ${val}, mantiene un equilibrio funcional adecuado para diversas situaciones de combate.`
+      : `⚖️ In ${pokemonName}: With a total of ${val}, it maintains a balanced baseline suitable for standard combat scenarios.`
+  } else {
+    standing = 'weakness'
+    badgeIcon = '🌱'
+    badgeLabel = isSpanish ? 'Etapa Inicial' : 'Initial Stage'
+    interpretation = isSpanish
+      ? `🌱 En ${pokemonName}: Con un total de ${val}, sus estadísticas reflejan una fase temprana de desarrollo o un rol de apoyo especializado.`
+      : `🌱 In ${pokemonName}: With a total of ${val}, its stats reflect an early developmental phase or a specialized support niche.`
+  }
+
+  return {
+    title,
+    definition,
+    standing,
+    badgeLabel,
+    badgeIcon,
+    interpretation,
+  }
+}
+

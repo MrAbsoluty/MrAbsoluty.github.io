@@ -1028,14 +1028,42 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   cursor: pointer;
   display: grid;
   font: inherit;
-  gap: 16px;
-  grid-template-columns: 140px 1fr;
+  gap: 14px;
+  grid-template-columns: 148px 1fr;
   margin: 0;
   padding: 6px 8px;
   position: relative;
   text-align: left;
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
+}
+
+.pokemon-stat-card.is-total {
+  border-top: 1px solid rgba(220, 228, 222, 0.7);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.pokemon-stat-row.is-total .stat-name {
+  color: var(--navy);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.stat-value.stat-value-total {
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stat-track.stat-track-total {
+  background: #e6eae5;
+  border-color: rgba(200, 210, 202, 0.85);
+  height: 10px;
+}
+
+.stat-fill.stat-fill-total {
+  box-shadow: 0 0 8px color-mix(in srgb, var(--stat-color) 35%, transparent);
 }
 
 .pokemon-stat-row.is-highlighted {

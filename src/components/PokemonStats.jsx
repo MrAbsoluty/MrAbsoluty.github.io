@@ -6,6 +6,9 @@ import {
   getStatColor,
   getStatExplanation,
   getStatPercentage,
+  getTotalStatColor,
+  getTotalStatExplanation,
+  getTotalStatPercentage,
 } from '../utils/pokemonStats'
 
 function formatFallbackName(name) {
@@ -82,6 +85,15 @@ function PokemonStats({
   const highlightedSet = useMemo(() => {
     return getHighlightedStats(orderedStats)
   }, [orderedStats])
+
+  // Base Stat Total (BST) calculation
+  const totalStatsValue = useMemo(() => {
+    return orderedStats.reduce((acc, s) => acc + (Number(s.value) || 0), 0)
+  }, [orderedStats])
+
+  const totalExplanation = useMemo(() => {
+    return getTotalStatExplanation(totalStatsValue, pokemonName, locale, t)
+  }, [totalStatsValue, pokemonName, locale, t])
 
   const handleStatToggle = (statItem) => {
     const nextState = expandedStat === statItem.name ? null : statItem.name
@@ -223,6 +235,115 @@ function PokemonStats({
             </div>
           )
         })}
+
+        {/* Base Stat Total (BST) / Estadísticas Totales */}
+        {totalStatsValue > 0 && (() => {
+          const isTotalExpanded = expandedStat === 'total'
+          const totalColor = getTotalStatColor(totalStatsValue)
+          const totalPercent = getTotalStatPercentage(totalStatsValue)
+          const totalLabel = t?.detail?.total || 'Total'
+          const totalFullLabel = t?.detail?.totalStats || 'Estadísticas Totales'
+          const ariaTotalText = `${totalFullLabel}: ${totalStatsValue} de 780${isTotalExpanded ? ' (Expandido)' : ''}`
+
+          return (
+            <div
+              className={`pokemon-stat-card is-total ${isTotalExpanded ? 'is-expanded' : ''} standing-${totalExplanation.standing}`}
+              style={{
+                '--stat-color': totalColor,
+              }}
+            >
+              <button
+                type="button"
+                className={`pokemon-stat-row stat-card-trigger is-total ${isTotalExpanded ? 'is-active' : ''}`}
+                onClick={() => {
+                  const nextState = expandedStat === 'total' ? null : 'total'
+                  setExpandedStat(nextState)
+                  onStatClick?.({ name: 'total', value: totalStatsValue })
+                }}
+                aria-expanded={isTotalExpanded}
+                aria-controls="stat-panel-total"
+                aria-label={ariaTotalText}
+                title={totalFullLabel}
+              >
+                <div className="stat-info">
+                  <div className="stat-name-wrap">
+                    <span className="stat-icon" aria-hidden="true">
+                      🏆
+                    </span>
+                    <span className="stat-name stat-name-total">
+                      {totalLabel}
+                    </span>
+                  </div>
+
+                  <div className="stat-value-group">
+                    <strong
+                      className={`stat-value stat-value-total ${statsBump ? 'stat-animating' : ''}`}
+                    >
+                      {totalStatsValue}
+                    </strong>
+
+                    <span
+                      className={`stat-expand-chevron ${isTotalExpanded ? 'is-open' : ''}`}
+                      aria-hidden="true"
+                      title={isTotalExpanded ? 'Contraer' : 'Expandir'}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="11"
+                        height="11"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="stat-track stat-track-total" aria-hidden="true">
+                  <span
+                    className="stat-fill stat-fill-total"
+                    style={{
+                      width: `${isAnimated ? totalPercent : 0}%`,
+                      backgroundColor: totalColor,
+                    }}
+                  />
+                </div>
+              </button>
+
+              {/* Smooth animated explanation panel */}
+              <div
+                id="stat-panel-total"
+                className={`stat-card-expandable ${isTotalExpanded ? 'is-open' : ''}`}
+                role="region"
+                aria-label={totalExplanation.title}
+              >
+                <div className="stat-card-expandable-inner">
+                  <div className="stat-explanation-panel">
+                    <div className="stat-explanation-header">
+                      <h4 className="stat-explanation-title">{totalExplanation.title}</h4>
+                      <span className={`stat-standing-pill standing-${totalExplanation.standing}`}>
+                        <span className="standing-icon" aria-hidden="true">
+                          {totalExplanation.badgeIcon}
+                        </span>
+                        <span>{totalExplanation.badgeLabel}</span>
+                      </span>
+                    </div>
+
+                    <p className="stat-explanation-def">{totalExplanation.definition}</p>
+
+                    <div className="stat-interpretation-box">
+                      <p className="stat-interpretation-text">{totalExplanation.interpretation}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
