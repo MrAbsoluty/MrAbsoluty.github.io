@@ -1056,16 +1056,6 @@ h1, h2, h3, p { margin-top: 0; } h1 { color: var(--navy); font: 600 clamp(46px, 
   font-weight: 700;
 }
 
-.stat-track.stat-track-total {
-  background: #e6eae5;
-  border-color: rgba(200, 210, 202, 0.85);
-  height: 10px;
-}
-
-.stat-fill.stat-fill-total {
-  box-shadow: 0 0 8px color-mix(in srgb, var(--stat-color) 35%, transparent);
-}
-
 .pokemon-stat-row.is-highlighted {
   background-color: color-mix(in srgb, var(--stat-color) 4%, transparent);
 }

@@ -8,7 +8,6 @@ import {
   getStatPercentage,
   getTotalStatColor,
   getTotalStatExplanation,
-  getTotalStatPercentage,
 } from '../utils/pokemonStats'
 
 function formatFallbackName(name) {
@@ -240,10 +239,9 @@ function PokemonStats({
         {totalStatsValue > 0 && (() => {
           const isTotalExpanded = expandedStat === 'total'
           const totalColor = getTotalStatColor(totalStatsValue)
-          const totalPercent = getTotalStatPercentage(totalStatsValue)
           const totalLabel = t?.detail?.total || 'Total'
           const totalFullLabel = t?.detail?.totalStats || 'Estadísticas Totales'
-          const ariaTotalText = `${totalFullLabel}: ${totalStatsValue} de 780${isTotalExpanded ? ' (Expandido)' : ''}`
+          const ariaTotalText = `${totalFullLabel}: ${totalStatsValue}${isTotalExpanded ? ' (Expandido)' : ''}`
 
           return (
             <div
@@ -301,16 +299,6 @@ function PokemonStats({
                       </svg>
                     </span>
                   </div>
-                </div>
-
-                <div className="stat-track stat-track-total" aria-hidden="true">
-                  <span
-                    className="stat-fill stat-fill-total"
-                    style={{
-                      width: `${isAnimated ? totalPercent : 0}%`,
-                      backgroundColor: totalColor,
-                    }}
-                  />
                 </div>
               </button>
 
