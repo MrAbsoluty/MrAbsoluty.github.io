@@ -519,19 +519,54 @@ Deno.serve(async (req: Request) => {
     const abilityLocalName = payload.ability?.localizedName || ''
     const verifiedFacts = buildVerifiedAbilityFacts(abilityName, abilityDesc, abilityLocalName)
 
-    // 6. Normalización de identificadores estables para el contexto de caché compartido (Fase 2)
+    // 6. Normalización y validación estricta de parámetros contextuales V2
     const pokemonId = String(payload.pokemon?.name || payload.pokemon?.id || '')
       .toLowerCase()
       .trim()
     const abilityId = String(payload.ability?.name || payload.ability?.id || '')
       .toLowerCase()
       .trim()
-    const userLevel = String(payload.context?.userLevel || 'beginner')
-      .toLowerCase()
-      .trim()
-    const locale = String(payload.context?.locale || 'es')
-      .toLowerCase()
-      .trim()
+
+    const contextObj = (payload.context && typeof payload.context === 'object') ? payload.context : {}
+    const rawContext = typeof (payload as Record<string, unknown>).context === 'string'
+      ? (payload as Record<string, unknown>).context
+      : (contextObj.context || contextObj.platform || 'general')
+    const context = String(rawContext || 'general').toLowerCase().trim()
+
+    const ALLOWED_CONTEXTS = ['general', 'showdown', 'champions']
+    if (!ALLOWED_CONTEXTS.includes(context)) {
+      return jsonResponse(
+        {
+          success: false,
+          error: `Contexto competitivo no válido: '${context}'. Valores permitidos: ${ALLOWED_CONTEXTS.join(', ')}.`,
+          code: 'INVALID_COMPETITIVE_CONTEXT',
+        },
+        400,
+      )
+    }
+
+    const rawFormat = (payload as Record<string, unknown>).format || contextObj.format || null
+    const format = rawFormat ? String(rawFormat).toLowerCase().trim() : null
+
+    const rawRegulation = (payload as Record<string, unknown>).regulation || contextObj.regulation || null
+    const regulation = rawRegulation ? String(rawRegulation).toLowerCase().trim() : null
+
+    const rawUserLevel = (payload as Record<string, unknown>).userLevel || contextObj.userLevel || 'beginner'
+    const userLevel = String(rawUserLevel).toLowerCase().trim()
+
+    const rawLocale = (payload as Record<string, unknown>).locale || contextObj.locale || 'es'
+    const locale = String(rawLocale).toLowerCase().trim()
+
+    // Sincronizar contexto normalizado en payload para el motor de prompts
+    payload.context = {
+      ...contextObj,
+      context,
+      platform: context,
+      format,
+      regulation,
+      userLevel,
+      locale,
+    }
 
     // 7. Inicialización del cliente Supabase con privilegios backend para el caché
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
@@ -544,11 +579,11 @@ Deno.serve(async (req: Request) => {
         ? createClient(supabaseUrl, supabaseServiceKey)
         : null
 
-    // 8. BÚSQUEDA CACHE-FIRST: Si existe un análisis válido vigente para este contexto, devolverlo de inmediato
+    // 8. BÚSQUEDA CACHE-FIRST V2: Si existe un análisis válido vigente para este contexto exacto, devolverlo de inmediato
     if (adminSupabase && pokemonId && abilityId) {
       const cached = await getCachedAnalysis(
         adminSupabase,
-        { pokemonId, abilityId, userLevel, locale },
+        { pokemonId, abilityId, userLevel, locale, context, format, regulation },
         verifiedFacts,
       )
 
@@ -564,6 +599,9 @@ Deno.serve(async (req: Request) => {
               cachedAt: cached.cachedAt,
               provider: cached.provider || 'cache',
               model: cached.model || 'cached',
+              context,
+              format,
+              regulation,
               userLevel,
               validationVersion: cached.validationVersion || CURRENT_VALIDATION_VERSION,
               factsEnforced: true,
@@ -699,13 +737,16 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // 15. Almacenamiento seguro en caché compartido (UPSERT atómico por contexto)
+    // 15. Almacenamiento seguro en caché compartido V2 (UPSERT atómico por contexto completo)
     if (adminSupabase && pokemonId && abilityId) {
       await saveCachedAnalysis(adminSupabase, {
         pokemonId,
         abilityId,
         userLevel,
         locale,
+        context,
+        format,
+        regulation,
         analysisJson: verifiedResult,
         provider: activeProvider,
         model: activeModel,
@@ -723,6 +764,9 @@ Deno.serve(async (req: Request) => {
           cache_hit: false,
           provider: activeProvider,
           model: activeModel,
+          context,
+          format,
+          regulation,
           userLevel,
           validationVersion: CURRENT_VALIDATION_VERSION,
           factsEnforced: true,

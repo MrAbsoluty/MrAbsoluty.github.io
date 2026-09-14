@@ -8,6 +8,7 @@ import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import PokemonFavoriteButton from '../components/PokemonFavoriteButton'
 import { getMegaForms, getRegionalForms, getAbilityDetails } from '../services/pokeapi'
 import { AbilityAIFocusMode } from '../components/AIAbilityAnalysis'
+import AbilityContextSelector from '../components/AbilityContextSelector'
 import { analyzeAbility, AI_STATUS } from '../services/pokeguideAI'
 import { useAuth } from '../context/AuthContext'
 import megaSound from '../audio/mega.mp3'
@@ -63,6 +64,12 @@ function PokemonDetail({
   const [aiError, setAiError] = useState(null)
   const [aiTargetAbility, setAiTargetAbility] = useState(null)
   const [isAiFocusOpen, setIsAiFocusOpen] = useState(false)
+  const [isContextSelectorOpen, setIsContextSelectorOpen] = useState(false)
+  const [selectedCompetitiveContext, setSelectedCompetitiveContext] = useState({
+    context: 'general',
+    format: null,
+    regulation: null,
+  })
 
   // Reset active form and states safely when pokemon changes
   useEffect(() => {
@@ -86,6 +93,8 @@ function PokemonDetail({
     setAiError(null)
     setAiTargetAbility(null)
     setIsAiFocusOpen(false)
+    setIsContextSelectorOpen(false)
+    setSelectedCompetitiveContext({ context: 'general', format: null, regulation: null })
   }, [pokemon?.id])
 
   // Fetch mega forms in background
@@ -168,6 +177,7 @@ function PokemonDetail({
     setAiStatus(AI_STATUS.IDLE)
     setAiTargetAbility(null)
     setIsAiFocusOpen(false)
+    setIsContextSelectorOpen(false)
 
     // Revert to base form
     if (!targetForm || (activeForm && activeForm.id === targetForm.id)) {
@@ -239,6 +249,7 @@ function PokemonDetail({
     setAiStatus(AI_STATUS.IDLE)
     setAiTargetAbility(null)
     setIsAiFocusOpen(false)
+    setIsContextSelectorOpen(false)
 
     setIsRegionalTransforming(true)
     setRegionalTransformRegion(region)
@@ -414,24 +425,7 @@ function PokemonDetail({
     }
   }
 
-  function handleAbilityAIAnalysis(event, abilityKey) {
-    event?.stopPropagation?.()
-    playClickSound()
-
-    const targetKey = abilityKey || activeSelectedAbility || aiTargetAbility
-    if (!targetKey) return
-
-    setIsAiFocusOpen(true)
-
-    // Si ya tenemos el análisis cargado exitosamente para esta misma habilidad, abrir directamente
-    if (aiStatus === AI_STATUS.SUCCESS && aiTargetAbility === targetKey && aiData) {
-      return
-    }
-
-    if (aiStatus === AI_STATUS.LOADING && aiTargetAbility === targetKey) {
-      return
-    }
-
+  function executeAIAnalysis(targetKey, competitiveContext = { context: 'general', format: null, regulation: null }) {
     const abilityName =
       extraAbilityData[targetKey]?.name ||
       currentAbilityLabels[targetKey] ||
@@ -444,6 +438,7 @@ function PokemonDetail({
     setAiStatus(AI_STATUS.LOADING)
     setAiTargetAbility(targetKey)
     setAiError(null)
+    setIsAiFocusOpen(true)
 
     const payload = {
       pokemon: {
@@ -458,18 +453,17 @@ function PokemonDetail({
         localizedName: abilityName,
         description: abilityDesc,
       },
-      context: {
-        platform: 'general',
-        battleMode: 'singles',
-        userLevel: profile?.ai_level || (() => {
-          try {
-            return window.localStorage.getItem('pokeguide_ai_level') || 'beginner'
-          } catch {
-            return 'beginner'
-          }
-        })(),
-        locale: locale || 'es',
-      },
+      context: competitiveContext.context || 'general',
+      format: competitiveContext.format || null,
+      regulation: competitiveContext.regulation || null,
+      userLevel: profile?.ai_level || (() => {
+        try {
+          return window.localStorage.getItem('pokeguide_ai_level') || 'beginner'
+        } catch {
+          return 'beginner'
+        }
+      })(),
+      locale: locale || 'es',
     }
 
     analyzeAbility(payload)
@@ -489,10 +483,42 @@ function PokemonDetail({
       })
   }
 
+  function handleAbilityAIAnalysis(event, abilityKey) {
+    event?.stopPropagation?.()
+    playClickSound()
+
+    const targetKey = abilityKey || activeSelectedAbility || aiTargetAbility
+    if (!targetKey) return
+
+    setAiTargetAbility(targetKey)
+    // El análisis comienza directamente en contexto General (Progressive AI Analysis)
+    const defaultContext = { context: 'general', format: null, regulation: null }
+    setSelectedCompetitiveContext(defaultContext)
+    setIsContextSelectorOpen(false)
+    executeAIAnalysis(targetKey, defaultContext)
+  }
+
+  function handleSelectContextAndAnalyze(chosenContext) {
+    setIsContextSelectorOpen(false)
+    setSelectedCompetitiveContext(chosenContext)
+
+    const targetKey = activeSelectedAbility || aiTargetAbility
+    if (!targetKey) return
+
+    executeAIAnalysis(targetKey, chosenContext)
+  }
+
+  function handleChangeContext() {
+    playClickSound()
+    setIsAiFocusOpen(false)
+    setIsContextSelectorOpen(true)
+  }
+
   function handleAiRetry() {
-    if (aiTargetAbility) {
+    const targetKey = aiTargetAbility || activeSelectedAbility
+    if (targetKey) {
       setAiData(null)
-      handleAbilityAIAnalysis(null, aiTargetAbility)
+      executeAIAnalysis(targetKey, selectedCompetitiveContext)
     }
   }
 
@@ -503,6 +529,7 @@ function PokemonDetail({
   function handleAbilityClose() {
     setSelectedAbility(null)
     setIsAiFocusOpen(false)
+    setIsContextSelectorOpen(false)
   }
 
   const currentHeight = currentData?.height
@@ -788,6 +815,26 @@ function PokemonDetail({
               )
             })()}
 
+            {/* Ability Context Selector (Fase 3: Contextos competitivos) */}
+            <AbilityContextSelector
+              isOpen={isContextSelectorOpen}
+              onClose={() => {
+                setIsContextSelectorOpen(false)
+                if (aiTargetAbility || activeSelectedAbility) {
+                  setIsAiFocusOpen(true)
+                }
+              }}
+              onSelectContext={handleSelectContextAndAnalyze}
+              pokemonName={currentName}
+              abilityName={
+                extraAbilityData[aiTargetAbility || activeSelectedAbility]?.name ||
+                currentAbilityLabels[aiTargetAbility || activeSelectedAbility] ||
+                formatName((aiTargetAbility || activeSelectedAbility)?.replaceAll('-', ' ') || '')
+              }
+              initialContext={selectedCompetitiveContext.context}
+              t={t}
+            />
+
             {/* Ability AI Focus Mode (Expansión Horizontal + Vertical) */}
             <AbilityAIFocusMode
               isOpen={isAiFocusOpen}
@@ -803,12 +850,15 @@ function PokemonDetail({
               error={aiError}
               data={aiData}
               context={{
-                platform: 'general',
-                battleMode: 'singles',
+                context: selectedCompetitiveContext.context,
+                platform: selectedCompetitiveContext.context,
+                format: selectedCompetitiveContext.format,
+                regulation: selectedCompetitiveContext.regulation,
                 locale,
               }}
               t={t}
               onRetry={handleAiRetry}
+              onChangeContext={handleChangeContext}
             />
           </div>
 

@@ -74,6 +74,23 @@ const FALSE_SPEED_REDUCTION_PATTERNS: Array<{ regex: RegExp; replacement: string
 ]
 
 /**
+ * Patrones para eliminar frases ambiguas en Truant (Ausente) como "cada dos turnos".
+ * Sustituye deterministamente por "turno por medio" / "turnos alternos".
+ */
+const AMBIGUOUS_TRUANT_PATTERNS: Array<{ regex: RegExp; replacement: string; description: string }> = [
+  {
+    regex: /\bcada\s+dos\s+turnos\b/gi,
+    replacement: 'turno por medio',
+    description: 'Ambigüedad: sustituido "cada dos turnos" por "turno por medio"',
+  },
+  {
+    regex: /\bevery\s+two\s+turns\b/gi,
+    replacement: 'every other turn',
+    description: 'Ambiguity: replaced "every two turns" with "every other turn"',
+  },
+]
+
+/**
  * Aplica correcciones deterministas sobre un string si viola hechos verificados.
  */
 function correctText(text: string, facts: VerifiedAbilityFacts, violations: string[]): string {
@@ -91,7 +108,17 @@ function correctText(text: string, facts: VerifiedAbilityFacts, violations: stri
     }
   }
 
-  // 2. Comprobar lista explícita de prohibitedClaims
+  // 2. Si la habilidad tiene ciclo de turnos (ej. Truant), evitar frase ambigua "cada dos turnos"
+  if (facts.turnCycle?.hasTurnSkip) {
+    for (const rule of AMBIGUOUS_TRUANT_PATTERNS) {
+      if (rule.regex.test(cleaned)) {
+        violations.push(`${rule.description}: "${rule.regex.source}"`)
+        cleaned = cleaned.replace(rule.regex, rule.replacement)
+      }
+    }
+  }
+
+  // 3. Comprobar lista explícita de prohibitedClaims
   if (Array.isArray(facts.prohibitedClaims)) {
     for (const claim of facts.prohibitedClaims) {
       const claimRegex = new RegExp(`\\b${claim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
@@ -142,50 +169,60 @@ export function validateAndCorrectFacts(
   // 1. Sanitización profunda de campos de texto
   const corrected = sanitizeRecursively(cloned, facts, violations) as Record<string, unknown>
 
-  // 2. Armonización determinista de puntuación (Fase 8)
-  // Conserva compatibilidad con el frontend mientras separa rating.source
+  // 2. Armonización determinista de puntuación (usa competitiveValue en contrato progresivo, rating en legacy)
+  const existingCV = corrected.competitiveValue && typeof corrected.competitiveValue === 'object'
+    ? (corrected.competitiveValue as Record<string, unknown>)
+    : null
+  // Compatibilidad: soportar rating legacy si competitiveValue no existe
   const existingRating = corrected.rating && typeof corrected.rating === 'object'
     ? (corrected.rating as Record<string, unknown>)
     : null
+  const ratingTarget = existingCV || existingRating
+  const ratingKey = existingCV ? 'competitiveValue' : 'rating'
+  const cvSummary = typeof existingCV?.summary === 'string' && existingCV.summary.trim()
+    ? existingCV.summary.trim()
+    : (facts.deterministicRating
+        ? `Tiene un valor competitivo ${facts.deterministicRating.label.toLowerCase()} en este contexto.`
+        : 'Tiene un valor competitivo sólido en este contexto.')
 
   if (facts.deterministicRating) {
-    // Si la habilidad tiene puntuación determinista de referencia
-    // (ej. Truant: 2 Deficiente; Huge Power: 10 Imprescindible; Drought: 9 Excelente)
-    const currentScore = Number(existingRating?.score) || 0
+    const currentScore = Number(ratingTarget?.score) || 0
     const diff = Math.abs(currentScore - facts.deterministicRating.score)
 
-    // Si la IA generó una puntuación extremadamente desviada (>2 puntos de diferencia),
-    // aplicamos la puntuación determinista para consistencia garantizada
-    if (!existingRating || diff > 2) {
+    if (!ratingTarget || diff > 2) {
       violations.push(
         `Puntuación inconsistente de IA (${currentScore}/10). Normalizada a calificación determinista (${facts.deterministicRating.score}/10).`,
       )
-      corrected.rating = {
+      corrected[ratingKey] = {
         score: facts.deterministicRating.score,
         label: facts.deterministicRating.label,
         source: 'deterministic',
+        ...(existingCV ? { summary: cvSummary } : {}),
       }
     } else {
-      corrected.rating = {
-        score: existingRating.score,
-        label: existingRating.label,
+      corrected[ratingKey] = {
+        score: ratingTarget.score,
+        label: ratingTarget.label,
         source: 'hybrid',
+        ...(existingCV ? { summary: cvSummary } : {}),
       }
     }
-  } else if (existingRating) {
-    corrected.rating = {
-      score: existingRating.score,
-      label: existingRating.label,
+  } else if (ratingTarget) {
+    corrected[ratingKey] = {
+      score: ratingTarget.score,
+      label: ratingTarget.label,
       source: 'ai',
+      ...(existingCV ? { summary: cvSummary } : {}),
     }
   }
 
   // 3. Garantía para el caso obligatorio de Truant
   if (facts.name === 'truant') {
-    // Asegurar que el resumen aclare el ciclo de turnos si el modelo fue ambiguo
-    const summary = String(corrected.summary || '')
-    if (!summary.toLowerCase().includes('alterno') && !summary.toLowerCase().includes('turno')) {
-      corrected.summary = `${summary} Actúa en turnos alternos (holgazanea en los turnos pares tras actuar, sin reducir su velocidad base).`.trim()
+    // Asegurar que coreInsight (contrato progresivo) o summary (legacy) aclare el ciclo de turnos
+    const insightField = typeof corrected.coreInsight === 'string' ? 'coreInsight' : 'summary'
+    const insight = String(corrected[insightField] || '')
+    if (!insight.toLowerCase().includes('alterno') && !insight.toLowerCase().includes('turno')) {
+      corrected[insightField] = `${insight} Actúa en turnos alternos (holgazanea en los turnos pares tras actuar, sin reducir su velocidad base).`.trim()
     }
   }
 

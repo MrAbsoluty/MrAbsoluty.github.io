@@ -8,8 +8,8 @@
  * El cliente sólo invoca la Edge Function correspondiente.
  */
 
-import { supabase, isSupabaseConfigured } from './supabase'
-import { sanitizePokemonTerms } from '../utils/sanitizePokemonTerms'
+import { supabase, isSupabaseConfigured } from './supabase.js'
+import { sanitizePokemonTerms } from '../utils/sanitizePokemonTerms.js'
 
 /**
  * Estados del ciclo de vida del análisis de IA para la UI.
@@ -36,17 +36,25 @@ function getResolvedUserLevel(contextLevel) {
   }
 }
 
-function getCacheKey(type, entityId, subId, context = {}) {
-  const resolvedLevel = getResolvedUserLevel(context.userLevel)
+function getCacheKey(type, entityId, subId, {
+  context = 'general',
+  format = 'none',
+  regulation = 'none',
+  battleMode = 'singles',
+  userLevel,
+  locale = 'es',
+} = {}) {
+  const resolvedLevel = getResolvedUserLevel(userLevel)
   const parts = [
     type,
     entityId?.toLowerCase(),
     subId?.toLowerCase(),
-    context.platform || 'general',
-    context.battleMode || 'singles',
-    context.format || 'none',
+    context?.toLowerCase() || 'general',
+    format?.toLowerCase() || 'none',
+    regulation?.toLowerCase() || 'none',
+    battleMode?.toLowerCase() || 'singles',
     resolvedLevel,
-    context.locale || 'es',
+    locale?.toLowerCase() || 'es',
   ]
   return parts.filter(Boolean).join(':')
 }
@@ -54,13 +62,29 @@ function getCacheKey(type, entityId, subId, context = {}) {
 /**
  * Analiza una habilidad Pokémon en contexto competitivo llamando a la Edge Function segura.
  *
+ * Soporta la nueva firma contextual:
+ * analyzeAbility({ pokemon, ability, context, format, regulation, userLevel, locale })
+ * y mantiene 100% de retrocompatibilidad con firmas previas ({ pokemon, ability, context: { ... } }).
+ *
  * @param {Object} params
  * @param {Object} params.pokemon - Datos del Pokémon (nombre, tipos, stats, etc.)
  * @param {Object} params.ability - Datos de la habilidad (nombre, descripción)
- * @param {Object} [params.context] - Contexto competitivo opcional
+ * @param {string|Object} [params.context='general'] - Identificador o payload de contexto ('general', 'showdown', 'champions')
+ * @param {string|null} [params.format=null] - Formato o modalidad (ej. 'gen9-ou', 'vgc', 'ranked-singles')
+ * @param {string|null} [params.regulation=null] - Regulación específica opcional
+ * @param {string} [params.userLevel] - Nivel de usuario ('beginner', 'intermediate', 'advanced', 'competitive')
+ * @param {string} [params.locale='es'] - Idioma ('es', 'es-419', 'en')
  * @returns {Promise<{ success: boolean, data?: Object, error?: string, code?: string }>}
  */
-export async function analyzeAbility({ pokemon, ability, context = {} }) {
+export async function analyzeAbility({
+  pokemon,
+  ability,
+  userLevel,
+  locale,
+  context = 'general',
+  format = null,
+  regulation = null,
+}) {
   if (!pokemon?.name || !ability?.name) {
     return {
       success: false,
@@ -69,8 +93,37 @@ export async function analyzeAbility({ pokemon, ability, context = {} }) {
     }
   }
 
+  // Normalización compatible de parámetros (soporta context como string o como objeto antiguo)
+  const contextObj = typeof context === 'object' && context !== null ? context : {}
+  const resolvedContext = (
+    typeof context === 'string'
+      ? context
+      : (contextObj.context || contextObj.platform || 'general')
+  ).toLowerCase().trim()
+
+  const resolvedFormat = format || contextObj.format || null
+  const resolvedRegulation = regulation || contextObj.regulation || null
+  const resolvedLevel = getResolvedUserLevel(userLevel || contextObj.userLevel)
+  const resolvedLocale = locale || contextObj.locale || 'es'
+
+  let resolvedBattleMode = contextObj.battleMode
+  if (!resolvedBattleMode) {
+    const fmt = (resolvedFormat || '').toLowerCase()
+    resolvedBattleMode = fmt.includes('double') || fmt.includes('vgc') ? 'doubles' : 'singles'
+  }
+
+  const resolvedGeneration = contextObj.generation || 9
+
   // 1. Comprobación de caché en memoria de sesión
-  const cacheKey = getCacheKey('ability', pokemon.name, ability.name, context)
+  const cacheKey = getCacheKey('ability', pokemon.name, ability.name, {
+    context: resolvedContext,
+    format: resolvedFormat,
+    regulation: resolvedRegulation,
+    battleMode: resolvedBattleMode,
+    userLevel: resolvedLevel,
+    locale: resolvedLocale,
+  })
+
   if (memoryCache.has(cacheKey)) {
     return {
       success: true,
@@ -88,7 +141,7 @@ export async function analyzeAbility({ pokemon, ability, context = {} }) {
     }
   }
 
-  // 3. Estructuración del payload extensible
+  // 3. Estructuración del payload contextual extensible para la Edge Function
   const payload = {
     type: 'ability',
     pokemon: {
@@ -104,13 +157,19 @@ export async function analyzeAbility({ pokemon, ability, context = {} }) {
       description: ability.description || '',
     },
     context: {
-      platform: context.platform || 'general',
-      format: context.format || null,
-      generation: context.generation || 9,
-      battleMode: context.battleMode || 'singles',
-      userLevel: getResolvedUserLevel(context.userLevel),
-      locale: context.locale || 'es',
+      context: resolvedContext,
+      platform: resolvedContext,
+      format: resolvedFormat,
+      regulation: resolvedRegulation,
+      generation: resolvedGeneration,
+      battleMode: resolvedBattleMode,
+      userLevel: resolvedLevel,
+      locale: resolvedLocale,
     },
+    userLevel: resolvedLevel,
+    locale: resolvedLocale,
+    format: resolvedFormat,
+    regulation: resolvedRegulation,
   }
 
   try {

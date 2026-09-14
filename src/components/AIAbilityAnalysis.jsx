@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { sanitizePokemonTerms } from '../utils/sanitizePokemonTerms'
+import { formatCompetitiveContextBadge } from '../data/competitiveContexts'
 
 /**
  * Determina un icono contextual adecuado según la temática de la habilidad.
@@ -104,165 +105,165 @@ export function AIAbilityErrorCard({ error, onRetry, t }) {
 }
 
 /**
- * Contenido estructurado en las 8 secciones temáticas para el Focus Mode.
+ * Contenido progresivo del análisis de habilidad.
+ * Primera capa (siempre visible): Idea clave, Cómo se aprovecha, Estrategias destacadas.
+ * Segunda capa (bajo "Explorar más"): Mecánicas, Singles, Doubles, Sinergias, Counters, Pro Tip, Alternativas.
  */
 export function AIAbilityAnalysisContent({
   analysis: rawAnalysis,
   t,
+  locale = 'es',
 }) {
+  const [isDeepDiveOpen, setIsDeepDiveOpen] = useState(false)
+
   if (!rawAnalysis) return null
 
   const analysis = sanitizePokemonTerms(rawAnalysis)
 
-  // Extracción segura de campos
-  const summary = analysis.summary || ''
-  const ratingScore = Number(analysis.rating?.score) || null
-  const ratingLabel = analysis.rating?.label || ''
-  const strengths = Array.isArray(analysis.strengths) ? analysis.strengths : []
-  const weaknesses = Array.isArray(analysis.weaknesses) ? analysis.weaknesses : []
-  const synergies = Array.isArray(analysis.synergies) ? analysis.synergies : []
-  const singles = analysis.singles || ''
-  const doubles = analysis.doubles || ''
-  const whenToUse = Array.isArray(analysis.whenToUse) ? analysis.whenToUse : []
-  const whenToAvoid = Array.isArray(analysis.whenToAvoid) ? analysis.whenToAvoid : []
-  const competitiveTip = analysis.competitiveTip || ''
+  // Extracción segura de campos del contrato progresivo
+  const coreInsight = analysis.coreInsight || ''
+  const howToLeverage = analysis.howToLeverage || ''
+  const strategies = Array.isArray(analysis.strategies) ? analysis.strategies : []
+  const alternatives = Array.isArray(analysis.alternatives) ? analysis.alternatives : []
+  const deepDive = analysis.deepDive && typeof analysis.deepDive === 'object' ? analysis.deepDive : {}
 
-  // Determinación de clase de color según el score (0 - 10)
-  let scoreClass = 'score-high'
-  if (ratingScore !== null) {
-    if (ratingScore < 6.0) scoreClass = 'score-low'
-    else if (ratingScore < 8.0) scoreClass = 'score-medium'
+  // Valor competitivo
+  const cv = analysis.competitiveValue || analysis.rating || {}
+  const cvScore = Number(cv.score) || null
+  const cvLabel = cv.label || ''
+  const cvSummary = cv.summary || ''
+
+  // Determinación de frase natural y contextual para el valor competitivo
+  let naturalCompetitiveText = cvSummary
+  if (!naturalCompetitiveText && (cvLabel || cvScore !== null)) {
+    const isEn = String(locale || 'es').toLowerCase().startsWith('en')
+    if (cvScore !== null && cvScore < 5) {
+      naturalCompetitiveText = isEn
+        ? 'Its competitive value is very limited in this setting.'
+        : 'Su valor competitivo es muy limitado.'
+    } else if (cvScore !== null && cvScore < 7) {
+      naturalCompetitiveText = isEn
+        ? 'It has situational competitive applications.'
+        : 'Tiene aplicaciones competitivas situacionales.'
+    } else if (cvScore !== null && cvScore >= 8) {
+      naturalCompetitiveText = isEn
+        ? 'It has outstanding competitive value in this context.'
+        : 'Tiene un valor competitivo destacado en este contexto.'
+    } else {
+      naturalCompetitiveText = isEn
+        ? 'It has solid competitive value in this context.'
+        : 'Tiene un valor competitivo sólido en este contexto.'
+    }
   }
-  const scorePercent = ratingScore !== null ? Math.min(100, Math.max(0, (ratingScore / 10) * 100)) : 0
 
-  // Textos y etiquetas con soporte i18n
+  // Deep dive fields
+  const mechanics = deepDive.mechanics || ''
+  const singles = deepDive.singles || ''
+  const doubles = deepDive.doubles || ''
+  const synergies = Array.isArray(deepDive.synergies) ? deepDive.synergies : []
+  const counters = Array.isArray(deepDive.counters) ? deepDive.counters : []
+  const proTip = deepDive.proTip || ''
+
+  // Check if there's any deep dive content to show
+  const hasDeepDive = mechanics || singles || doubles || synergies.length > 0 || counters.length > 0 || proTip || alternatives.length > 0
+
+  // Score class for visual styling
+  let scoreClass = 'score-high'
+  if (cvScore !== null) {
+    if (cvScore < 6.0) scoreClass = 'score-low'
+    else if (cvScore < 8.0) scoreClass = 'score-medium'
+  }
+
+  // i18n labels
   const aiT = t?.aiAnalysis || {}
-  const ratingHeaderLabel = aiT.competitiveValue || aiT.ratingLabel || 'Valor competitivo'
-  const summaryTitle = aiT.summaryLabel || 'Resumen Táctico'
-  const strengthsTitle = aiT.strengthsLabel || 'Fortalezas'
-  const weaknessesTitle = aiT.weaknessesLabel || 'Debilidades'
-  const synergiesTitle = aiT.synergiesLabel || 'Sinergias'
+  const coreInsightTitle = aiT.coreInsightLabel || 'Idea clave'
+  const howToLeverageTitle = aiT.howToLeverageLabel || 'Cómo se aprovecha'
+  const strategiesTitle = strategies.length === 1
+    ? (aiT.strategyLabel || 'Estrategia destacada')
+    : (aiT.strategiesLabel || 'Estrategias destacadas')
+  const whyFeaturedLabel = aiT.whyFeaturedLabel || '¿Por qué es destacada?'
+  const exploreMoreLabel = aiT.exploreMore || 'Explorar más'
+  const collapseLabel = aiT.collapseDetails || 'Menos detalles'
+  const mechanicsTitle = aiT.mechanicsLabel || 'Mecánicas en detalle'
   const singlesTitle = aiT.singlesTitle || 'Singles'
   const doublesTitle = aiT.doublesTitle || 'Doubles'
-  const whenToUseTitle = aiT.whenToUseLabel || 'Cuándo usarla'
-  const whenToAvoidTitle = aiT.whenToAvoidLabel || 'Cuándo evitarla'
+  const synergiesTitle = aiT.synergiesLabel || 'Sinergias recomendadas'
+  const countersTitle = aiT.countersLabel || 'Amenazas y contramedidas'
   const proTipTitle = aiT.proTipLabel || 'Consejo competitivo'
-  const ratingOutOf = aiT.ratingOutOf || '/ 10'
+  const alternativesTitle = aiT.alternativesLabel || 'Alternativas'
 
   return (
-    <div className="ability-ai-focus-sections">
+    <div className="ability-ai-focus-sections ability-ai-progressive">
       {/* ====================================================================
-          BLOQUE 1: ⭐ VALOR COMPETITIVO
+          VALOR COMPETITIVO (Texto natural y contextual — sin puntuación numérica)
           ==================================================================== */}
-      {ratingScore !== null && (
-        <section className="ability-ai-focus-section section-rating">
-          <div className="ability-ai-focus-section-header">
-            <span className="ability-ai-focus-section-icon" aria-hidden="true">⭐</span>
-            <h3 className="ability-ai-focus-section-title">{ratingHeaderLabel}</h3>
+      {naturalCompetitiveText && (
+        <div className={`ability-ai-cv-contextual-wrap ${scoreClass}`}>
+          <div className="ability-ai-cv-contextual-header">
+            <span className="ability-ai-cv-contextual-icon" aria-hidden="true">
+              {scoreClass === 'score-low' ? '⚠️' : scoreClass === 'score-medium' ? '⚖️' : '✨'}
+            </span>
+            <p className="ability-ai-cv-contextual-text">
+              {naturalCompetitiveText}
+            </p>
+            {cvLabel && (
+              <span className={`ability-ai-cv-pill ${scoreClass}`}>{cvLabel}</span>
+            )}
           </div>
-          <div className="ability-ai-focus-rating-box">
-            <div className="ability-ai-focus-rating-left">
-              <div className="ability-ai-focus-score-badge">
-                <span className="ability-ai-focus-score-number">{ratingScore.toFixed(0)}</span>
-                <span className="ability-ai-focus-score-max">{ratingOutOf}</span>
-              </div>
-              <div className="ability-ai-focus-label-wrap">
-                <span className={`ability-ai-focus-qualifier ${scoreClass}`}>
-                  {ratingLabel}
-                </span>
-                <span className="ability-ai-focus-score-sub">
-                  Evaluación basada en metagame competitivo
-                </span>
-              </div>
-            </div>
-            <div className="ability-ai-focus-bar-wrap" aria-hidden="true">
-              <div className="ability-ai-focus-bar-track">
-                <div
-                  className={`ability-ai-focus-bar-fill ${scoreClass}`}
-                  style={{ width: `${scorePercent}%` }}
-                />
-              </div>
-              <div className="ability-ai-focus-pips">
-                {[...Array(10)].map((_, i) => (
-                  <span
-                    key={`pip-${i}`}
-                    className={`ability-ai-focus-pip ${i < Math.round(ratingScore) ? 'is-filled' : ''}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ====================================================================
-          BLOQUE 2: 📖 RESUMEN
-          ==================================================================== */}
-      {summary && (
-        <section className="ability-ai-focus-section section-summary">
-          <div className="ability-ai-focus-section-header">
-            <span className="ability-ai-focus-section-icon" aria-hidden="true">📖</span>
-            <h3 className="ability-ai-focus-section-title">{summaryTitle}</h3>
-          </div>
-          <p className="ability-ai-focus-summary-text">{summary}</p>
-        </section>
-      )}
-
-      {/* ====================================================================
-          BLOQUE 3: DOS COLUMNAS (✓ FORTALEZAS vs ⚠ DEBILIDADES)
-          ==================================================================== */}
-      {(strengths.length > 0 || weaknesses.length > 0) && (
-        <div className="ability-ai-focus-grid two-columns">
-          {strengths.length > 0 && (
-            <section className="ability-ai-focus-section section-strengths">
-              <div className="ability-ai-focus-section-header">
-                <span className="ability-ai-bullet-icon green" aria-hidden="true">✓</span>
-                <h3 className="ability-ai-focus-section-title">{strengthsTitle}</h3>
-              </div>
-              <ul className="ability-ai-focus-list">
-                {strengths.map((item, idx) => (
-                  <li key={`str-${idx}`} className="ability-ai-focus-item">
-                    <span className="ability-ai-item-bullet green" aria-hidden="true">✓</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {weaknesses.length > 0 && (
-            <section className="ability-ai-focus-section section-weaknesses">
-              <div className="ability-ai-focus-section-header">
-                <span className="ability-ai-bullet-icon red" aria-hidden="true">⚠</span>
-                <h3 className="ability-ai-focus-section-title">{weaknessesTitle}</h3>
-              </div>
-              <ul className="ability-ai-focus-list">
-                {weaknesses.map((item, idx) => (
-                  <li key={`weak-${idx}`} className="ability-ai-focus-item">
-                    <span className="ability-ai-item-bullet red" aria-hidden="true">!</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
         </div>
       )}
 
       {/* ====================================================================
-          BLOQUE 4: 🔗 SINERGIAS
+          PRIMERA CAPA: IDEA CLAVE
           ==================================================================== */}
-      {synergies.length > 0 && (
-        <section className="ability-ai-focus-section section-synergies">
+      {coreInsight && (
+        <section className="ability-ai-focus-section section-core-insight">
           <div className="ability-ai-focus-section-header">
-            <span className="ability-ai-focus-section-icon" aria-hidden="true">🔗</span>
-            <h3 className="ability-ai-focus-section-title">{synergiesTitle}</h3>
+            <span className="ability-ai-focus-section-icon" aria-hidden="true">💡</span>
+            <h3 className="ability-ai-focus-section-title">{coreInsightTitle}</h3>
           </div>
-          <div className="ability-ai-focus-synergies-wrap">
-            {synergies.map((item, idx) => (
-              <div key={`syn-${idx}`} className="ability-ai-focus-synergy-chip">
-                <span className="ability-ai-synergy-spark" aria-hidden="true">✦</span>
-                <span className="ability-ai-synergy-text">{item}</span>
+          <p className="ability-ai-focus-insight-text">{coreInsight}</p>
+        </section>
+      )}
+
+      {/* ====================================================================
+          PRIMERA CAPA: CÓMO SE APROVECHA
+          ==================================================================== */}
+      {howToLeverage && (
+        <section className="ability-ai-focus-section section-leverage">
+          <div className="ability-ai-focus-section-header">
+            <span className="ability-ai-focus-section-icon" aria-hidden="true">⚙️</span>
+            <h3 className="ability-ai-focus-section-title">{howToLeverageTitle}</h3>
+          </div>
+          <p className="ability-ai-focus-leverage-text">{howToLeverage}</p>
+        </section>
+      )}
+
+      {/* ====================================================================
+          PRIMERA CAPA: ESTRATEGIAS DESTACADAS (0 a 3)
+          ==================================================================== */}
+      {strategies.length > 0 && (
+        <section className="ability-ai-focus-section section-strategies">
+          <div className="ability-ai-focus-section-header">
+            <span className="ability-ai-focus-section-icon" aria-hidden="true">⭐</span>
+            <h3 className="ability-ai-focus-section-title">{strategiesTitle}</h3>
+          </div>
+          <div className="ability-ai-strategies-list">
+            {strategies.map((strat, idx) => (
+              <div key={`strat-${idx}`} className="ability-ai-strategy-card">
+                <h4 className="ability-ai-strategy-name">
+                  <span className="ability-ai-strategy-star" aria-hidden="true">⭐</span>
+                  {strat.name}
+                </h4>
+                {strat.explanation && (
+                  <p className="ability-ai-strategy-explanation">{strat.explanation}</p>
+                )}
+                {strat.whyFeatured && (
+                  <div className="ability-ai-strategy-why">
+                    <span className="ability-ai-strategy-why-label">{whyFeaturedLabel}</span>
+                    <p className="ability-ai-strategy-why-text">{strat.whyFeatured}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -270,86 +271,131 @@ export function AIAbilityAnalysisContent({
       )}
 
       {/* ====================================================================
-          BLOQUE 5: DOS COLUMNAS (⚔ SINGLES vs 👥 DOUBLES)
+          EXPLORAR MÁS (toggle)
           ==================================================================== */}
-      {(singles || doubles) && (
-        <div className="ability-ai-focus-grid two-columns">
-          {singles && (
-            <section className="ability-ai-focus-section section-format">
-              <div className="ability-ai-focus-section-header">
-                <span className="ability-ai-focus-section-icon" aria-hidden="true">⚔</span>
-                <h3 className="ability-ai-focus-section-title">{singlesTitle}</h3>
-              </div>
-              <p className="ability-ai-focus-format-text">{singles}</p>
-            </section>
-          )}
+      {hasDeepDive && (
+        <>
+          <button
+            type="button"
+            className={`ability-ai-explore-toggle ${isDeepDiveOpen ? 'is-open' : ''}`}
+            onClick={() => setIsDeepDiveOpen((prev) => !prev)}
+            aria-expanded={isDeepDiveOpen}
+          >
+            <span className="ability-ai-explore-icon" aria-hidden="true">
+              {isDeepDiveOpen ? '▼' : '▶'}
+            </span>
+            <span>{isDeepDiveOpen ? collapseLabel : exploreMoreLabel}</span>
+            <span className="ability-ai-explore-chevron" aria-hidden="true">›</span>
+          </button>
 
-          {doubles && (
-            <section className="ability-ai-focus-section section-format">
-              <div className="ability-ai-focus-section-header">
-                <span className="ability-ai-focus-section-icon" aria-hidden="true">👥</span>
-                <h3 className="ability-ai-focus-section-title">{doublesTitle}</h3>
-              </div>
-              <p className="ability-ai-focus-format-text">{doubles}</p>
-            </section>
-          )}
-        </div>
-      )}
+          {isDeepDiveOpen && (
+            <div className="ability-ai-deep-dive">
+              {/* Mecánicas en detalle */}
+              {mechanics && (
+                <section className="ability-ai-focus-section section-mechanics">
+                  <div className="ability-ai-focus-section-header">
+                    <span className="ability-ai-focus-section-icon" aria-hidden="true">⚙️</span>
+                    <h3 className="ability-ai-focus-section-title">{mechanicsTitle}</h3>
+                  </div>
+                  <p className="ability-ai-focus-format-text">{mechanics}</p>
+                </section>
+              )}
 
-      {/* ====================================================================
-          BLOQUE 6: 🎯 CUÁNDO USARLA & BLOQUE 7: 🚫 CUÁNDO EVITARLA
-          ==================================================================== */}
-      {(whenToUse.length > 0 || whenToAvoid.length > 0) && (
-        <div className="ability-ai-focus-grid two-columns">
-          {whenToUse.length > 0 && (
-            <section className="ability-ai-focus-section section-usage">
-              <div className="ability-ai-focus-section-header">
-                <span className="ability-ai-focus-section-icon" aria-hidden="true">🎯</span>
-                <h3 className="ability-ai-focus-section-title">{whenToUseTitle}</h3>
-              </div>
-              <ul className="ability-ai-focus-list">
-                {whenToUse.map((item, idx) => (
-                  <li key={`use-${idx}`} className="ability-ai-focus-item">
-                    <span className="ability-ai-item-bullet green" aria-hidden="true">▲</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+              {/* Singles & Doubles */}
+              {(singles || doubles) && (
+                <div className="ability-ai-focus-grid two-columns">
+                  {singles && (
+                    <section className="ability-ai-focus-section section-format">
+                      <div className="ability-ai-focus-section-header">
+                        <span className="ability-ai-focus-section-icon" aria-hidden="true">⚔</span>
+                        <h3 className="ability-ai-focus-section-title">{singlesTitle}</h3>
+                      </div>
+                      <p className="ability-ai-focus-format-text">{singles}</p>
+                    </section>
+                  )}
+                  {doubles && (
+                    <section className="ability-ai-focus-section section-format">
+                      <div className="ability-ai-focus-section-header">
+                        <span className="ability-ai-focus-section-icon" aria-hidden="true">👥</span>
+                        <h3 className="ability-ai-focus-section-title">{doublesTitle}</h3>
+                      </div>
+                      <p className="ability-ai-focus-format-text">{doubles}</p>
+                    </section>
+                  )}
+                </div>
+              )}
 
-          {whenToAvoid.length > 0 && (
-            <section className="ability-ai-focus-section section-avoid">
-              <div className="ability-ai-focus-section-header">
-                <span className="ability-ai-focus-section-icon" aria-hidden="true">🚫</span>
-                <h3 className="ability-ai-focus-section-title">{whenToAvoidTitle}</h3>
-              </div>
-              <ul className="ability-ai-focus-list">
-                {whenToAvoid.map((item, idx) => (
-                  <li key={`avoid-${idx}`} className="ability-ai-focus-item">
-                    <span className="ability-ai-item-bullet red" aria-hidden="true">▼</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
-      )}
+              {/* Sinergias */}
+              {synergies.length > 0 && (
+                <section className="ability-ai-focus-section section-synergies">
+                  <div className="ability-ai-focus-section-header">
+                    <span className="ability-ai-focus-section-icon" aria-hidden="true">🔗</span>
+                    <h3 className="ability-ai-focus-section-title">{synergiesTitle}</h3>
+                  </div>
+                  <div className="ability-ai-focus-synergies-wrap">
+                    {synergies.map((item, idx) => (
+                      <div key={`syn-${idx}`} className="ability-ai-focus-synergy-chip">
+                        <span className="ability-ai-synergy-spark" aria-hidden="true">✦</span>
+                        <span className="ability-ai-synergy-text">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
-      {/* ====================================================================
-          BLOQUE 8: 💡 CONSEJO PRO COMPETITIVO
-          ==================================================================== */}
-      {competitiveTip && (
-        <section className="ability-ai-focus-protip">
-          <div className="ability-ai-protip-icon-col" aria-hidden="true">
-            <span className="ability-ai-protip-bulb">💡</span>
-          </div>
-          <div className="ability-ai-protip-body">
-            <span className="ability-ai-protip-eyebrow">{proTipTitle}</span>
-            <p className="ability-ai-protip-text">{competitiveTip}</p>
-          </div>
-        </section>
+              {/* Counters / Amenazas */}
+              {counters.length > 0 && (
+                <section className="ability-ai-focus-section section-counters">
+                  <div className="ability-ai-focus-section-header">
+                    <span className="ability-ai-focus-section-icon" aria-hidden="true">🛡️</span>
+                    <h3 className="ability-ai-focus-section-title">{countersTitle}</h3>
+                  </div>
+                  <ul className="ability-ai-focus-list">
+                    {counters.map((item, idx) => (
+                      <li key={`ctr-${idx}`} className="ability-ai-focus-item">
+                        <span className="ability-ai-item-bullet red" aria-hidden="true">▼</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* Pro Tip */}
+              {proTip && (
+                <section className="ability-ai-focus-protip">
+                  <div className="ability-ai-protip-icon-col" aria-hidden="true">
+                    <span className="ability-ai-protip-bulb">💡</span>
+                  </div>
+                  <div className="ability-ai-protip-body">
+                    <span className="ability-ai-protip-eyebrow">{proTipTitle}</span>
+                    <p className="ability-ai-protip-text">{proTip}</p>
+                  </div>
+                </section>
+              )}
+
+              {/* Alternativas */}
+              {alternatives.length > 0 && (
+                <section className="ability-ai-focus-section section-alternatives">
+                  <div className="ability-ai-focus-section-header">
+                    <span className="ability-ai-focus-section-icon" aria-hidden="true">🔄</span>
+                    <h3 className="ability-ai-focus-section-title">{alternativesTitle}</h3>
+                  </div>
+                  <div className="ability-ai-strategies-list">
+                    {alternatives.map((alt, idx) => (
+                      <div key={`alt-${idx}`} className="ability-ai-alternative-card">
+                        <h4 className="ability-ai-alternative-name">{alt.name}</h4>
+                        {alt.explanation && (
+                          <p className="ability-ai-alternative-explanation">{alt.explanation}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -372,6 +418,7 @@ export function AbilityAIFocusMode({
   context,
   t,
   onRetry,
+  onChangeContext,
 }) {
   // Manejo de tecla Escape y bloqueo de scroll de fondo
   useEffect(() => {
@@ -396,11 +443,18 @@ export function AbilityAIFocusMode({
   if (!isOpen) return null
 
   const aiT = t?.aiAnalysis || {}
-  const focusEyebrow = aiT.focusEyebrow || 'ANÁLISIS CON IA'
+  const focusEyebrow = aiT.contextBadgePrefix || aiT.focusEyebrow || '✦ ANÁLISIS IA'
   const pressEscHint = aiT.pressEscToClose || 'Esc para salir'
   const closeLabel = aiT.close || 'Cerrar análisis'
   const disclaimerText = aiT.disclaimer || 'Interpretación táctica generada por IA · No oficial'
   const abilityIcon = getAbilityIcon(abilityName, abilityRawName)
+
+  const activeContextId = context?.context || context?.platform || 'general'
+  const contextBadgeText = formatCompetitiveContextBadge(
+    activeContextId,
+    context?.format,
+    context?.regulation,
+  )
 
   return (
     <>
@@ -425,18 +479,27 @@ export function AbilityAIFocusMode({
           <div className="ability-ai-focus-header-meta">
             <div className="ability-ai-focus-badge-row">
               <span className="ability-ai-focus-badge">
-                <span className="ability-ai-focus-spark" aria-hidden="true">✨</span>
+                <span className="ability-ai-focus-spark" aria-hidden="true">✦</span>
                 <span>{focusEyebrow}</span>
+              </span>
+              <span className="ability-ai-focus-context-pill" title={contextBadgeText}>
+                {contextBadgeText}
               </span>
               {pokemonName && (
                 <span className="ability-ai-focus-pokemon-pill">
                   {pokemonName}
                 </span>
               )}
-              {context?.battleMode && (
-                <span className="ability-ai-focus-mode-pill">
-                  {context.battleMode.toUpperCase()}
-                </span>
+              {onChangeContext && (
+                <button
+                  type="button"
+                  className="ability-ai-change-context-btn"
+                  onClick={onChangeContext}
+                  title={aiT.changeContext || 'Cambiar contexto'}
+                >
+                  <span aria-hidden="true">⇄</span>
+                  <span>{aiT.changeContext || 'Cambiar contexto'}</span>
+                </button>
               )}
             </div>
 
@@ -493,6 +556,7 @@ export function AbilityAIFocusMode({
             <AIAbilityAnalysisContent
               analysis={data}
               t={t}
+              locale={context?.locale || 'es'}
             />
           )}
         </div>

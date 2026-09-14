@@ -1,11 +1,12 @@
 /**
  * cacheManager.ts
- * Gestor del Caché Compartido de Análisis de Habilidades para PokeGuide AI (Fase 2).
+ * Gestor del Caché Compartido de Análisis de Habilidades para PokeGuide AI (Cache V3 — Progressive).
  *
  * Implementa una política Cache-First con:
  * - TTL configurable (por defecto 30 días)
- * - Identidad estricta por contexto: pokemon_id, ability_id, user_level, locale
- * - Control de versiones de validación (validation_version)
+ * - Identidad estricta: pokemon_id, ability_id, user_level, locale, context, format, regulation
+ * - Control de versiones de validación (validation_version 'v3' para contrato progresivo,
+ *   con compatibilidad 'v1'/'v2' para contexto 'general' legacy)
  * - Prevención de condiciones de carrera con UPSERT
  * - Verificación integral previa de esquema y hechos antes de retornar un HIT
  */
@@ -17,13 +18,16 @@ import { type VerifiedAbilityFacts } from './knowledgeLayer.ts'
 
 // Configuración centralizada de TTL y versión de validación
 export const AI_CACHE_TTL_DAYS = 30
-export const CURRENT_VALIDATION_VERSION = 'v1'
+export const CURRENT_VALIDATION_VERSION = 'v3'
 
 export interface CacheLookupParams {
   pokemonId: string
   abilityId: string
   userLevel: string
   locale: string
+  context?: string
+  format?: string | null
+  regulation?: string | null
 }
 
 export interface CacheSaveParams extends CacheLookupParams {
@@ -42,10 +46,13 @@ export interface CacheLookupResult {
   provider?: string
   model?: string
   validationVersion?: string
+  context?: string
+  format?: string | null
+  regulation?: string | null
 }
 
 /**
- * Consulta el caché compartido para un contexto específico.
+ * Consulta el caché compartido para un contexto competitivo específico.
  * Valida expiración, versión de validación, completitud de esquema y hechos objetivos.
  */
 export async function getCachedAnalysis(
@@ -53,17 +60,35 @@ export async function getCachedAnalysis(
   params: CacheLookupParams,
   verifiedFacts?: VerifiedAbilityFacts,
 ): Promise<CacheLookupResult> {
-  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${params.locale}`
+  const resolvedContext = (params.context || 'general').toLowerCase().trim()
+  const resolvedFormat = params.format ? String(params.format).toLowerCase().trim() : null
+  const resolvedRegulation = params.regulation ? String(params.regulation).toLowerCase().trim() : null
+
+  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${params.locale} | ${resolvedContext} | ${resolvedFormat || 'none'} | ${resolvedRegulation || 'none'}`
 
   try {
-    const { data: row, error } = await supabaseClient
+    let query = supabaseClient
       .from('ai_ability_analysis_cache')
       .select('*')
       .eq('pokemon_id', params.pokemonId)
       .eq('ability_id', params.abilityId)
       .eq('user_level', params.userLevel)
       .eq('locale', params.locale)
-      .maybeSingle()
+      .eq('context', resolvedContext)
+
+    if (resolvedFormat) {
+      query = query.eq('format', resolvedFormat)
+    } else {
+      query = query.is('format', null)
+    }
+
+    if (resolvedRegulation) {
+      query = query.eq('regulation', resolvedRegulation)
+    } else {
+      query = query.is('regulation', null)
+    }
+
+    const { data: row, error } = await query.maybeSingle()
 
     if (error) {
       console.warn(`[AI CACHE] Error consultando caché (${contextTag}):`, error.message)
@@ -82,10 +107,11 @@ export async function getCachedAnalysis(
       return { hit: false, reason: 'expired' }
     }
 
-    // 2. Verificación de versión de validación
-    if (row.validation_version !== CURRENT_VALIDATION_VERSION) {
+    // 2. Verificación de versión de validación (v1/v2 aceptadas para general histórico, v3 para contrato progresivo)
+    const allowedVersions = resolvedContext === 'general' ? ['v1', 'v2', CURRENT_VALIDATION_VERSION] : [CURRENT_VALIDATION_VERSION]
+    if (!allowedVersions.includes(row.validation_version)) {
       console.log(
-        `[AI CACHE] VERSION_MISMATCH (${contextTag}) - entrada: '${row.validation_version}', actual: '${CURRENT_VALIDATION_VERSION}'`,
+        `[AI CACHE] VERSION_MISMATCH (${contextTag}) - entrada: '${row.validation_version}', permitidas: [${allowedVersions.join(', ')}]`,
       )
       return { hit: false, reason: 'version_mismatch' }
     }
@@ -126,6 +152,9 @@ export async function getCachedAnalysis(
       provider: row.provider,
       model: row.model,
       validationVersion: row.validation_version,
+      context: row.context || resolvedContext,
+      format: row.format || null,
+      regulation: row.regulation || null,
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
@@ -136,14 +165,18 @@ export async function getCachedAnalysis(
 
 /**
  * Guarda o actualiza un análisis válido en el caché compartido.
- * Utiliza UPSERT sobre (pokemon_id, ability_id, user_level, locale) para resolver
- * condiciones de carrera entre peticiones simultáneas de forma atómica y segura.
+ * Utiliza UPSERT sobre (pokemon_id, ability_id, user_level, locale, context, format, regulation)
+ * para resolver condiciones de carrera de forma atómica y segura.
  */
 export async function saveCachedAnalysis(
   supabaseClient: SupabaseClient,
   params: CacheSaveParams,
 ): Promise<{ success: boolean; error?: string }> {
-  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${params.locale}`
+  const resolvedContext = (params.context || 'general').toLowerCase().trim()
+  const resolvedFormat = params.format ? String(params.format).toLowerCase().trim() : null
+  const resolvedRegulation = params.regulation ? String(params.regulation).toLowerCase().trim() : null
+
+  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${params.locale} | ${resolvedContext} | ${resolvedFormat || 'none'} | ${resolvedRegulation || 'none'}`
   const ttlDays = params.ttlDays || AI_CACHE_TTL_DAYS
   const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString()
   const version = params.validationVersion || CURRENT_VALIDATION_VERSION
@@ -157,6 +190,9 @@ export async function saveCachedAnalysis(
           ability_id: params.abilityId,
           user_level: params.userLevel,
           locale: params.locale,
+          context: resolvedContext,
+          format: resolvedFormat,
+          regulation: resolvedRegulation,
           analysis_json: params.analysisJson,
           provider: params.provider,
           model: params.model,
@@ -165,7 +201,7 @@ export async function saveCachedAnalysis(
           updated_at: new Date().toISOString(),
         },
         {
-          onConflict: 'pokemon_id,ability_id,user_level,locale',
+          onConflict: 'pokemon_id,ability_id,user_level,locale,context,format,regulation',
         },
       )
 

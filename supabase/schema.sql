@@ -65,8 +65,8 @@ FOR EACH ROW
 EXECUTE FUNCTION public.handle_updated_at();
 
 -- ================================================================
--- Tabla: ai_ability_analysis_cache (PokeGuide AI - Fase 2)
--- Caché compartido global indexado por contexto competitivo
+-- Tabla: ai_ability_analysis_cache (PokeGuide AI - Fase 3: Cache V2)
+-- Caché compartido global indexado por contexto competitivo completo
 -- ================================================================
 
 CREATE TABLE IF NOT EXISTS public.ai_ability_analysis_cache (
@@ -75,22 +75,26 @@ CREATE TABLE IF NOT EXISTS public.ai_ability_analysis_cache (
   ability_id TEXT NOT NULL,
   user_level TEXT NOT NULL,
   locale TEXT NOT NULL,
+  context TEXT NOT NULL DEFAULT 'general',
+  format TEXT DEFAULT NULL,
+  regulation TEXT DEFAULT NULL,
   analysis_json JSONB NOT NULL,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
-  validation_version TEXT NOT NULL DEFAULT 'v1',
+  validation_version TEXT NOT NULL DEFAULT 'v2',
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
 
-  CONSTRAINT unique_ability_analysis_context UNIQUE (pokemon_id, ability_id, user_level, locale),
-  CONSTRAINT ai_cache_user_level_check CHECK (user_level IN ('beginner', 'intermediate', 'advanced', 'competitive'))
+  CONSTRAINT ai_cache_user_level_check CHECK (user_level IN ('beginner', 'intermediate', 'advanced', 'competitive')),
+  CONSTRAINT ai_cache_context_check CHECK (context IN ('general', 'showdown', 'champions')),
+  CONSTRAINT unique_ability_analysis_context_v2 UNIQUE NULLS NOT DISTINCT (pokemon_id, ability_id, user_level, locale, context, format, regulation)
 );
 
-COMMENT ON TABLE public.ai_ability_analysis_cache IS 'Caché compartido global de análisis de habilidades tácticas de PokeGuide AI, indexado por contexto (Pokémon, habilidad, nivel e idioma).';
+COMMENT ON TABLE public.ai_ability_analysis_cache IS 'Caché compartido global de análisis de habilidades tácticas de PokeGuide AI V2, indexado por identidad completa (Pokémon, habilidad, nivel, idioma, plataforma/contexto, formato y regulación).';
 
-CREATE INDEX IF NOT EXISTS idx_ai_ability_cache_lookup 
-ON public.ai_ability_analysis_cache (pokemon_id, ability_id, user_level, locale);
+CREATE INDEX IF NOT EXISTS idx_ai_ability_cache_lookup_v2 
+ON public.ai_ability_analysis_cache (pokemon_id, ability_id, user_level, locale, context);
 
 CREATE INDEX IF NOT EXISTS idx_ai_ability_cache_expires 
 ON public.ai_ability_analysis_cache (expires_at);

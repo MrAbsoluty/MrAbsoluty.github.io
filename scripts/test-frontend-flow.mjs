@@ -1,4 +1,4 @@
-import { analyzeAbility } from './src/services/pokeguideAI.js'
+import { analyzeAbility } from '../src/services/pokeguideAI.js'
 
 console.log('Testing frontend service analyzeAbility() with Groq active...')
 

@@ -60,7 +60,7 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
     },
     turnCycle: {
       hasTurnSkip: true,
-      pattern: 'Turno 1: Puede actuar normalmente -> Turno 2: Holgazanea (no actúa) -> Turno 3: Puede actuar normalmente -> Turno 4: Holgazanea...',
+      pattern: 'En el primer turno puede actuar con normalidad; en el siguiente turno holgazanea y no actúa; después vuelve a actuar con normalidad, alternando sucesivamente.',
       explanation: 'La restricción es estrictamente de frecuencia de actuación por turno, NUNCA una reducción de la estadística de Velocidad.',
     },
     activation: 'Pasiva al inicio de cada turno par tras haber actuado en el impar.',
@@ -108,6 +108,10 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
       'activa nieve',
       'reduce el ataque',
       'reduce la velocidad',
+      'daña al usuario cada turno',
+      'debilita al usuario',
+      'reduce las estadísticas del usuario',
+      'la habilidad es débil porque potencia ataques de fuego del rival',
     ],
   },
   'huge-power': {
@@ -282,10 +286,63 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
     },
     prohibitedClaims: ['aumenta la velocidad', 'sin penalización'],
   },
+  unburden: {
+    name: 'unburden',
+    canonicalName: 'Unburden (Liviano)',
+    officialEffect: 'Duplica la estadística de Velocidad del Pokémon tras perder o consumir el objeto equipado que llevaba al entrar en combate.',
+    statChanges: [],
+    speedChanges: {
+      affectsSpeedStat: true,
+      explanation: 'Duplica (x2) la Velocidad del Pokémon a partir del momento en que su objeto equipado es consumido o perdido en combate, para las acciones y turnos siguientes. No duplica la velocidad retroactivamente durante la ejecución del movimiento que causó el consumo.',
+    },
+    activation: 'Al consumir o perder el objeto equipado durante el combate (por ejemplo: al usar A Bocajarro, Sneasler reduce su Defensa y Defensa Especial; Hierba Blanca restaura esas reducciones y se consume en el proceso; al quedar sin objeto, Liviano duplica su Velocidad a partir de ese momento para las acciones y turnos siguientes).',
+    category: 'utility',
+    deterministicRating: {
+      score: 8,
+      label: 'Muy buena',
+      source: 'deterministic',
+    },
+    prohibitedClaims: [
+      'se activa si entra sin objeto',
+      'se activa sin tener objeto inicial',
+      'aumenta el ataque',
+      'reduce la velocidad',
+    ],
+  },
+  guts: {
+    name: 'guts',
+    canonicalName: 'Guts (Agallas)',
+    officialEffect: 'Aumenta el Ataque físico en un 50% (multiplicador x1.5) cuando el Pokémon sufre un problema de estado alterado (quemadura, parálisis, envenenamiento o sueño). Ignora la penalización de daño por quemadura.',
+    statChanges: [
+      {
+        stat: 'attack',
+        target: 'self',
+        multiplier: 1.5,
+        explanation: 'Aumenta el Ataque en un 50% al sufrir un problema de estado alterado persistente. Ignora la penalización pasiva de daño provocada por la quemadura.',
+      },
+    ],
+    speedChanges: {
+      affectsSpeedStat: false,
+      explanation: 'Guts NO altera la estadística de Velocidad. La parálisis sigue reduciendo la velocidad habitual salvo inmunidades.',
+    },
+    activation: 'Condicional a sufrir un problema de estado alterado persistente (típicamente autoinducido mediante Llamasfera o Toxisfera, o por recibir un ataque de estado del rival).',
+    category: 'offensive',
+    deterministicRating: {
+      score: 8,
+      label: 'Muy buena',
+      source: 'deterministic',
+    },
+    prohibitedClaims: [
+      'se activa con confusión',
+      'aumenta la velocidad',
+      'se activa sin estado alterado',
+      'cura el estado alterado',
+    ],
+  },
 }
 
 /**
- * Normaliza nombres de habilidades a slug estándar (ej. "Huge Power" -> "huge-power").
+ * Normaliza nombres de habilidades a slug estándar (ej. "Huge Power" a "huge-power").
  */
 function toAbilitySlug(name: string): string {
   if (!name) return ''
@@ -356,5 +413,59 @@ export function buildVerifiedAbilityFacts(
     activation: 'Condiciones descritas en el juego oficial.',
     category: isHindrance ? 'hindrance' : 'utility',
     prohibitedClaims,
+  }
+}
+
+/* ==========================================================================
+ * PREPARACIÓN PARA FASE 4: Competitive Knowledge Layer
+ * ========================================================================== */
+
+export type CompetitiveSource = 'general' | 'showdown' | 'champions'
+
+export interface CompetitiveSetData {
+  name: string
+  item?: string
+  ability?: string
+  nature?: string
+  evs?: Record<string, number>
+  moves: string[]
+}
+
+export interface CompetitiveUsageStat {
+  rank?: number
+  usagePercent?: number
+  winRate?: number
+  commonPartners?: string[]
+}
+
+export interface CompetitiveContextData {
+  source: CompetitiveSource
+  format: string | null
+  regulation: string | null
+  verifiedFacts: string[]
+  recommendedItems: string[]
+  recommendedMoves: string[]
+  commonSets: CompetitiveSetData[]
+  usageStats: CompetitiveUsageStat[]
+}
+
+/**
+ * Stub preparatorio para la siguiente fase (Fase 4):
+ * Proveerá datos competitivos estructurados provenientes de Showdown, Smogon y Champions.
+ */
+export function getCompetitiveContext(
+  source: CompetitiveSource = 'general',
+  format: string | null = null,
+  regulation: string | null = null,
+): CompetitiveContextData {
+  return {
+    source,
+    format,
+    regulation,
+    verifiedFacts: [],
+    recommendedItems: [],
+    recommendedMoves: [],
+    commonSets: [],
+    usageStats: [],
   }
 }

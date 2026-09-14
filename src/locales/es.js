@@ -225,6 +225,67 @@ const es = {
     competitiveValue: 'Valor competitivo',
     singlesTitle: 'Singles',
     doublesTitle: 'Doubles',
+    coreInsightLabel: 'Idea clave',
+    howToLeverageLabel: 'Cómo se aprovecha',
+    strategyLabel: 'Estrategia destacada',
+    strategiesLabel: 'Estrategias destacadas',
+    whyFeaturedLabel: '¿Por qué es destacada?',
+    exploreMore: 'Explorar más',
+    collapseDetails: 'Menos detalles',
+    mechanicsLabel: 'Mecánicas en detalle',
+    countersLabel: 'Amenazas y contramedidas',
+    alternativesLabel: 'Alternativas',
+    contextSelectorTitle: '¿Dónde quieres analizar esta habilidad?',
+    contextSelectorSubtitle: 'Selecciona el contexto competitivo para adaptar el enfoque táctico.',
+    changeContext: 'Cambiar contexto',
+    selectFormatTitle: 'Selecciona el formato:',
+    selectContextTitle: 'Selecciona el contexto:',
+    backToContexts: 'Volver a plataformas',
+    cancel: 'Cancelar',
+    contextBadgePrefix: '✦ Análisis IA',
+    contexts: {
+      champions: {
+        name: 'Pokémon Champions',
+        tag: 'Comunidad Champions',
+        description: 'Contexto competitivo oficial de Pokémon Champions.',
+      },
+      showdown: {
+        name: 'Pokémon Showdown',
+        tag: 'Simulador / Smogon',
+        description: 'Metagames y tiers competitivos de Showdown y Smogon.',
+      },
+      general: {
+        name: 'General',
+        tag: 'Sin formato específico',
+        description: 'Explicación táctica general sin asumir ningún metagame concreto.',
+      },
+    },
+    formats: {
+      'gen9-ou': {
+        name: 'Gen 9 OU',
+        description: 'OverUsed estándar individual de 9ª Generación.',
+      },
+      vgc: {
+        name: 'VGC',
+        description: 'Formato oficial de combate doble competitivo.',
+      },
+      'doubles-ou': {
+        name: 'Doubles OU',
+        description: 'Combate doble bajo reglas de Smogon.',
+      },
+      'battle-stadium-singles': {
+        name: 'Battle Stadium Singles',
+        description: 'Reglamento individual oficial en consola.',
+      },
+      'ranked-singles': {
+        name: 'Ranked Singles',
+        description: 'Modalidad individual clasificada de Champions.',
+      },
+      'ranked-doubles': {
+        name: 'Ranked Doubles',
+        description: 'Modalidad doble clasificada de Champions.',
+      },
+    },
   },
   aiLevel: {
     sectionTitle: 'Nivel de análisis de IA',

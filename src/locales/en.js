@@ -225,6 +225,67 @@ const en = {
     competitiveValue: 'Competitive rating',
     singlesTitle: 'Singles',
     doublesTitle: 'Doubles',
+    coreInsightLabel: 'Key Insight',
+    howToLeverageLabel: 'How to Leverage',
+    strategyLabel: 'Featured Strategy',
+    strategiesLabel: 'Featured Strategies',
+    whyFeaturedLabel: 'Why is this featured?',
+    exploreMore: 'Explore more',
+    collapseDetails: 'Less details',
+    mechanicsLabel: 'Mechanics in Detail',
+    countersLabel: 'Threats \u0026 Counters',
+    alternativesLabel: 'Alternatives',
+    contextSelectorTitle: 'Where do you want to analyze this ability?',
+    contextSelectorSubtitle: 'Select a competitive platform or format to focus the tactical evaluation.',
+    changeContext: 'Change context',
+    selectFormatTitle: 'Select format:',
+    selectContextTitle: 'Select context:',
+    backToContexts: 'Back to platforms',
+    cancel: 'Cancel',
+    contextBadgePrefix: '✦ AI Analysis',
+    contexts: {
+      champions: {
+        name: 'Pokémon Champions',
+        tag: 'Champions Community',
+        description: 'Official competitive environment of Pokémon Champions.',
+      },
+      showdown: {
+        name: 'Pokémon Showdown',
+        tag: 'Simulator / Smogon',
+        description: 'Metagames and competitive tiers from Showdown and Smogon.',
+      },
+      general: {
+        name: 'General',
+        tag: 'No specific format',
+        description: 'General tactical mechanics without assuming any specific metagame.',
+      },
+    },
+    formats: {
+      'gen9-ou': {
+        name: 'Gen 9 OU',
+        description: 'Standard 9th Generation Singles OverUsed.',
+      },
+      vgc: {
+        name: 'VGC',
+        description: 'Official competitive double battles format.',
+      },
+      'doubles-ou': {
+        name: 'Doubles OU',
+        description: 'Competitive double battles under Smogon rules.',
+      },
+      'battle-stadium-singles': {
+        name: 'Battle Stadium Singles',
+        description: 'Official console ranked singles ruleset.',
+      },
+      'ranked-singles': {
+        name: 'Ranked Singles',
+        description: 'Official Champions ranked singles format.',
+      },
+      'ranked-doubles': {
+        name: 'Ranked Doubles',
+        description: 'Official Champions ranked doubles format.',
+      },
+    },
   },
   aiLevel: {
     sectionTitle: 'AI Analysis Level',

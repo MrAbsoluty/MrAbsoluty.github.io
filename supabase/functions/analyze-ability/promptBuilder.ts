@@ -24,7 +24,9 @@ export interface AbilityContextData {
 
 export interface AnalysisContext {
   platform?: 'general' | 'showdown' | 'champions' | string
-  format?: string | null // ej. "OU", "UU", "Ubers", "VGC", "Regulation H"
+  context?: 'general' | 'showdown' | 'champions' | string
+  format?: string | null // ej. "gen9-ou", "vgc", "ranked-singles"
+  regulation?: string | null
   generation?: number | string | null // ej. 9
   battleMode?: 'singles' | 'doubles' | 'vgc' | string | null
   userLevel?: 'beginner' | 'intermediate' | 'advanced' | 'competitive' | string
@@ -46,8 +48,28 @@ export const MASTER_PROMPT = `
 Eres PokeGuide AI, el analista y educador de élite especializado en Pokémon competitivo de la plataforma PokeGuide.
 Tu misión es interpretar, contextualizar y enseñar conocimiento verificado con rigor y precisión pedagógica.
 
+FILOSOFÍA DE ANÁLISIS PROGRESIVO:
+"PokeGuide no debe demostrar cuánto sabe. Debe decidir qué conocimiento es útil para el usuario y enseñarle por qué es útil."
+
+No generes un informe competitivo extenso. Genera primero lo más importante:
+1. La idea clave de la habilidad (breve y clara).
+2. Cómo se aprovecha tácticamente (breve y práctico).
+3. Estrategias destacadas SOLO si existen (0 a 3 máximo).
+4. Contenido profundo secundario para usuarios que quieran explorar más.
+
 PRINCIPIO FUNDAMENTAL:
 "PokeGuide AI no debe inventar el conocimiento; debe interpretar, contextualizar y enseñar conocimiento verificado."
+
+REGLAS DE ESTRATEGIAS:
+- Una habilidad puede tener 0, 1, 2 o hasta 3 estrategias destacadas. NUNCA inventes estrategias para llenar el campo.
+- Si una habilidad es limitada o perjudicial (ej. Truant/Ausente), devuelve un array vacío de estrategias.
+- 1 estrategia excelente > 2 estrategias mediocres > 3 estrategias de relleno.
+- Cada estrategia DEBE explicar POR QUÉ es destacada con lenguaje natural y conectores ("al utilizar", "debido a", "como consecuencia", "porque", "de esta forma").
+- NUNCA uses cadenas de flechas (→, ↓) como sustituto de explicaciones. Las flechas SOLO en diagramas visuales, no en texto generado.
+
+REGLAS SOBRE ALTERNATIVAS:
+- Solo incluye alternativas cuando existan realmente y sean relevantes.
+- Si no hay alternativas reales, devuelve un array vacío. NO inventes alternativas artificiales.
 
 REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
 1. FUENTE DE VERDAD Y REGLAS FACTUALES:
@@ -57,8 +79,9 @@ REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
    - NUNCA atribuyas a una habilidad un cambio de estadística que no aparezca en los datos verificados.
    - DISTINCIÓN ESTRICTA DE VELOCIDAD: NUNCA confundas una reducción de frecuencia de actuación (ej. turnos alternos) con una reducción de la estadística de Velocidad (Speed).
      * En Truant (Ausente): El Pokémon NO puede atacar en turnos alternos (holgazanea en turnos pares). Esto NO reduce su estadística de Velocidad. Su Speed es idéntica y se calcula normalmente. Queda terminantemente PROHIBIDO decir "reduce la velocidad", "disminuye speed", "hace más lento" o expresiones similares.
+     * En Unburden (Liviano): Al usar un movimiento como A Bocajarro, Sneasler reduce sus defensas; Hierba Blanca restaura esas reducciones y se consume en el proceso; al quedar sin objeto, Liviano duplica su Velocidad a partir de ese momento para las acciones y turnos siguientes. La ejecución de A Bocajarro ocurre a velocidad normal; el aumento de velocidad entra en vigor tras consumirse el objeto. NUNCA decir que A Bocajarro se ejecuta a velocidad duplicada ni que se activa si entra sin objeto.
      * En Huge Power / Pure Power: Duplica ÚNICAMENTE el Ataque físico (x2), jamás la Velocidad ni el Ataque Especial.
-     * En Drought (Sequía): Activa Sol (Luz Solar Intensa), jamás lluvia ni tormentas.
+     * En Drought (Sequía): Activa Sol (Luz Solar Intensa), jamás lluvia ni tormentas. NUNCA califiques los efectos globales del clima (como potenciar fuego rival) como una debilidad o autodaño intrínseco de la habilidad.
      * En Wonder Guard (Superguarda): Solo es vulnerable a daño directo de movimientos supereficaces; el daño indirecto le afecta con normalidad.
      * En Intimidate (Intimidación): Reduce el Ataque físico del rival en 1 nivel, NO la Velocidad ni la Defensa.
 
@@ -96,7 +119,12 @@ REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
      * "Throat Spray" -> "Espray Bucal".
      * "Safety Goggles" -> "Gafas Protectoras".
 
-4. FORMATO DE SALIDA:
+4. PRECISIÓN PEDAGÓGICA:
+   - Evita frases técnicamente ambiguas.
+   - EVITAR: "El Pokémon debe descansar cada dos turnos." PREFERIR: "El Pokémon debe descansar turno por medio."
+   - Explica las mecánicas con lenguaje claro y directamente interpretable en combate.
+
+5. FORMATO DE SALIDA:
    - La respuesta DEBE ser EXCLUSIVAMENTE un único objeto JSON válido sin sintaxis Markdown, sin bloques de código y sin texto antes o después.
 `
 
@@ -106,11 +134,15 @@ REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
 export const ABILITY_RESPONSE_SCHEMA = {
   type: 'OBJECT',
   properties: {
-    summary: {
+    coreInsight: {
       type: 'STRING',
-      description: 'Resumen conciso y directo del impacto táctico de la habilidad en combate.',
+      description: 'Idea clave de la habilidad: qué hace y por qué importa (1-3 frases adaptadas al nivel del usuario).',
     },
-    rating: {
+    howToLeverage: {
+      type: 'STRING',
+      description: 'Cómo se aprovecha tácticamente esta habilidad (1-3 frases prácticas).',
+    },
+    competitiveValue: {
       type: 'OBJECT',
       properties: {
         score: {
@@ -125,58 +157,55 @@ export const ABILITY_RESPONSE_SCHEMA = {
           type: 'STRING',
           description: 'Origen de la calificación: deterministic, hybrid o ai.',
         },
+        summary: {
+          type: 'STRING',
+          description: 'Frase natural describiendo el valor competitivo (ej. "Tiene aplicaciones competitivas claras" o "Su valor competitivo es muy limitado").',
+        },
       },
-      required: ['score', 'label'],
+      required: ['score', 'label', 'summary'],
     },
-    strengths: {
+    strategies: {
       type: 'ARRAY',
-      items: { type: 'STRING' },
-      description: 'Puntos fuertes clave con contexto táctico.',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          name: { type: 'STRING', description: 'Nombre de la estrategia o combinación (ej. "Hierba Blanca + A Bocajarro").' },
+          explanation: { type: 'STRING', description: 'Explicación en lenguaje natural con conectores causales. SIN flechas.' },
+          whyFeatured: { type: 'STRING', description: 'Justificación de por qué esta estrategia es destacada.' },
+        },
+        required: ['name', 'explanation', 'whyFeatured'],
+      },
+      description: 'Estrategias destacadas (0 a 3 máximo). Puede ser un array vacío si no hay estrategias relevantes.',
     },
-    weaknesses: {
+    alternatives: {
       type: 'ARRAY',
-      items: { type: 'STRING' },
-      description: 'Puntos débiles, riesgos o limitaciones en combate.',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          name: { type: 'STRING', description: 'Nombre de la alternativa.' },
+          explanation: { type: 'STRING', description: 'Breve explicación de la alternativa.' },
+        },
+        required: ['name', 'explanation'],
+      },
+      description: 'Alternativas relevantes. Array vacío si no existen alternativas reales. NUNCA inventar alternativas artificiales.',
     },
-    synergies: {
-      type: 'ARRAY',
-      items: { type: 'STRING' },
-      description: 'Sinergias con compañeros de equipo, objetos o movimientos.',
-    },
-    singles: {
-      type: 'STRING',
-      description: 'Análisis detallado de viabilidad en combate individual (Singles / Smogon).',
-    },
-    doubles: {
-      type: 'STRING',
-      description: 'Análisis detallado de viabilidad en combate doble (VGC / Doubles).',
-    },
-    whenToUse: {
-      type: 'ARRAY',
-      items: { type: 'STRING' },
-      description: 'Escenarios y momentos óptimos para aprovechar la habilidad.',
-    },
-    whenToAvoid: {
-      type: 'ARRAY',
-      items: { type: 'STRING' },
-      description: 'Situaciones o amenazas donde evitar o tener cautela.',
-    },
-    competitiveTip: {
-      type: 'STRING',
-      description: 'Consejo pro competitivo o truco táctico para sacarle el máximo provecho.',
+    deepDive: {
+      type: 'OBJECT',
+      properties: {
+        mechanics: { type: 'STRING', description: 'Explicación profunda de la mecánica interna de la habilidad (opcional, puede ser cadena vacía).' },
+        singles: { type: 'STRING', description: 'Análisis contextualizado en Singles/Smogon (opcional, puede ser cadena vacía).' },
+        doubles: { type: 'STRING', description: 'Análisis contextualizado en Doubles/VGC (opcional, puede ser cadena vacía).' },
+        synergies: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Sinergias con compañeros, objetos o movimientos.' },
+        counters: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Amenazas, counters o contramedidas.' },
+        proTip: { type: 'STRING', description: 'Consejo avanzado para sacar el máximo provecho (opcional, puede ser cadena vacía).' },
+      },
     },
   },
   required: [
-    'summary',
-    'rating',
-    'strengths',
-    'weaknesses',
-    'synergies',
-    'singles',
-    'doubles',
-    'whenToUse',
-    'whenToAvoid',
-    'competitiveTip',
+    'coreInsight',
+    'howToLeverage',
+    'competitiveValue',
+    'strategies',
   ],
 }
 
@@ -189,78 +218,73 @@ export const GROQ_ABILITY_RESPONSE_SCHEMA = {
   schema: {
     type: 'object',
     properties: {
-      summary: {
+      coreInsight: {
         type: 'string',
-        description: 'Resumen conciso y directo del impacto táctico de la habilidad en combate.',
+        description: 'Idea clave de la habilidad: qué hace y por qué importa (1-3 frases adaptadas al nivel del usuario).',
       },
-      rating: {
+      howToLeverage: {
+        type: 'string',
+        description: 'Cómo se aprovecha tácticamente esta habilidad (1-3 frases prácticas).',
+      },
+      competitiveValue: {
         type: 'object',
         properties: {
-          score: {
-            type: 'number',
-            description: 'Calificación numérica entera del 1 al 10 según su viabilidad competitiva.',
-          },
-          label: {
-            type: 'string',
-            description: 'Etiqueta cualitativa: Deficiente, Situacional, Buena, Muy buena, Excelente o Imprescindible.',
-          },
-          source: {
-            type: 'string',
-            description: 'Origen de la evaluación: deterministic, hybrid o ai.',
-          },
+          score: { type: 'number', description: 'Calificación numérica entera del 1 al 10.' },
+          label: { type: 'string', description: 'Etiqueta cualitativa: Deficiente, Situacional, Buena, Muy buena, Excelente o Imprescindible.' },
+          source: { type: 'string', description: 'Origen: deterministic, hybrid o ai.' },
+          summary: { type: 'string', description: 'Frase natural describiendo el valor competitivo.' },
         },
-        required: ['score', 'label', 'source'],
+        required: ['score', 'label', 'source', 'summary'],
         additionalProperties: false,
       },
-      strengths: {
+      strategies: {
         type: 'array',
-        items: { type: 'string' },
-        description: 'Puntos fuertes clave con contexto táctico.',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nombre de la estrategia o combinación.' },
+            explanation: { type: 'string', description: 'Explicación en lenguaje natural. SIN flechas.' },
+            whyFeatured: { type: 'string', description: 'Justificación de por qué es destacada.' },
+          },
+          required: ['name', 'explanation', 'whyFeatured'],
+          additionalProperties: false,
+        },
+        description: 'Estrategias destacadas (0 a 3 máximo). Puede ser array vacío.',
       },
-      weaknesses: {
+      alternatives: {
         type: 'array',
-        items: { type: 'string' },
-        description: 'Puntos débiles, riesgos o limitaciones en combate.',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nombre de la alternativa.' },
+            explanation: { type: 'string', description: 'Breve explicación.' },
+          },
+          required: ['name', 'explanation'],
+          additionalProperties: false,
+        },
+        description: 'Alternativas relevantes. Array vacío si no existen.',
       },
-      synergies: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Sinergias con compañeros de equipo, objetos o movimientos.',
-      },
-      singles: {
-        type: 'string',
-        description: 'Análisis detallado de viabilidad en combate individual (Singles / Smogon).',
-      },
-      doubles: {
-        type: 'string',
-        description: 'Análisis detallado de viabilidad en combate doble (VGC / Doubles).',
-      },
-      whenToUse: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Escenarios y momentos óptimos para aprovechar la habilidad.',
-      },
-      whenToAvoid: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Situaciones o amenazas donde evitar o tener cautela.',
-      },
-      competitiveTip: {
-        type: 'string',
-        description: 'Consejo pro competitivo o truco táctico para sacarle el máximo provecho.',
+      deepDive: {
+        type: 'object',
+        properties: {
+          mechanics: { type: 'string', description: 'Explicación profunda de la mecánica (puede ser cadena vacía).' },
+          singles: { type: 'string', description: 'Análisis contextualizado en Singles (puede ser cadena vacía).' },
+          doubles: { type: 'string', description: 'Análisis contextualizado en Doubles/VGC (puede ser cadena vacía).' },
+          synergies: { type: 'array', items: { type: 'string' }, description: 'Sinergias con compañeros, objetos o movimientos.' },
+          counters: { type: 'array', items: { type: 'string' }, description: 'Amenazas y contramedidas.' },
+          proTip: { type: 'string', description: 'Consejo avanzado (puede ser cadena vacía).' },
+        },
+        required: ['mechanics', 'singles', 'doubles', 'synergies', 'counters', 'proTip'],
+        additionalProperties: false,
       },
     },
     required: [
-      'summary',
-      'rating',
-      'strengths',
-      'weaknesses',
-      'synergies',
-      'singles',
-      'doubles',
-      'whenToUse',
-      'whenToAvoid',
-      'competitiveTip',
+      'coreInsight',
+      'howToLeverage',
+      'competitiveValue',
+      'strategies',
+      'alternatives',
+      'deepDive',
     ],
     additionalProperties: false,
   },
@@ -272,38 +296,45 @@ export const GROQ_ABILITY_RESPONSE_SCHEMA = {
 export const JSON_SCHEMA_INSTRUCTIONS = `
 Estructura JSON obligatoria de salida (DEBE ser un JSON estrictamente válido, sin comentarios ni sintaxis Markdown):
 {
-  "summary": "Resumen conciso y directo del impacto de la habilidad en combate.",
-  "rating": {
+  "coreInsight": "Idea clave de la habilidad: qué hace y por qué importa (1-3 frases adaptadas al nivel del usuario).",
+  "howToLeverage": "Cómo se aprovecha tácticamente (1-3 frases prácticas).",
+  "competitiveValue": {
     "score": 8,
     "label": "Excelente",
-    "source": "deterministic"
+    "source": "ai",
+    "summary": "Frase natural describiendo el valor competitivo."
   },
-  "strengths": [
-    "Punto fuerte 1 con contexto táctico",
-    "Punto fuerte 2 con contexto táctico"
+  "strategies": [
+    {
+      "name": "Nombre de la estrategia o combinación",
+      "explanation": "Explicación en lenguaje natural usando conectores como 'al utilizar', 'debido a', 'como consecuencia'. NUNCA usar cadenas de flechas.",
+      "whyFeatured": "Justificación de por qué esta estrategia es destacada."
+    }
   ],
-  "weaknesses": [
-    "Punto débil o limitación 1",
-    "Punto débil o limitación 2"
+  "alternatives": [
+    {
+      "name": "Nombre de alternativa",
+      "explanation": "Breve explicación"
+    }
   ],
-  "synergies": [
-    "Nombre de Pokémon, objeto o movimiento con el que combina y por qué"
-  ],
-  "singles": "Análisis específico de cómo se desenvuelve en combate individual (Singles).",
-  "doubles": "Análisis específico de cómo se desenvuelve en combate doble / VGC.",
-  "whenToUse": [
-    "Escenario o condición de victoria donde brilla"
-  ],
-  "whenToAvoid": [
-    "Situación, matchup o counter donde pierde efectividad"
-  ],
-  "competitiveTip": "Consejo maestro o secreto táctico para sacarle el máximo partido."
+  "deepDive": {
+    "mechanics": "Explicación profunda de la mecánica (cadena vacía si no aplica).",
+    "singles": "Análisis en Singles (cadena vacía si no aplica).",
+    "doubles": "Análisis en Doubles/VGC (cadena vacía si no aplica).",
+    "synergies": ["Sinergia con contexto táctico"],
+    "counters": ["Amenaza o contramedida"],
+    "proTip": "Consejo avanzado (cadena vacía si no aplica)."
+  }
 }
 
 Reglas sobre los valores:
-- "rating.score": número del 1 al 10.
-- "rating.label": una de: "Deficiente", "Situacional", "Buena", "Muy buena", "Excelente", "Imprescindible".
-- "rating.source": "deterministic", "hybrid" o "ai".
+- "competitiveValue.score": número del 1 al 10.
+- "competitiveValue.label": una de: "Deficiente", "Situacional", "Buena", "Muy buena", "Excelente", "Imprescindible".
+- "competitiveValue.source": "deterministic", "hybrid" o "ai".
+- "strategies": array de 0 a 3 elementos. Si la habilidad no tiene estrategias competitivas relevantes (ej. Truant), devuelve [].
+- "alternatives": array de 0 a N. Si no hay alternativas reales, devuelve [].
+- "deepDive": campos opcionales. Usa cadena vacía "" si la sección no aporta valor.
+- NUNCA uses flechas (→, ↓, ↑) en explanation ni en whyFeatured. Usa conectores naturales.
 `
 
 /**
@@ -369,7 +400,9 @@ DIRECTRICES DIDÁCTICAS PARA NIVEL PRINCIPIANTE (beginner):
 - Explica los términos competitivos siempre que los uses (ej. si mencionas qué es STAB, explícalo brevemente).
 - Utiliza ejemplos concretos y paso a paso (ej. qué ocurre exactamente en el turno 1 y en el turno 2).
 - Evita jerga técnica innecesaria ("speed tiers", "momentum", "wallbreaker", "spread", "hazard stacking").
-- En Truant: explica que el Pokémon puede atacar un turno y en el siguiente holgazanea descansando, sin complicar con términos abstractos.
+- En coreInsight: la idea clave debe poder entenderse sin conocimientos previos de competitivo.
+- En strategies.explanation: explica cada paso de la interacción con lenguaje accesible.
+- Ejemplo de adaptación: "Liviano duplica la Velocidad cuando Sneasler pierde su objeto. Por eso, podemos buscar una forma de hacer que el objeto se consuma durante el combate."
 `
   } else if (userLevel === 'intermediate') {
     pedagogicalGuidance = `
@@ -378,7 +411,7 @@ DIRECTRICES TÁCTICAS PARA NIVEL INTERMEDIO (intermediate):
 - Utiliza terminología competitiva estándar: STAB, Sweeper, Muralla (Wall), Pivote, Check, Counter, Hazard, Sinergia.
 - Explica estrategias claras y cómo la habilidad define el rol del Pokémon en el equipo.
 - Reduce explicaciones demasiado básicas sobre qué es un tipo o qué es daño físico.
-- En Truant: explica que obliga a alternar turnos activos e inactivos, facilitando que el rival se prepare en el turno libre.
+- Ejemplo de adaptación: "Liviano duplica la Velocidad cuando el Pokémon pierde su objeto, por lo que podemos construir una estrategia alrededor de objetos consumibles o interacciones que provoquen su pérdida de forma controlada."
 `
   } else if (userLevel === 'advanced') {
     pedagogicalGuidance = `
@@ -386,7 +419,7 @@ DIRECTRICES ESTRATÉGICAS PARA NIVEL AVANZADO (advanced):
 - Objetivo: Usuario con experiencia competitiva sólida.
 - Utiliza terminología competitiva avanzada: Matchups, control de velocidad (speed control), presión ofensiva (pressure), setup, condición de victoria (win condition), momentum.
 - Céntrate en optimización, escenarios de riesgo/recompensa y tempo de la partida.
-- En Truant: explica que impone un ciclo de acción/inacción que elimina la presión ofensiva constante y concede turnos de setup gratuitos al oponente.
+- Ejemplo de adaptación: "Liviano convierte la pérdida del objeto en una condición de control de Velocidad propia, permitiendo que Sneasler supere amenazas más rápidas una vez activada la habilidad."
 `
   } else if (userLevel === 'competitive') {
     pedagogicalGuidance = `
@@ -395,7 +428,7 @@ DIRECTRICES DE ÉLITE PARA NIVEL COMPETITIVO (competitive):
 - Utiliza terminología técnica completa y análisis profundo.
 - Analiza el metajuego específico, roles, teambuilding, distribución de amenazas, daño relativo y counterplay óptimo.
 - Asume conocimientos previos avanzados sin explicaciones introductorias.
-- En Truant: analiza el gravísimo déficit de tempo, la extrema vulnerabilidad frente a Protect/Substitute y las posibles opciones nicho (como Gastro Acid o Skill Swap/Entrainment en VGC).
+- Ejemplo de adaptación: "Liviano proporciona un multiplicador de ×2 a la Velocidad tras la pérdida del objeto, permitiendo alcanzar benchmarks relevantes y convertir ciertas interacciones de consumo o remoción de objeto en una condición de snowball."
 `
   }
 
@@ -459,6 +492,56 @@ export function buildAbilityData(ability?: AbilityContextData): string {
 }
 
 /**
+ * Construye directrices específicas según el contexto competitivo seleccionado
+ * (General, Pokémon Showdown o Pokémon Champions).
+ *
+ * PRINCIPIO: Separa CONTEXTO de CONOCIMIENTO. No finge tener datos no integrados.
+ */
+export function buildCompetitiveContextPrompt(context: AnalysisContext = {}): string {
+  const platform = (context.context || context.platform || 'general').toLowerCase().trim()
+  const format = context.format ? String(context.format).trim() : null
+  const regulation = context.regulation ? String(context.regulation).trim() : null
+
+  if (platform === 'showdown') {
+    const formatLabel = format || 'Gen 9 OU'
+    return `
+[CONTEXTO COMPETITIVO: POKÉMON SHOWDOWN]
+- Plataforma: Pokémon Showdown
+- Formato seleccionado: ${formatLabel}
+- DIRECTRICES OBLIGATORIAS:
+  1. Analiza el impacto de la habilidad EXCLUSIVAMENTE dentro del contexto de Pokémon Showdown (${formatLabel}).
+  2. NO mezcles recomendaciones de otros formatos o tiers distintos (ej. no apliques reglas o dinámicas de VGC en formatos individuales ni viceversa).
+  3. PRINCIPIO DE VERACIDAD (SEPARACIÓN DE CONTEXTO Y CONOCIMIENTO): No inventes datos estadísticos de uso, tiers o sets no verificados. Basa tus recomendaciones en mecánicas objetivas y sinergias reales del formato.
+`
+  }
+
+  if (platform === 'champions') {
+    const formatLabel = format || 'Ranked Singles'
+    const regLabel = regulation ? `Regulación: ${regulation}` : 'Regulación estándar'
+    return `
+[CONTEXTO COMPETITIVO: POKÉMON CHAMPIONS]
+- Plataforma: Pokémon Champions
+- Contexto / Modalidad: ${formatLabel}
+- ${regLabel}
+- DIRECTRICES OBLIGATORIAS:
+  1. Analiza la habilidad dentro del entorno competitivo de Pokémon Champions (${formatLabel}).
+  2. NO mezcles datos ni reglas de Pokémon Showdown u otros reglamentos no aplicables.
+  3. PRINCIPIO DE VERACIDAD: No asumas ni inventes restricciones no confirmadas. Evalúa la viabilidad táctica en este entorno.
+`
+  }
+
+  // Por defecto: 'general'
+  return `
+[CONTEXTO COMPETITIVO: GENERAL]
+- Plataforma: General (Sin metagame específico predefinido)
+- DIRECTRICES OBLIGATORIAS:
+  1. Explica la habilidad desde una perspectiva táctica general y mecánica de combate Pokémon.
+  2. NO asumas ningún metagame concreto ni atribuyas recomendaciones a tiers específicos (ej. NO afirmes que un objeto o movimiento es "meta en Gen 9 OU" sin datos competitivos verificados).
+  3. Céntrate en cómo funciona la habilidad, cuándo resulta ventajosa y con qué tipos de estrategias y roles sinergiza naturalmente.
+`
+}
+
+/**
  * Construye el contexto de formato y metagame específico.
  */
 export function buildFormatContext(context: AnalysisContext = {}): string {
@@ -492,6 +575,7 @@ export function buildFullPrompt(
   const master = MASTER_PROMPT.trim()
   const facts = buildVerifiedFactsSection(verifiedFacts).trim()
   const dynamic = buildDynamicContext(payload.context).trim()
+  const compCtx = buildCompetitiveContextPrompt(payload.context).trim()
   const pokemon = buildPokemonData(payload.pokemon).trim()
   const ability = buildAbilityData(payload.ability).trim()
   const formatCtx = buildFormatContext(payload.context).trim()
@@ -501,6 +585,8 @@ export function buildFullPrompt(
 
 ${facts ? `${facts}\n\n` : ''}${dynamic}
 
+${compCtx}
+
 ${pokemon}
 
 ${ability}
@@ -508,7 +594,13 @@ ${ability}
 ${formatCtx}
 
 INSTRUCCIÓN FINAL:
-Analiza en profundidad la habilidad indicada para el Pokémon especificado respetando rigurosamente los hechos verificados y adaptando la explicación al nivel de usuario indicado.
+Analiza la habilidad indicada para el Pokémon especificado siguiendo la FILOSOFÍA DE ANÁLISIS PROGRESIVO:
+1. Empieza por la idea clave (coreInsight): breve, útil y adaptada al nivel del usuario.
+2. Explica cómo se aprovecha (howToLeverage): práctico y directo.
+3. Si existen estrategias destacadas REALES Y VERIFICADAS, inclúyelas (0 a 3). Si no existen, devuelve strategies: [].
+4. Proporciona contenido profundo en deepDive para quienes quieran explorar más.
+5. Respeta rigurosamente los hechos verificados y delimita el análisis al contexto competitivo solicitado.
+6. Adapta el vocabulario y profundidad al nivel de usuario indicado.
 ${schema}
 `
 }
@@ -522,52 +614,34 @@ export function validateAbilityAnalysis(data: Record<string, unknown>): { valid:
     return { valid: false, missingField: 'root' }
   }
 
-  if (typeof data.summary !== 'string' || !data.summary.trim()) {
-    return { valid: false, missingField: 'summary' }
+  // Campos obligatorios del contrato progresivo
+  if (typeof data.coreInsight !== 'string' || !data.coreInsight.trim()) {
+    return { valid: false, missingField: 'coreInsight' }
   }
 
-  if (!data.rating || typeof data.rating !== 'object') {
-    return { valid: false, missingField: 'rating' }
+  if (!data.competitiveValue || typeof data.competitiveValue !== 'object') {
+    return { valid: false, missingField: 'competitiveValue' }
   }
 
-  const rating = data.rating as Record<string, unknown>
-  if (typeof rating.score !== 'number' && isNaN(Number(rating.score))) {
-    return { valid: false, missingField: 'rating.score' }
+  const cv = data.competitiveValue as Record<string, unknown>
+  if (typeof cv.score !== 'number' && isNaN(Number(cv.score))) {
+    return { valid: false, missingField: 'competitiveValue.score' }
   }
-  if (typeof rating.label !== 'string' || !rating.label.trim()) {
-    return { valid: false, missingField: 'rating.label' }
+  if (typeof cv.label !== 'string' || !cv.label.trim()) {
+    return { valid: false, missingField: 'competitiveValue.label' }
   }
-
-  if (!Array.isArray(data.strengths) || data.strengths.length === 0) {
-    return { valid: false, missingField: 'strengths' }
-  }
-
-  if (!Array.isArray(data.weaknesses) || data.weaknesses.length === 0) {
-    return { valid: false, missingField: 'weaknesses' }
+  if (typeof cv.summary !== 'string' || !cv.summary.trim()) {
+    return { valid: false, missingField: 'competitiveValue.summary' }
   }
 
-  if (!Array.isArray(data.synergies)) {
-    return { valid: false, missingField: 'synergies' }
+  // strategies es obligatorio pero puede ser un array vacío
+  if (!Array.isArray(data.strategies)) {
+    return { valid: false, missingField: 'strategies' }
   }
 
-  if (typeof data.singles !== 'string' || !data.singles.trim()) {
-    return { valid: false, missingField: 'singles' }
-  }
-
-  if (typeof data.doubles !== 'string' || !data.doubles.trim()) {
-    return { valid: false, missingField: 'doubles' }
-  }
-
-  if (!Array.isArray(data.whenToUse)) {
-    return { valid: false, missingField: 'whenToUse' }
-  }
-
-  if (!Array.isArray(data.whenToAvoid)) {
-    return { valid: false, missingField: 'whenToAvoid' }
-  }
-
-  if (typeof data.competitiveTip !== 'string' || !data.competitiveTip.trim()) {
-    return { valid: false, missingField: 'competitiveTip' }
+  // howToLeverage es obligatorio
+  if (typeof data.howToLeverage !== 'string') {
+    return { valid: false, missingField: 'howToLeverage' }
   }
 
   return { valid: true }
