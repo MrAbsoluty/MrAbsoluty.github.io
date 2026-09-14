@@ -30,7 +30,7 @@ export interface AnalysisContext {
   generation?: number | string | null // ej. 9
   battleMode?: 'singles' | 'doubles' | 'vgc' | string | null
   userLevel?: 'beginner' | 'intermediate' | 'advanced' | 'competitive' | string
-  locale?: 'es' | 'es-419' | 'en' | string
+  locale?: 'es' | 'en' | string
 }
 
 export interface AnalysisRequestPayload {
@@ -91,7 +91,7 @@ REGLAS FUNDAMENTALES DE ANÁLISIS COMPETITIVO:
    - Doubles / VGC (Dobles Oficial): Control de velocidad (Tailwind, Trick Room), Protección (Protect), Fake Out, redirección (Follow Me), sinergia directa con el compañero y daño en área.
 
 3. IDIOMA Y TERMINOLOGÍA OFICIAL DE POKÉMON EN ESPAÑOL:
-   - Responde SIEMPRE en el idioma especificado en el contexto (Español para "es" y "es-419", Inglés para "en").
+   - Responde SIEMPRE en el idioma especificado en el contexto (Español neutro e internacional para "es", Inglés para "en").
    - Utiliza rigurosamente los nombres canónicos oficiales de Nintendo / Game Freak en español.
    - PROHIBIDAS TERMINANTEMENTE LAS TRADUCCIONES LITERALES O ALUCINADAS:
      * "Light Ball" NUNCA es "Bolamadrastra" ni "Bola ligera" -> DEBE SER SIEMPRE "Bola Luminosa".
@@ -359,6 +359,27 @@ export function buildVerifiedFactsSection(facts?: VerifiedAbilityFacts): string 
     ? `- Calificación objetiva de referencia: ${facts.deterministicRating.score}/10 (${facts.deterministicRating.label})`
     : ''
 
+  let conditionsBlock = ''
+  if (facts.verifiedConditions && facts.verifiedConditions.length > 0) {
+    conditionsBlock = `\n- CONDICIONES OBLIGATORIAS:\n${facts.verifiedConditions.map((c) => `  * ${c}`).join('\n')}`
+  }
+
+  let synergiesBlock = ''
+  if (facts.verifiedSynergies && facts.verifiedSynergies.length > 0) {
+    synergiesBlock = `\n\n[SINERGIAS VERIFICADAS (VERIFIED SYNERGIES)]\nLas siguientes combinaciones tácticas están verificadas por el Knowledge Layer. La IA puede seleccionarlas para la sección de estrategias destacadas ('strategies'):\n${facts.verifiedSynergies.map((s, idx) => `Sinergia ${idx + 1}: ${s.name}${s.featured || s.priority === 1 ? ' [DESTACADA PRIORITARIA]' : ''}
+- Objeto: ${s.item || 'N/A'}
+- Movimiento: ${s.move || 'N/A'}
+- Detonante / Activación: ${s.trigger}
+- Interacción mecánica: ${s.interaction}
+- Resultado: ${s.result}
+- Justificación táctica: ${s.whyUseful}`).join('\n\n')}`
+  }
+
+  let activationsBlock = ''
+  if (facts.verifiedActivations && facts.verifiedActivations.length > 0) {
+    activationsBlock = `\n\n[MECANISMOS DE ACTIVACIÓN VERIFICADOS]\n${facts.verifiedActivations.map((a) => `- ${a.trigger}: ${a.itemOrCondition} (${a.isConsumption ? 'Consumo' : 'Pérdida - NO consumo'}). ${a.explanation} ${a.constraints || ''}`).join('\n')}`
+  }
+
   return `
 [HECHOS VERIFICADOS OBLIGATORIOS (KNOWLEDGE LAYER - VERIFIED FACTS)]
 Los siguientes datos son inmutables y la ÚNICA fuente de verdad para este análisis:
@@ -368,14 +389,25 @@ Los siguientes datos son inmutables y la ÚNICA fuente de verdad para este anál
 - Interacción con la estadística Speed (Velocidad): ${facts.speedChanges.explanation}
 - ${turnCycleStr}
 - Activación: ${facts.activation}
-- Categoría táctica: ${facts.category}
+- Categoría táctica: ${facts.category}${conditionsBlock}
 ${ratingHint}
-- AFIRMACIONES ESTRICTAMENTE PROHIBIDAS: ${prohibitedStr}
+- AFIRMACIONES ESTRICTAMENTE PROHIBIDAS: ${prohibitedStr}${synergiesBlock}${activationsBlock}
 
-REGLAS FACTUALES OBLIGATORIAS:
+REGLAS FACTUALES Y DE SINERGIAS OBLIGATORIAS:
 1. No puedes contradecir, modificar ni reinterpretar estos hechos verificados.
 2. NUNCA atribuyas a una habilidad un cambio de estadística que no aparezca en los datos verificados.
 3. NUNCA confundas una reducción de frecuencia de actuación (turnos alternos) con una reducción de la estadística Speed.
+4. Para la sección 'strategies', utiliza EXCLUSIVAMENTE sinergias verificadas del Knowledge Layer.
+5. Cada estrategia DEBE explicarse en prosa natural y causal (usando conectores como 'al utilizar', 'debido a', 'como consecuencia', 'de esta forma'). NUNCA uses cadenas de flechas (→, ↓).
+6. NUNCA inventes sinergias o combinaciones con objetos competitivos genéricos (Choice Band, Choice Scarf, Life Orb) tratándolos como si activaran o interactuaran con la habilidad cuando no es el caso.
+7. Si no existen sinergias verificadas aplicables al Pokémon o contexto, devuelve strategies: [].
+8. NUNCA afirmes que el aumento de Velocidad dura "para el resto del combate" o que es permanente; la duración precisa es "mientras permanezca sin objeto".
+9. NUNCA afirmes que la habilidad permite superar a "casi cualquier rival" o "a cualquier rival"; utiliza formulaciones precisas como "permitiéndole superar a muchos rivales que antes podían ser más rápidos".
+10. Evita expresiones espectaculares o imprecisas como "velocidad extrema"; utiliza siempre términos precisos como "aumento de Velocidad" o "duplicación de Velocidad".
+11. NUNCA afirmes que tener objeto al inicio o entrar con objeto es un requisito obligatorio de la habilidad: entrar sin objeto no activa Liviano por sí solo, pero si el Pokémon entra sin objeto y obtiene uno durante el combate, perderlo o consumirlo sí puede activar la habilidad.
+12. En los consejos avanzados o proTip, no formules prohibiciones absolutas (ej. "evita equipar X"); formula pedagógicamente el principio: "Si buscas activar Liviano mediante la pérdida del objeto, necesitas utilizar un objeto que pueda perderse o consumirse durante el combate".
+13. PRIORIDAD DE SINERGIA DESTACADA: Las sinergias verificadas marcadas como prioritarias tienen preferencia absoluta sobre mecanismos de activación genéricos al seleccionar 'strategies'. Para Liviano en Sneasler, la sinergia prioritaria 'Hierba Blanca + A Bocajarro' DEBE aparecer como la primera estrategia destacada (strategies[0]). Los mecanismos de activación genéricos (como Bayas o Globo Helio) NO deben desplazar a la sinergia destacada principal; deben ubicarse en 'alternatives' cuando sean relevantes.
+14. NO SOBREAFIRMAR: La prioridad de una estrategia destacada NO significa afirmar que sea la única forma de jugar, obligatoria para el Pokémon, o la mejor en todos los formatos. Preséntala con rigor como una interacción destacada y verificada que optimiza la activación de la habilidad de forma controlada.
 `
 }
 
@@ -399,10 +431,11 @@ DIRECTRICES DIDÁCTICAS PARA NIVEL PRINCIPIANTE (beginner):
 - Utiliza lenguaje sencillo, claro y motivador.
 - Explica los términos competitivos siempre que los uses (ej. si mencionas qué es STAB, explícalo brevemente).
 - Utiliza ejemplos concretos y paso a paso (ej. qué ocurre exactamente en el turno 1 y en el turno 2).
-- Evita jerga técnica innecesaria ("speed tiers", "momentum", "wallbreaker", "spread", "hazard stacking").
+- Evita jerga técnica sin explicación ("speed tiers", "momentum", "wallbreaker", "sweep", "sweeps", "outspeeds", "benchmark", "win condition").
+- Prefiere términos universales y comprensibles: "superar en Velocidad", "amenaza", "aumento de Velocidad", "rival", "estrategia", "sinergia".
 - En coreInsight: la idea clave debe poder entenderse sin conocimientos previos de competitivo.
-- En strategies.explanation: explica cada paso de la interacción con lenguaje accesible.
-- Ejemplo de adaptación: "Liviano duplica la Velocidad cuando Sneasler pierde su objeto. Por eso, podemos buscar una forma de hacer que el objeto se consuma durante el combate."
+- En strategies.explanation: explica cada paso de la interacción con lenguaje accesible y causal.
+- Ejemplo de adaptación: "Liviano duplica la Velocidad de Sneasler cuando pierde o consume su objeto, permitiéndole superar a muchos rivales que antes podían ser más rápidos. Por eso, podemos buscar una forma de hacer que el objeto se consuma durante el combate."
 `
   } else if (userLevel === 'intermediate') {
     pedagogicalGuidance = `
@@ -439,7 +472,7 @@ DIRECTRICES DE ÉLITE PARA NIVEL COMPETITIVO (competitive):
 - Formato / Tier: ${format}
 - Generación: ${generation}
 - Nivel de audiencia asignado: ${userLevel.toUpperCase()}
-- Idioma de respuesta requerido: ${locale === 'es-419' ? 'Español Latinoamericano' : locale === 'en' ? 'Inglés' : 'Español'}
+- Idioma de respuesta requerido: ${locale === 'en' ? 'Inglés' : 'Español (neutro e internacional)'}
 ${pedagogicalGuidance}
 `
 }

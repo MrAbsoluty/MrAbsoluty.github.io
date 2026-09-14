@@ -1,16 +1,18 @@
-import en from './en'
-import es from './es'
-import es419 from './es-419'
+import en from './en.js'
+import es from './es.js'
+
+export const SUPPORTED_LOCALES = ['es', 'en']
 
 export const localeOptions = [
   { code: 'es', flag: '🇪🇸' },
-  { code: 'es-419', flag: '🇨🇱' },
   { code: 'en', flag: '🇺🇸' },
 ]
 
-export const translations = { es, 'es-419': es419, en }
+export const translations = { es, en }
 export const defaultLocale = 'es'
 
 export function getTranslations(locale) {
-  return translations[locale] || translations[defaultLocale]
+  const normalizedLocale = String(locale || defaultLocale).toLowerCase().startsWith('en') ? 'en' : 'es'
+  return translations[normalizedLocale] || translations[defaultLocale]
 }
+

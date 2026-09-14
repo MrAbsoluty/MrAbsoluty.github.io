@@ -60,35 +60,47 @@ export async function getCachedAnalysis(
   params: CacheLookupParams,
   verifiedFacts?: VerifiedAbilityFacts,
 ): Promise<CacheLookupResult> {
+  const resolvedLocale = String(params.locale || 'es').toLowerCase().startsWith('en') ? 'en' : 'es'
   const resolvedContext = (params.context || 'general').toLowerCase().trim()
   const resolvedFormat = params.format ? String(params.format).toLowerCase().trim() : null
   const resolvedRegulation = params.regulation ? String(params.regulation).toLowerCase().trim() : null
 
-  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${params.locale} | ${resolvedContext} | ${resolvedFormat || 'none'} | ${resolvedRegulation || 'none'}`
+  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${resolvedLocale} | ${resolvedContext} | ${resolvedFormat || 'none'} | ${resolvedRegulation || 'none'}`
 
   try {
-    let query = supabaseClient
-      .from('ai_ability_analysis_cache')
-      .select('*')
-      .eq('pokemon_id', params.pokemonId)
-      .eq('ability_id', params.abilityId)
-      .eq('user_level', params.userLevel)
-      .eq('locale', params.locale)
-      .eq('context', resolvedContext)
+    const buildQueryForLocale = (targetLocale: string) => {
+      let q = supabaseClient
+        .from('ai_ability_analysis_cache')
+        .select('*')
+        .eq('pokemon_id', params.pokemonId)
+        .eq('ability_id', params.abilityId)
+        .eq('user_level', params.userLevel)
+        .eq('locale', targetLocale)
+        .eq('context', resolvedContext)
 
-    if (resolvedFormat) {
-      query = query.eq('format', resolvedFormat)
-    } else {
-      query = query.is('format', null)
+      if (resolvedFormat) {
+        q = q.eq('format', resolvedFormat)
+      } else {
+        q = q.is('format', null)
+      }
+
+      if (resolvedRegulation) {
+        q = q.eq('regulation', resolvedRegulation)
+      } else {
+        q = q.is('regulation', null)
+      }
+      return q
     }
 
-    if (resolvedRegulation) {
-      query = query.eq('regulation', resolvedRegulation)
-    } else {
-      query = query.is('regulation', null)
-    }
+    let { data: row, error } = await buildQueryForLocale(resolvedLocale).maybeSingle()
 
-    const { data: row, error } = await query.maybeSingle()
+    // Si no se encuentra en 'es', buscar si existe una entrada histórica en 'es-419' para reutilizarla
+    if (!row && resolvedLocale === 'es') {
+      const legacyResult = await buildQueryForLocale('es-419').maybeSingle()
+      if (legacyResult.data) {
+        row = legacyResult.data
+      }
+    }
 
     if (error) {
       console.warn(`[AI CACHE] Error consultando caché (${contextTag}):`, error.message)
@@ -172,11 +184,12 @@ export async function saveCachedAnalysis(
   supabaseClient: SupabaseClient,
   params: CacheSaveParams,
 ): Promise<{ success: boolean; error?: string }> {
+  const resolvedLocale = String(params.locale || 'es').toLowerCase().startsWith('en') ? 'en' : 'es'
   const resolvedContext = (params.context || 'general').toLowerCase().trim()
   const resolvedFormat = params.format ? String(params.format).toLowerCase().trim() : null
   const resolvedRegulation = params.regulation ? String(params.regulation).toLowerCase().trim() : null
 
-  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${params.locale} | ${resolvedContext} | ${resolvedFormat || 'none'} | ${resolvedRegulation || 'none'}`
+  const contextTag = `${params.pokemonId} | ${params.abilityId} | ${params.userLevel} | ${resolvedLocale} | ${resolvedContext} | ${resolvedFormat || 'none'} | ${resolvedRegulation || 'none'}`
   const ttlDays = params.ttlDays || AI_CACHE_TTL_DAYS
   const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString()
   const version = params.validationVersion || CURRENT_VALIDATION_VERSION
@@ -189,7 +202,7 @@ export async function saveCachedAnalysis(
           pokemon_id: params.pokemonId,
           ability_id: params.abilityId,
           user_level: params.userLevel,
-          locale: params.locale,
+          locale: resolvedLocale,
           context: resolvedContext,
           format: resolvedFormat,
           regulation: resolvedRegulation,

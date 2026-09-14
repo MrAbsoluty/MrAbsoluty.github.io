@@ -68,7 +68,7 @@ const es = {
   },
   errors: { empty: 'Escribe un nombre o número de Pokédex para buscar.', network: 'No pudimos conectar con PokéAPI. Comprueba tu conexión e inténtalo de nuevo.', notFound: 'No encontramos ningún Pokémon llamado “{query}”.', api: 'PokéAPI no está disponible en este momento. Inténtalo de nuevo.', invalid: 'Recibimos una respuesta inválida de PokéAPI.' },
   footer: { tagline: 'Aprende. Explora. Juega mejor.', note: 'Una guía hecha por y para entrenadores curiosos.' },
-  languages: { es: 'Español', 'es-419': 'Español Latino', en: 'English' },
+  languages: { es: 'Español', en: 'English' },
   types: { bug: 'Bicho', dark: 'Siniestro', dragon: 'Dragón', electric: 'Eléctrico', fairy: 'Hada', fighting: 'Lucha', fire: 'Fuego', flying: 'Volador', ghost: 'Fantasma', grass: 'Planta', ground: 'Tierra', ice: 'Hielo', normal: 'Normal', poison: 'Veneno', psychic: 'Psíquico', rock: 'Roca', steel: 'Acero', water: 'Agua' },
   affinities: {
     eyebrow: 'RELACIONES ELEMENTALES',

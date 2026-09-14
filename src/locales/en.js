@@ -68,7 +68,7 @@ const en = {
   },
   errors: { empty: 'Enter a Pokémon name or Pokédex number to search.', network: 'We could not connect to PokéAPI. Check your connection and try again.', notFound: 'We could not find a Pokémon named “{query}”.', api: 'PokéAPI is unavailable right now. Please try again.', invalid: 'PokéAPI returned an invalid response.' },
   footer: { tagline: 'Learn. Explore. Play better.', note: 'A guide made by and for curious trainers.' },
-  languages: { es: 'Español', 'es-419': 'Español Latino', en: 'English' },
+  languages: { es: 'Español', en: 'English' },
   types: { bug: 'Bug', dark: 'Dark', dragon: 'Dragon', electric: 'Electric', fairy: 'Fairy', fighting: 'Fighting', fire: 'Fire', flying: 'Flying', ghost: 'Ghost', grass: 'Grass', ground: 'Ground', ice: 'Ice', normal: 'Normal', poison: 'Poison', psychic: 'Psychic', rock: 'Rock', steel: 'Steel', water: 'Water' },
   affinities: {
     eyebrow: 'ELEMENTAL MATCHUPS',

@@ -115,13 +115,12 @@ test('5. Regulation diferente no colisiona', () => {
   assert(regM !== regMC && regM !== noReg, 'Diferentes regulaciones deben tener identidades separadas')
 })
 
-// 6. Locale diferente no colisiona
+// 6. Locale diferente no colisiona (es y en)
 test('6. Locale diferente no colisiona', () => {
   const es = `slaking:truant:beginner:es:showdown:gen9-ou`
   const en = `slaking:truant:beginner:en:showdown:gen9-ou`
-  const es419 = `slaking:truant:beginner:es-419:showdown:gen9-ou`
 
-  assert(es !== en && es !== es419, 'Diferentes locales deben generar claves de caché separadas')
+  assert(es !== en, 'Diferentes locales deben generar claves de caché separadas')
 })
 
 // 7. User level diferente no colisiona

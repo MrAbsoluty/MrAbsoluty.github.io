@@ -29,7 +29,7 @@ export default function SocialModal() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [error, setError] = useState('')
-  const [onlineIds, setOnlineIds] = useState(new Set())
+  const [onlineIds, _setOnlineIds] = useState(new Set())
 
   const reload = async () => {
     if (!user?.id) return

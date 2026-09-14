@@ -335,8 +335,7 @@ function UserMenuDropdown({
             <div className="dropdown-lang-pills">
               {localeOptions.map((opt) => {
                 const isActive = opt.code === locale
-                const labelText =
-                  opt.code === 'es' ? 'ES' : opt.code === 'es-419' ? 'LATAM' : 'EN'
+                const labelText = opt.code === 'es' ? 'ES' : 'EN'
 
                 return (
                   <button

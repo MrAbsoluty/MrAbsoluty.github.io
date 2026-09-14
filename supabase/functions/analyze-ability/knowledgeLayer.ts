@@ -15,6 +15,29 @@ export interface StatChangeFact {
   explanation: string
 }
 
+export interface VerifiedSynergy {
+  name: string
+  verified: true
+  ability: string
+  item?: string
+  move?: string
+  trigger: string
+  interaction: string
+  result: string
+  whyUseful: string
+  featured?: boolean
+  priority?: number
+  applicablePokemon?: string[]
+}
+
+export interface VerifiedActivationMechanism {
+  trigger: string
+  itemOrCondition: string
+  isConsumption: boolean
+  explanation: string
+  constraints?: string
+}
+
 export interface VerifiedAbilityFacts {
   name: string
   canonicalName: string
@@ -42,6 +65,9 @@ export interface VerifiedAbilityFacts {
     label: string
     source: 'deterministic'
   }
+  verifiedConditions?: string[]
+  verifiedSynergies?: VerifiedSynergy[]
+  verifiedActivations?: VerifiedActivationMechanism[]
   prohibitedClaims: string[]
 }
 
@@ -289,13 +315,60 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
   unburden: {
     name: 'unburden',
     canonicalName: 'Unburden (Liviano)',
-    officialEffect: 'Duplica la estadística de Velocidad del Pokémon tras perder o consumir el objeto equipado que llevaba al entrar en combate.',
+    officialEffect: 'Duplica la estadística de Velocidad del Pokémon cuando este pierde o consume el objeto equipado que esté llevando. Entrar al combate sin objeto no activa la habilidad por sí solo.',
     statChanges: [],
     speedChanges: {
       affectsSpeedStat: true,
-      explanation: 'Duplica (x2) la Velocidad del Pokémon a partir del momento en que su objeto equipado es consumido o perdido en combate, para las acciones y turnos siguientes. No duplica la velocidad retroactivamente durante la ejecución del movimiento que causó el consumo.',
+      explanation: 'Duplica (x2) la Velocidad del Pokémon a partir del momento en que su objeto equipado es consumido o perdido en combate, manteniéndose mientras permanezca sin objeto. No duplica la velocidad retroactivamente durante la ejecución del movimiento que causó el consumo ni garantiza superar a cualquier rival.',
     },
-    activation: 'Al consumir o perder el objeto equipado durante el combate (por ejemplo: al usar A Bocajarro, Sneasler reduce su Defensa y Defensa Especial; Hierba Blanca restaura esas reducciones y se consume en el proceso; al quedar sin objeto, Liviano duplica su Velocidad a partir de ese momento para las acciones y turnos siguientes).',
+    verifiedConditions: [
+      'Liviano se activa cuando el Pokémon pierde o consume un objeto que esté llevando.',
+      'Entrar al combate sin objeto NO activa la habilidad por sí solo.',
+      'Si el Pokémon entra sin objeto y obtiene uno durante el combate, perderlo o consumirlo puede activar Liviano.',
+      'El aumento de Velocidad comienza inmediatamente cuando la habilidad se activa (tras consumirse o perderse el objeto).',
+      'Mientras el Pokémon permanezca sin objeto, conserva la duplicación de Velocidad (no describir el efecto como permanente para el resto del combate).',
+      'Si el Pokémon vuelve a equipar o recibir un objeto en combate, pierde la bonificación de Liviano.',
+    ],
+    verifiedSynergies: [
+      {
+        name: 'Hierba Blanca + A Bocajarro',
+        verified: true,
+        ability: 'Unburden',
+        item: 'Hierba Blanca (White Herb)',
+        move: 'A Bocajarro (Close Combat)',
+        trigger: 'Uso de A Bocajarro y activación inmediata de Hierba Blanca.',
+        interaction: 'A Bocajarro reduce en 1 nivel la Defensa y la Defensa Especial del usuario. Hierba Blanca detecta estas reducciones, las restaura a 0 y se consume en el proceso. Al consumirse el objeto, Sneasler queda sin objeto equipado.',
+        result: 'Liviano se activa inmediatamente al quedar sin objeto, duplicando la Velocidad de Sneasler mientras permanezca sin objeto, permitiéndole superar a muchos rivales que antes podían ser más rápidos.',
+        whyUseful: 'Convierte la desventaja de reducción de estadísticas de A Bocajarro en una oportunidad táctica para activar Liviano de forma controlada, activando el aumento de Velocidad de Liviano en una sola jugada mientras Hierba Blanca mitiga las penalizaciones defensivas del movimiento.',
+        featured: true,
+        priority: 1,
+        applicablePokemon: ['Sneasler', 'Hawlucha'],
+      },
+    ],
+    verifiedActivations: [
+      {
+        trigger: 'Consumo de Baya Sitrus',
+        itemOrCondition: 'Baya Sitrus (Sitrus Berry)',
+        isConsumption: true,
+        explanation: 'Se consume al cumplirse su condición de PS correspondiente (bajar del 50% de PS máximos en batalla). Al consumirse, restaura PS y deja al Pokémon sin objeto, activando Liviano mientras continúe sin objeto.',
+        constraints: 'Condición de activación específica de umbral de PS. NUNCA generalizar esta condición a otras bayas ni afirmar que todas las bayas se activan al 50% de PS.',
+      },
+      {
+        trigger: 'Consumo de Baya de Resistencia',
+        itemOrCondition: 'Bayas de reducción de daño supereficaz (ej. Baya Pasio, Baya Chilan, etc.)',
+        isConsumption: true,
+        explanation: 'Se consume al cumplirse su condición específica al recibir un ataque supereficaz del tipo correspondiente. Al mitigar el daño y consumirse, deja al Pokémon sin objeto, activando Liviano mientras permanezca sin objeto.',
+        constraints: 'Condición de activación específica por impacto supereficaz de su tipo. NUNCA afirmar que se activa al 50% de PS ni agrupar con otras bayas bajo una misma regla.',
+      },
+      {
+        trigger: 'Pérdida de Globo Helio',
+        itemOrCondition: 'Globo Helio (Air Balloon)',
+        isConsumption: false,
+        explanation: 'El Globo Helio estalla y se pierde cuando el portador recibe daño de un movimiento ofensivo rival.',
+        constraints: 'El Globo Helio se PIERDE (estalla), NO se consume. La pérdida del objeto activa Liviano mientras continúe sin objeto.',
+      },
+    ],
+    activation: 'Al consumir o perder un objeto que lleve en combate. Conserva la duplicación de Velocidad mientras continúe sin objeto.',
     category: 'utility',
     deterministicRating: {
       score: 8,
@@ -304,9 +377,39 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
     },
     prohibitedClaims: [
       'se activa si entra sin objeto',
+      'se activa al entrar sin objeto',
       'se activa sin tener objeto inicial',
-      'aumenta el ataque',
+      'se activa simplemente por no tener objeto',
       'reduce la velocidad',
+      'disminuye la velocidad',
+      'aumenta el ataque',
+      'las bayas se activan al bajar de 50%',
+      'las bayas activan liviano al bajar de 50%',
+      'todas las bayas se activan al 50%',
+      'para el resto del combate',
+      'casi cualquier rival',
+      'cualquier rival',
+      'velocidad extrema',
+      'debe tener objeto al entrar',
+      'requiere haber entrado con objeto',
+      'exige haber entrado con objeto',
+      'no tiene efecto si entra sin objeto',
+      'hierba blanca activa directamente liviano',
+      'a bocajarro activa directamente liviano',
+      'globo helio se consume',
+      'el globo helio se consume',
+      'choice band + a bocajarro',
+      'choice scarf + a bocajarro',
+      'cinta elección + a bocajarro',
+      'pañuelo elección + a bocajarro',
+      'vidasfera + a bocajarro',
+      'life orb + a bocajarro',
+      'la única forma',
+      'la única estrategia',
+      'siempre es el mejor',
+      'es obligatorio',
+      'obligatorio para sneasler',
+      'la mejor estrategia en todos los formatos',
     ],
   },
   guts: {
@@ -378,6 +481,9 @@ export function buildVerifiedAbilityFacts(
       activation: base.activation || 'Pasiva en combate.',
       category: base.category || 'utility',
       deterministicRating: base.deterministicRating,
+      verifiedConditions: base.verifiedConditions || [],
+      verifiedSynergies: base.verifiedSynergies || [],
+      verifiedActivations: base.verifiedActivations || [],
       prohibitedClaims: base.prohibitedClaims || [],
     }
   }

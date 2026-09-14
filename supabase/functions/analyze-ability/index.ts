@@ -555,7 +555,7 @@ Deno.serve(async (req: Request) => {
     const userLevel = String(rawUserLevel).toLowerCase().trim()
 
     const rawLocale = (payload as Record<string, unknown>).locale || contextObj.locale || 'es'
-    const locale = String(rawLocale).toLowerCase().trim()
+    const locale = String(rawLocale).toLowerCase().startsWith('en') ? 'en' : 'es'
 
     // Sincronizar contexto normalizado en payload para el motor de prompts
     payload.context = {

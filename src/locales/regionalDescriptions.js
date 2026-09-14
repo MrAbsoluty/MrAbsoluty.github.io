@@ -6,7 +6,7 @@
  * (en el endpoint de pokemon-form) y carece de entradas en español para varias variantes
  * de generaciones posteriores. Este catálogo provee la traducción oficial canónica de los juegos
  * (Pokémon Sol/Luna, Ultrasol/Ultraluna, Espada/Escudo y Leyendas Pokémon: Arceus)
- * cuando el usuario navega en Español o Español Latino.
+ * cuando el usuario navega en Español.
  */
 
 export const regionalDescriptionsEs = {

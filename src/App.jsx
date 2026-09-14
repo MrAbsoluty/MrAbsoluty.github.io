@@ -5,7 +5,7 @@ import ItemDetail from './pages/ItemDetail'
 import Items from './pages/Items'
 import Pokedex from './pages/Pokedex'
 import PokemonDetail from './pages/PokemonDetail'
-import { defaultLocale, getTranslations } from './locales'
+import { defaultLocale, getTranslations, SUPPORTED_LOCALES } from './locales'
 import { getItem, getPokemon } from './services/pokeapi'
 import MusicPlayer from './components/MusicPlayer'
 import AuthModal from './components/auth/AuthModal'
@@ -26,9 +26,18 @@ import './styles/profile.css'
 import './styles/social.css'
 import './App.css'
 
+
 function getInitialLocale() {
-  const savedLocale = window.localStorage.getItem('pokeguide-locale')
-  return ['es', 'es-419', 'en'].includes(savedLocale) ? savedLocale : defaultLocale
+  try {
+    const savedLocale = window.localStorage.getItem('pokeguide-locale')
+    if (savedLocale === 'es-419') {
+      window.localStorage.setItem('pokeguide-locale', 'es')
+      return 'es'
+    }
+    return SUPPORTED_LOCALES.includes(savedLocale) ? savedLocale : defaultLocale
+  } catch {
+    return defaultLocale
+  }
 }
 
 function App() {
@@ -232,14 +241,21 @@ function App() {
   }
 
   async function handleLocaleChange(nextLocale) {
-    setLocale(nextLocale)
-    window.localStorage.setItem('pokeguide-locale', nextLocale)
+    const targetLocale = nextLocale === 'es-419' || !SUPPORTED_LOCALES.includes(nextLocale)
+      ? (String(nextLocale || '').toLowerCase().startsWith('en') ? 'en' : 'es')
+      : nextLocale
+    setLocale(targetLocale)
+    try {
+      window.localStorage.setItem('pokeguide-locale', targetLocale)
+    } catch {
+      // ignore
+    }
 
     if (view === 'detail' && pokemon) {
       setIsLoading(true)
       setError(null)
       try {
-        setPokemon(await getPokemon(pokemon.name, nextLocale, getTranslations(nextLocale).errors))
+        setPokemon(await getPokemon(pokemon.name, targetLocale, getTranslations(targetLocale).errors))
       } catch (searchError) {
         setError(searchError)
       } finally {
@@ -251,7 +267,7 @@ function App() {
       setIsLoading(true)
       setError(null)
       try {
-        setItem(await getItem(item.name, nextLocale, getTranslations(nextLocale).errors))
+        setItem(await getItem(item.name, targetLocale, getTranslations(targetLocale).errors))
       } catch (itemError) {
         setError(itemError)
       } finally {

@@ -45,6 +45,7 @@ function getCacheKey(type, entityId, subId, {
   locale = 'es',
 } = {}) {
   const resolvedLevel = getResolvedUserLevel(userLevel)
+  const normalizedLocale = String(locale || 'es').toLowerCase().startsWith('en') ? 'en' : 'es'
   const parts = [
     type,
     entityId?.toLowerCase(),
@@ -54,7 +55,7 @@ function getCacheKey(type, entityId, subId, {
     regulation?.toLowerCase() || 'none',
     battleMode?.toLowerCase() || 'singles',
     resolvedLevel,
-    locale?.toLowerCase() || 'es',
+    normalizedLocale,
   ]
   return parts.filter(Boolean).join(':')
 }
@@ -73,7 +74,7 @@ function getCacheKey(type, entityId, subId, {
  * @param {string|null} [params.format=null] - Formato o modalidad (ej. 'gen9-ou', 'vgc', 'ranked-singles')
  * @param {string|null} [params.regulation=null] - Regulación específica opcional
  * @param {string} [params.userLevel] - Nivel de usuario ('beginner', 'intermediate', 'advanced', 'competitive')
- * @param {string} [params.locale='es'] - Idioma ('es', 'es-419', 'en')
+ * @param {string} [params.locale='es'] - Idioma ('es', 'en')
  * @returns {Promise<{ success: boolean, data?: Object, error?: string, code?: string }>}
  */
 export async function analyzeAbility({
@@ -104,7 +105,8 @@ export async function analyzeAbility({
   const resolvedFormat = format || contextObj.format || null
   const resolvedRegulation = regulation || contextObj.regulation || null
   const resolvedLevel = getResolvedUserLevel(userLevel || contextObj.userLevel)
-  const resolvedLocale = locale || contextObj.locale || 'es'
+  const rawLocale = locale || contextObj.locale || 'es'
+  const resolvedLocale = String(rawLocale).toLowerCase().startsWith('en') ? 'en' : 'es'
 
   let resolvedBattleMode = contextObj.battleMode
   if (!resolvedBattleMode) {

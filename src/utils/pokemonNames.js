@@ -361,7 +361,7 @@ export function cleanPokemonSlug(name, id = null) {
 }
 
 /**
- * Retorna el nombre de visualización oficial localizado según el idioma (es, es-419, en).
+ * Retorna el nombre de visualización oficial localizado según el idioma (es, en).
  */
 export function getPokemonDisplayName(idOrName, locale = 'es') {
   if (!idOrName && idOrName !== 0) return ''

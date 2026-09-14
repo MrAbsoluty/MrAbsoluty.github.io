@@ -91,9 +91,11 @@ function Navbar({
             <label className="language-picker">
               <span aria-hidden="true">{localeOptions.find((option) => option.code === locale)?.flag}</span>
               <select value={locale} onChange={(event) => onLocaleChange(event.target.value)} aria-label="Language">
-                <option value="es">{t.languages.es}</option>
-                <option value="es-419">{t.languages['es-419']}</option>
-                <option value="en">{t.languages.en}</option>
+                {localeOptions.map((opt) => (
+                  <option key={opt.code} value={opt.code}>
+                    {t.languages[opt.code] || opt.code}
+                  </option>
+                ))}
               </select>
             </label>
             <button className="ai-link" type="button" aria-label={t.nav.ai}>

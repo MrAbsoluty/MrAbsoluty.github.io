@@ -91,6 +91,72 @@ const AMBIGUOUS_TRUANT_PATTERNS: Array<{ regex: RegExp; replacement: string; des
 ]
 
 /**
+ * Patrones específicos de corrección para Liviano (Unburden).
+ */
+const UNBURDEN_CORRECTION_PATTERNS: Array<{ regex: RegExp; replacement: string; description: string }> = [
+  {
+    regex: /\b(?:se\s+activa\s+(?:al|simplemente\s+por)\s+entrar\s+sin\s+objeto|se\s+activa\s+sin\s+(?:tener\s+)?objeto\s+inicial)\b/gi,
+    replacement: 'se activa tras perder o consumir un objeto que esté llevando',
+    description: 'Afirmación errónea: Liviano no se activa por entrar sin objeto',
+  },
+  {
+    regex: /\b(?:debe|exige|requiere)\s+(?:haber\s+entrado|tener\s+un\s+objeto)\s+al\s+(?:iniciar|entrar\s+al?)\s+combate\b/gi,
+    replacement: 'se activa cuando el Pokémon pierde o consume un objeto que esté llevando',
+    description: 'Requisito inicial demasiado estricto: aclarada condición de pérdida/consumo de objeto',
+  },
+  {
+    regex: /\bliviano\s+no\s+tiene\s+efecto\s+si\s+(?:el\s+pok[eé]mon\s+)?entra\s+al\s+combate\s+sin\s+objeto\s+inicial\b/gi,
+    replacement: 'entrar al combate sin objeto no activa Liviano por sí solo',
+    description: 'Aclaración: entrar sin objeto no activa Liviano por sí solo',
+  },
+  {
+    regex: /\b(?:para\s+el\s+resto\s+del?\s+combate|durante\s+el\s+resto\s+del?\s+combate|hasta\s+el\s+final\s+del?\s+combate)\b/gi,
+    replacement: 'mientras permanezca sin objeto',
+    description: 'Duración absoluta: reemplazado por "mientras permanezca sin objeto"',
+  },
+  {
+    regex: /\b(?:a\s+)?(?:casi\s+)?cualquier\s+(?:rival|oponente|pok[eé]mon)\b/gi,
+    replacement: 'a muchos rivales que antes podían ser más rápidos',
+    description: 'Generalización absoluta de velocidad: reemplazado por "a muchos rivales que antes podían ser más rápidos"',
+  },
+  {
+    regex: /\b(?:la\s+)?velocidad\s+extrema\b/gi,
+    replacement: 'el aumento de Velocidad de Liviano',
+    description: 'Término hiperbólico: reemplazado por "el aumento de Velocidad de Liviano"',
+  },
+  {
+    regex: /\b(?:el\s+)?globo\s+helio\s+se\s+consume\b/gi,
+    replacement: 'el Globo Helio se pierde tras recibir un ataque',
+    description: 'Afirmación errónea: Globo Helio no se consume, se pierde tras recibir un impacto',
+  },
+  {
+    regex: /\b(?:todas\s+)?las\s+bayas\s+(?:se\s+activan|activan\s+liviano)\s+al\s+bajar\s+(?:del?|de)\s+50\s*%\b/gi,
+    replacement: 'las bayas se activan al cumplir su condición específica',
+    description: 'Afirmación errónea: no todas las bayas se activan al 50% de PS',
+  },
+  {
+    regex: /\b(?:es\s+)?la\s+[uú]nica\s+(?:forma|manera|estrategia|opci[oó]n)\b/gi,
+    replacement: 'una interacción destacada',
+    description: 'Sobreafirmación: no es la única forma',
+  },
+  {
+    regex: /\b(?:siempre\s+es|es\s+siempre)\s+el\s+mejor\b/gi,
+    replacement: 'es una opción muy destacada',
+    description: 'Sobreafirmación: no siempre es el mejor',
+  },
+  {
+    regex: /\b(?:es\s+)?obligatorio(?:\s+para\s+sneasler)?\b/gi,
+    replacement: 'muy recomendable',
+    description: 'Sobreafirmación: no es obligatorio',
+  },
+  {
+    regex: /\bla\s+mejor\s+estrategia\s+en\s+todos\s+los\s+formatos\b/gi,
+    replacement: 'una estrategia destacada en este formato',
+    description: 'Sobreafirmación: no es la mejor en todos los formatos',
+  },
+]
+
+/**
  * Aplica correcciones deterministas sobre un string si viola hechos verificados.
  */
 function correctText(text: string, facts: VerifiedAbilityFacts, violations: string[]): string {
@@ -111,6 +177,16 @@ function correctText(text: string, facts: VerifiedAbilityFacts, violations: stri
   // 2. Si la habilidad tiene ciclo de turnos (ej. Truant), evitar frase ambigua "cada dos turnos"
   if (facts.turnCycle?.hasTurnSkip) {
     for (const rule of AMBIGUOUS_TRUANT_PATTERNS) {
+      if (rule.regex.test(cleaned)) {
+        violations.push(`${rule.description}: "${rule.regex.source}"`)
+        cleaned = cleaned.replace(rule.regex, rule.replacement)
+      }
+    }
+  }
+
+  // 3. Si la habilidad es Liviano (Unburden), aplicar correcciones específicas
+  if (facts.name === 'unburden') {
+    for (const rule of UNBURDEN_CORRECTION_PATTERNS) {
       if (rule.regex.test(cleaned)) {
         violations.push(`${rule.description}: "${rule.regex.source}"`)
         cleaned = cleaned.replace(rule.regex, rule.replacement)
@@ -223,6 +299,109 @@ export function validateAndCorrectFacts(
     const insight = String(corrected[insightField] || '')
     if (!insight.toLowerCase().includes('alterno') && !insight.toLowerCase().includes('turno')) {
       corrected[insightField] = `${insight} Actúa en turnos alternos (holgazanea en los turnos pares tras actuar, sin reducir su velocidad base).`.trim()
+    }
+  }
+
+  // 4. Garantía de sinergias verificadas para Liviano (Unburden)
+  if (facts.name === 'unburden') {
+    if (Array.isArray(corrected.strategies)) {
+      const originalStrategies = corrected.strategies as Array<Record<string, unknown>>
+
+      // 4a. Filtrar estrategias con objetos no sinérgicos (Choice / Life Orb)
+      let filtered = originalStrategies.filter((st) => {
+        const name = String(st.name || '').toLowerCase()
+        const expl = String(st.explanation || '').toLowerCase()
+        const isChoiceOrOrb =
+          name.includes('choice') ||
+          name.includes('cinta elección') ||
+          name.includes('gafas elección') ||
+          name.includes('pañuelo elección') ||
+          name.includes('life orb') ||
+          name.includes('vidasfera') ||
+          (expl.includes('choice band') && !expl.includes('rival')) ||
+          (expl.includes('cinta elección') && !expl.includes('rival'))
+        if (isChoiceOrOrb) {
+          violations.push(`Estrategia no verificada rechazada para Liviano: "${st.name}"`)
+          return false
+        }
+        return true
+      })
+
+      // 4b. Reubicar mecanismos de activación genéricos (bayas, globo helio) a 'alternatives'
+      // para no desplazar a la sinergia destacada principal
+      const isGenericActivation = (st: Record<string, unknown>) => {
+        const name = String(st.name || '').toLowerCase()
+        return (
+          name.includes('baya') ||
+          name.includes('berry') ||
+          name.includes('globo helio') ||
+          name.includes('air balloon')
+        )
+      }
+
+      const displacedActivations: Array<Record<string, unknown>> = []
+      filtered = filtered.filter((st) => {
+        if (isGenericActivation(st)) {
+          displacedActivations.push(st)
+          violations.push(
+            `Mecanismo de activación ("${st.name}") reubicado de 'strategies' a 'alternatives' para preservar la sinergia destacada.`,
+          )
+          return false
+        }
+        return true
+      })
+
+      // Agregar los mecanismos reubicados a 'alternatives' si no estaban ya presentes
+      if (displacedActivations.length > 0) {
+        if (!Array.isArray(corrected.alternatives)) {
+          corrected.alternatives = []
+        }
+        const alternatives = corrected.alternatives as Array<Record<string, unknown>>
+        for (const act of displacedActivations) {
+          const exists = alternatives.some(
+            (alt) => String(alt.name || '').toLowerCase() === String(act.name || '').toLowerCase(),
+          )
+          if (!exists) {
+            alternatives.push({
+              name: act.name,
+              explanation: act.explanation,
+            })
+          }
+        }
+      }
+
+      // 4c. Garantizar que la sinergia prioritaria (Hierba Blanca + A Bocajarro) sea strategies[0]
+      const prioritySynergy = facts.verifiedSynergies?.find((s) => s.featured || s.priority === 1)
+      if (prioritySynergy) {
+        const idx = filtered.findIndex((st) => {
+          const n = String(st.name || '').toLowerCase()
+          return (
+            (n.includes('hierba blanca') || n.includes('white herb')) &&
+            (n.includes('a bocajarro') || n.includes('close combat'))
+          )
+        })
+
+        if (idx > 0) {
+          // Si estaba en la lista pero no al inicio, moverla al inicio
+          const [promoted] = filtered.splice(idx, 1)
+          filtered.unshift(promoted)
+          violations.push(
+            `Sinergia prioritaria "${prioritySynergy.name}" reordenada a primera posición en 'strategies'.`,
+          )
+        } else if (idx === -1 && filtered.length === 0) {
+          // Si la IA no la incluyó pero es la sinergia canónica destacada, garantizarla
+          filtered.unshift({
+            name: prioritySynergy.name,
+            explanation: `Al utilizar ${prioritySynergy.move || 'A Bocajarro'}, el usuario reduce su Defensa y Defensa Especial en un nivel; debido a esto, la ${prioritySynergy.item || 'Hierba Blanca'} restaura inmediatamente esas estadísticas y se consume en el proceso. Como consecuencia de quedar sin objeto, Liviano se activa y duplica la Velocidad mientras permanezca sin objeto.`,
+            whyFeatured: prioritySynergy.whyUseful,
+          })
+          violations.push(
+            `Sinergia prioritaria "${prioritySynergy.name}" garantizada como primera estrategia destacada.`,
+          )
+        }
+      }
+
+      corrected.strategies = filtered
     }
   }
 

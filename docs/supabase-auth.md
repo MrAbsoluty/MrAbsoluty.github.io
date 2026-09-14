@@ -125,7 +125,7 @@ Para habilitar las fotos de perfil, ejecuta en el editor SQL de Supabase el arch
 Organizado en pestañas:
 - **Cuenta**: Modificación de correo electrónico con envío de confirmación de Supabase.
 - **Seguridad**: Cambio de contraseña segura (mínimo 8 caracteres) y botón para cerrar sesión activa.
-- **Preferencias**: Selector visual de idioma (Español, Español Latino, English) sincronizado con el estado global de PokéGuide.
+- **Preferencias**: Selector visual de idioma (Español, English) sincronizado con el estado global de PokéGuide.
 - **Datos**: Zona informativa sobre la privacidad de la cuenta y eliminación de datos.
 
 ### Menú de Usuario (`UserMenuDropdown.jsx`)
