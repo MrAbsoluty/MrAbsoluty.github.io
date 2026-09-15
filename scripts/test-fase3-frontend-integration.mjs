@@ -32,17 +32,17 @@ const cssContent = readFileSync(join(process.cwd(), 'src/styles/ai-ability-analy
 
 // 1. i18n
 test('1. i18n: es.js incluye analyzeButton, analyzing, hide, viewAnalysisButton', () => {
-  assert(esContent.includes("analyzeButton: '✨ Analizar con IA'"), 'Falta analyzeButton en es.js')
+  assert(esContent.includes("analyzeButton: 'Analizar con IA'"), 'Falta analyzeButton en es.js')
   assert(esContent.includes("analyzing: 'Analizando habilidad...'"), 'Falta analyzing en es.js')
   assert(esContent.includes("hide: 'Ocultar análisis'"), 'Falta hide en es.js')
-  assert(esContent.includes("viewAnalysisButton: '✨ Ver análisis de IA'"), 'Falta viewAnalysisButton en es.js')
+  assert(esContent.includes("viewAnalysisButton: 'Ver análisis de IA'"), 'Falta viewAnalysisButton en es.js')
 })
 
 test('2. i18n: en.js incluye analyzeButton, analyzing, hide, viewAnalysisButton', () => {
-  assert(enContent.includes("analyzeButton: '✨ Analyze with AI'"), 'Falta analyzeButton en en.js')
+  assert(enContent.includes("analyzeButton: 'Analyze with AI'"), 'Falta analyzeButton en en.js')
   assert(enContent.includes("analyzing: 'Analyzing ability...'"), 'Falta analyzing en en.js')
   assert(enContent.includes("hide: 'Hide analysis'"), 'Falta hide en en.js')
-  assert(enContent.includes("viewAnalysisButton: '✨ View AI Analysis'"), 'Falta viewAnalysisButton en en.js')
+  assert(enContent.includes("viewAnalysisButton: 'View AI Analysis'"), 'Falta viewAnalysisButton en en.js')
 })
 
 // 2. Componente AIAbilityAnalysis.jsx

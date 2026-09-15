@@ -15,59 +15,37 @@ import {
 } from '../data/competitiveContexts'
 import { playClickSound, playButtonSound } from '../utils/audio'
 
+import championsLogo from '../assets/champions.png'
+import showdownLogo from '../assets/pokemonshowdownbeta.png'
+
 /**
- * Insignias visuales temáticas discretas y vectoriales con diseño original PokeGuide.
+ * Insignias visuales temáticas con logos oficiales de alta definición para Champions y Showdown.
  */
 function ContextVisualBadge({ type }) {
   if (type === 'champions') {
     return (
-      <div className="ctx-badge-art ctx-art-champions" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none" className="ctx-svg-art">
-          <circle cx="24" cy="24" r="22" stroke="url(#champGrad)" strokeWidth="2" strokeDasharray="3 3" opacity="0.6" />
-          <path
-            d="M14 18L24 10L34 18L30 34H18L14 18Z"
-            fill="url(#champFill)"
-            stroke="#f59e0b"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M24 16L27 24H21L24 16Z"
-            fill="#fef3c7"
-          />
-          <circle cx="24" cy="27" r="2" fill="#d97706" />
-          <defs>
-            <linearGradient id="champGrad" x1="0" y1="0" x2="48" y2="48">
-              <stop stopColor="#fbbf24" />
-              <stop offset="1" stopColor="#b45309" />
-            </linearGradient>
-            <linearGradient id="champFill" x1="14" y1="10" x2="34" y2="34">
-              <stop stopColor="#f59e0b" stopOpacity="0.3" />
-              <stop offset="1" stopColor="#78350f" stopOpacity="0.7" />
-            </linearGradient>
-          </defs>
-        </svg>
+      <div className="ctx-badge-art ctx-art-champions ctx-art-has-logo" aria-hidden="true">
+        <img
+          src={championsLogo}
+          alt="Pokémon Champions"
+          className="ctx-logo-img ctx-logo-champions"
+          loading="eager"
+          decoding="sync"
+        />
       </div>
     )
   }
 
   if (type === 'showdown') {
     return (
-      <div className="ctx-badge-art ctx-art-showdown" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none" className="ctx-svg-art">
-          <circle cx="24" cy="24" r="22" stroke="url(#sdGrad)" strokeWidth="2" strokeDasharray="4 2" opacity="0.6" />
-          {/* Espadas cruzadas */}
-          <path d="M13 13L21 21M35 13L27 21" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M21 21L33 33M27 21L15 33" stroke="#93c5fd" strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M31 35L35 31M17 35L13 31" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="24" cy="21" r="3" fill="#3b82f6" />
-          <defs>
-            <linearGradient id="sdGrad" x1="0" y1="0" x2="48" y2="48">
-              <stop stopColor="#60a5fa" />
-              <stop offset="1" stopColor="#1d4ed8" />
-            </linearGradient>
-          </defs>
-        </svg>
+      <div className="ctx-badge-art ctx-art-showdown ctx-art-has-logo" aria-hidden="true">
+        <img
+          src={showdownLogo}
+          alt="Pokémon Showdown"
+          className="ctx-logo-img ctx-logo-showdown"
+          loading="eager"
+          decoding="sync"
+        />
       </div>
     )
   }

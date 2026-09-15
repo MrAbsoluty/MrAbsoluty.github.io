@@ -41,6 +41,7 @@ function SettingsModal({ locale, onLocaleChange, t }) {
   // Estados para Nivel de IA
   const [currentAiLevel, setCurrentAiLevel] = useState('beginner')
   const [aiLevelMessage, setAiLevelMessage] = useState(null)
+  const [aiLevelError, setAiLevelError] = useState(null)
   const [isSavingAiLevel, setIsSavingAiLevel] = useState(false)
 
   useEffect(() => {
@@ -55,6 +56,7 @@ function SettingsModal({ locale, onLocaleChange, t }) {
       const activeLvl = profile?.ai_level || window.localStorage.getItem('pokeguide_ai_level') || 'beginner'
       setCurrentAiLevel(activeLvl)
       setAiLevelMessage(null)
+      setAiLevelError(null)
     }
   }, [isSettingsOpen, profile])
 
@@ -630,6 +632,11 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                   {t?.aiLevel?.sectionSubtitle || 'Personaliza el lenguaje, profundidad y terminología de las explicaciones tácticas según tu experiencia.'}
                 </p>
 
+                {aiLevelError && (
+                  <div className="auth-alert alert-error" role="alert" style={{ marginBottom: '12px' }}>
+                    {aiLevelError}
+                  </div>
+                )}
                 {aiLevelMessage && (
                   <div className="auth-alert alert-success" role="status" style={{ marginBottom: '12px' }}>
                     {aiLevelMessage}
@@ -660,17 +667,26 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                           position: 'relative',
                         }}
                         onClick={async () => {
+                          if (lvl === currentAiLevel) return
+                          const previousLevel = currentAiLevel
                           setCurrentAiLevel(lvl)
                           setIsSavingAiLevel(true)
                           setAiLevelMessage(null)
+                          setAiLevelError(null)
                           try {
                             const res = await updateAiLevel(lvl)
-                            if (res.success) {
+                            if (res?.success) {
                               setAiLevelMessage(t?.aiLevel?.savedSuccess || 'Nivel de análisis de IA actualizado con éxito.')
                               setTimeout(() => setAiLevelMessage(null), 3000)
+                            } else {
+                              setCurrentAiLevel(previousLevel)
+                              setAiLevelError(res?.error || 'No se pudo guardar el nivel de análisis.')
+                              setTimeout(() => setAiLevelError(null), 4000)
                             }
                           } catch {
-                            // Silencioso
+                            setCurrentAiLevel(previousLevel)
+                            setAiLevelError('Error inesperado al guardar el nivel de análisis.')
+                            setTimeout(() => setAiLevelError(null), 4000)
                           } finally {
                             setIsSavingAiLevel(false)
                           }

@@ -883,17 +883,8 @@ export function AuthProvider({ children }) {
       return { success: false, error: 'Nivel de análisis de IA no válido.' }
     }
 
-    try {
-      window.localStorage.setItem('pokeguide_ai_level', newLevel)
-    } catch {
-      // Silencioso
-    }
-
-    // Actualizar estado local inmediatamente para reactividad visual óptima
-    setProfile((prev) => (prev ? { ...prev, ai_level: newLevel } : { ai_level: newLevel }))
-
     if (!user || !supabase) {
-      return { success: true, ai_level: newLevel }
+      return { success: false, error: 'No hay usuario autenticado.' }
     }
 
     try {
@@ -905,15 +896,22 @@ export function AuthProvider({ children }) {
         .single()
 
       if (error) {
-        console.warn('[PokeGuide Auth] No se pudo guardar ai_level en Supabase (posible columna pendiente de migración):', error.message)
-        return { success: true, ai_level: newLevel, warning: error.message }
+        console.error('[PokeGuide Auth] Error al guardar ai_level en Supabase:', error.message)
+        return { success: false, error: 'No se pudo guardar el nivel de análisis en Supabase.' }
+      }
+
+      // Persistir en localStorage y actualizar estado del perfil tras confirmación de Supabase
+      try {
+        window.localStorage.setItem('pokeguide_ai_level', newLevel)
+      } catch {
+        // Silencioso
       }
 
       setProfile(data)
       return { success: true, profile: data, ai_level: newLevel }
     } catch (err) {
       console.error('[PokeGuide Auth] Error al persistir ai_level en Supabase:', err)
-      return { success: true, ai_level: newLevel }
+      return { success: false, error: 'Error inesperado al guardar el nivel de análisis.' }
     }
   }, [user])
 
@@ -1006,6 +1004,7 @@ export function AuthProvider({ children }) {
       setPendingRequestsCount,
       updateBioAndFeaturedPokemon,
       updateProfilePrivacy,
+      updateAiLevel,
       isChatOpen,
       isChatMinimized,
       activeChatFriend,

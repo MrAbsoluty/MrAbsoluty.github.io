@@ -38,6 +38,21 @@ export interface VerifiedActivationMechanism {
   constraints?: string
 }
 
+export interface VerifiedCounterplayMechanism {
+  tool: string
+  mechanism: string
+  consequence: string
+  constraints?: string
+}
+
+export interface VerifiedPriorityMechanic {
+  moveName: string
+  priorityValue: number
+  condition?: string
+  explanation: string
+  commonMisconception?: string
+}
+
 export interface VerifiedAbilityFacts {
   name: string
   canonicalName: string
@@ -68,7 +83,340 @@ export interface VerifiedAbilityFacts {
   verifiedConditions?: string[]
   verifiedSynergies?: VerifiedSynergy[]
   verifiedActivations?: VerifiedActivationMechanism[]
+  verifiedCounterplay?: VerifiedCounterplayMechanism[]
+  verifiedPriorityMechanics?: VerifiedPriorityMechanic[]
+  relevantMoves?: VerifiedMoveFacts[]
+  relevantItems?: VerifiedItemFacts[]
   prohibitedClaims: string[]
+}
+
+export interface VerifiedMoveFacts {
+  id: string
+  name: string
+  canonicalName: string
+  type: string
+  category: 'physical' | 'special' | 'status'
+  priority: number
+  basePower?: number
+  accuracy?: number
+  isChargeMove: boolean
+  healsFromDamagePercent?: number
+  statDrops?: Array<{ stat: string; stages: number; target: string }>
+  mechanics: string[]
+  conditions: string[]
+  competitiveImplications: string[]
+  commonMisconceptions: string[]
+}
+
+export interface VerifiedItemFacts {
+  id: string
+  name: string
+  canonicalName: string
+  isConsumption: boolean
+  mechanics: string[]
+  conditions: string[]
+  competitiveImplications: string[]
+  commonMisconceptions: string[]
+}
+
+/**
+ * Catálogo canónico de movimientos competitivos verificados (Fase 2.5).
+ */
+export const CANONICAL_MOVE_KNOWLEDGE: Record<string, VerifiedMoveFacts> = {
+  'sucker-punch': {
+    id: 'sucker-punch',
+    name: 'sucker-punch',
+    canonicalName: 'Sucker Punch (Golpe Bajo)',
+    type: 'dark',
+    category: 'physical',
+    priority: 1,
+    basePower: 70,
+    accuracy: 100,
+    isChargeMove: false,
+    mechanics: [
+      'Ataca en el escalón de prioridad +1 antes de que se ejecuten los movimientos de prioridad estándar (0).',
+      'Requiere que el Pokémon objetivo haya seleccionado un movimiento que cause daño directo ese mismo turno y que aún no haya actuado.',
+    ],
+    conditions: [
+      'Falla si el objetivo seleccionó un movimiento de estado (ej. Danza Espada, Protección, Paz Mental).',
+      'Falla si el objetivo cambia de Pokémon.',
+      'Falla si el objetivo actúa antes mediante un movimiento con prioridad superior (+2 o más) o por mayor Velocidad en el mismo escalón (+1).',
+    ],
+    competitiveImplications: [
+      'Herramienta de venganza (revenge kill) y presión contra atacantes rápidos o debilitados.',
+      'Crea un juego mental (mind game o 50/50) donde el rival puede castigar el uso de Golpe Bajo usando movimientos de estado o sustituto.',
+    ],
+    commonMisconceptions: [
+      'Golpe Bajo NO supera la Velocidad del rival: actúa antes porque opera en un escalón de prioridad superior (+1).',
+      'Golpe Bajo NO siempre golpea primero: falla contra movimientos de estado y no supera movimientos de prioridad +2 o superior.',
+      'Tener mayor Velocidad o duplicarla con Liviano no evita ser amenazado por Golpe Bajo si se selecciona un ataque de daño directo.',
+    ],
+  },
+  'trick-room': {
+    id: 'trick-room',
+    name: 'trick-room',
+    canonicalName: 'Trick Room (Espacio Raro)',
+    type: 'psychic',
+    category: 'status',
+    priority: -7,
+    isChargeMove: false,
+    mechanics: [
+      'Crea una dimensión distorsionada que dura exactamente 5 turnos en el campo (incluyendo el turno de activación).',
+      'Invierte el orden de actuación basado en la estadística de Velocidad dentro de cada escalón de prioridad (los Pokémon más lentos actúan primero).',
+    ],
+    conditions: [
+      'Afecta a todos los Pokémon en el campo.',
+      'Si se usa nuevamente mientras está activo, cancela la dimensión anticipadamente.',
+    ],
+    competitiveImplications: [
+      'Transforma una Velocidad elevada en una desventaja táctica relativa durante sus 5 turnos.',
+      'Permite a equipos lentos y voluminosos tomar la iniciativa ofensiva absoluta.',
+    ],
+    commonMisconceptions: [
+      'Espacio Raro NO reduce ni modifica el valor numérico de la estadística de Velocidad.',
+      'Espacio Raro NO desactiva, anula ni elimina la habilidad Liviano ni su multiplicador x2.',
+      'Espacio Raro NO altera el sistema de prioridad de movimientos: un movimiento de prioridad +1 (como Golpe Bajo) sigue actuando antes que movimientos de prioridad 0 dentro de Espacio Raro.',
+    ],
+  },
+  protect: {
+    id: 'protect',
+    name: 'protect',
+    canonicalName: 'Protect (Protección)',
+    type: 'normal',
+    category: 'status',
+    priority: 4,
+    isChargeMove: false,
+    mechanics: [
+      'Protege al usuario de la gran mayoría de movimientos ofensivos y de estado dirigidos hacia él durante ese turno.',
+      'Opera en el escalón de prioridad +4.',
+    ],
+    conditions: [
+      'Su probabilidad de éxito se reduce progresivamente si se utiliza de forma consecutiva tras otro movimiento de protección.',
+      'No protege contra daño indirecto residual (clima, veneno, quemadura, drenadoras) ni movimientos perforantes de protección (Amago, Golpe Umbrío).',
+    ],
+    competitiveImplications: [
+      'Herramienta fundamental de scouting para identificar la jugada u objeto del rival.',
+      'Permite consumir turnos de efectos temporales (clima, terrenos, Espacio Raro, Viento Afín).',
+      'Vital en formatos Dobles/VGC para gestionar el posicionamiento y mitigar presión focalizada.',
+    ],
+    commonMisconceptions: [
+      'Protección NO garantiza éxito absoluto en turnos consecutivos.',
+      'Protección NO anula el daño residual de estados alterados como veneno o quemadura.',
+    ],
+  },
+  'fake-out': {
+    id: 'fake-out',
+    name: 'fake-out',
+    canonicalName: 'Fake Out (Sorpresa)',
+    type: 'normal',
+    category: 'physical',
+    priority: 3,
+    basePower: 40,
+    accuracy: 100,
+    isChargeMove: false,
+    mechanics: [
+      'Movimiento de prioridad +3 que causa retroceso (flinch) garantizado al objetivo si conecta.',
+      'Solo puede ejecutarse con éxito durante el primer turno en que el usuario entra al campo (primer turno tras switch-in).',
+    ],
+    conditions: [
+      'Falla si el usuario intenta utilizarlo después de su primer turno en combate sin haber cambiado previamente.',
+      'Falla o no causa retroceso contra tipos Fantasma, Pokémon con Foco Interno (Inner Focus), o equipados con Capa Furtiva (Covert Cloak).',
+      'Bloqueado por Protección, Detección o Terreno Psíquico en objetivos en contacto con el suelo.',
+    ],
+    competitiveImplications: [
+      'Control de tempo y mitigación de amenazas inmediatas en el primer turno.',
+      'Pilar fundamental en Dobles/VGC para permitir que el compañero prepare una estrategia (setup, Viento Afín, Espacio Raro) sin interferencia.',
+    ],
+    commonMisconceptions: [
+      'Sorpresa NO causa retroceso siempre ni de forma incondicional; existen inmunidades de tipo, habilidades y objetos que previenen el flinch.',
+      'NO puede usarse en turnos sucesivos sin salir y volver a entrar al campo.',
+    ],
+  },
+  'knock-off': {
+    id: 'knock-off',
+    name: 'knock-off',
+    canonicalName: 'Knock Off (Desarme)',
+    type: 'dark',
+    category: 'physical',
+    priority: 0,
+    basePower: 65,
+    accuracy: 100,
+    isChargeMove: false,
+    mechanics: [
+      'Inflige daño físico y remueve permanentemente el objeto equipado del objetivo durante el resto del combate.',
+      'Multiplica su potencia base por 1.5x (alcanzando 97.5 de potencia base) si el objetivo porta un objeto que pueda ser removido.',
+    ],
+    conditions: [
+      'No puede remover objetos no desprendibles (ej. Megapiedras, Cristales Z, Recuerdos de Silvally, Tablas de Arceus, o Energía Potenciadora en Pokémon Paradoja).',
+      'Si el objetivo no lleva objeto, inflige su potencia base estándar de 65.',
+    ],
+    competitiveImplications: [
+      'Uno de los movimientos más desestabilizadores del juego competitivo por eliminar la utilidad de objetos clave (Botas Gruesas, Restos, Mineral Evolutivo, Vidasfera).',
+      'Proporciona progreso táctico permanente independientemente del cambio del rival.',
+    ],
+    commonMisconceptions: [
+      'Desarme NO impide ni cancela la habilidad Liviano (Unburden).',
+      'Al forzar la pérdida del objeto equipado, Desarme CUMPLE la condición de activación de Liviano, provocando que la duplicación de Velocidad se active (incluso si ocurre antes del momento planeado por el usuario).',
+    ],
+  },
+  'close-combat': {
+    id: 'close-combat',
+    name: 'close-combat',
+    canonicalName: 'Close Combat (A Bocajarro)',
+    type: 'fighting',
+    category: 'physical',
+    priority: 0,
+    basePower: 120,
+    accuracy: 100,
+    isChargeMove: false,
+    statDrops: [
+      { stat: 'defense', stages: -1, target: 'self' },
+      { stat: 'special-defense', stages: -1, target: 'self' },
+    ],
+    mechanics: [
+      'Ataque físico de alta potencia (120 de daño base) que reduce la Defensa y Defensa Especial del usuario en un nivel (-1 cada una) tras infligir daño.',
+    ],
+    conditions: [
+      'Las reducciones defensivas se aplican al usuario inmediatamente después del ataque si este conecta.',
+    ],
+    competitiveImplications: [
+      'Ataque con STAB demoledor para Pokémon tipo Lucha con excelente cobertura ofensiva.',
+      'Su penalización defensiva convierte al usuario en un objetivo más vulnerable al contraataque.',
+    ],
+    commonMisconceptions: [
+      'Las reducciones defensivas NO son una desventaja insuperable: combinadas con Hierba Blanca, activan la restauración del objeto y su consumo inmediato.',
+      'Para Sneasler con Liviano, A Bocajarro + Hierba Blanca constituye la sinergia prioritaria y canónica, ya que elimina las bajadas de defensas y activa la duplicación de Velocidad en el mismo turno.',
+    ],
+  },
+  'solar-beam': {
+    id: 'solar-beam',
+    name: 'solar-beam',
+    canonicalName: 'Solar Beam (Rayo Solar)',
+    type: 'grass',
+    category: 'special',
+    priority: 0,
+    basePower: 120,
+    accuracy: 100,
+    isChargeMove: true,
+    mechanics: [
+      'Ataque especial de alta potencia (120 de daño base) que normalmente requiere un turno de carga (absorbe luz en el turno 1 y golpea en el turno 2).',
+      'Bajo clima de Sol Intenso / Luz Solar (Drought / Despejado), omite por completo la fase de carga y se ejecuta en un solo turno.',
+      'Si se porta el objeto Hierba Única (Power Herb), se consume para omitir el turno de carga en cualquier clima.',
+      'Bajo climas adversos (Lluvia, Tormenta de Arena, Nieve), su potencia base se reduce a la mitad (60 de daño base) y sigue requiriendo carga.',
+    ],
+    conditions: [
+      'Requiere 2 turnos para ejecutarse en condiciones climáticas estándar o sin Hierba Única.',
+      'NO recupera puntos de salud (PS) del usuario bajo ninguna circunstancia.',
+    ],
+    competitiveImplications: [
+      'Movimiento de cobertura devastador para sweepers de Fuego o activadores de Sol (como Torkoal, Charizard) para castigar a tipos Agua, Tierra y Roca en un solo turno.',
+    ],
+    commonMisconceptions: [
+      'Rayo Solar NO recupera PS al infligir daño (eso es Gigadrenado).',
+      'Rayo Solar NO siempre requiere un turno de carga: en Sol o con Hierba Única ataca inmediatamente.',
+      'No debe confundirse con Gigadrenado ni en mecánicas de curación ni en necesidad de carga.',
+    ],
+  },
+  'giga-drain': {
+    id: 'giga-drain',
+    name: 'giga-drain',
+    canonicalName: 'Giga Drain (Gigadrenado)',
+    type: 'grass',
+    category: 'special',
+    priority: 0,
+    basePower: 75,
+    accuracy: 100,
+    isChargeMove: false,
+    healsFromDamagePercent: 50,
+    mechanics: [
+      'Ataque especial de tipo Planta con 75 de potencia base que restaura los PS del usuario en una cantidad equivalente al 50% del daño infligido al objetivo.',
+      'Se ejecuta SIEMPRE en un solo turno; es un movimiento de daño directo y recuperación, NO un movimiento de carga.',
+    ],
+    conditions: [
+      'La cantidad de salud recuperada es estrictamente proporcional al daño real infligido (si golpea una sustitución o una inmunidad, no recupera PS).',
+      'No depende del clima de Sol ni de Hierba Única para atacar inmediatamente en 1 turno.',
+    ],
+    competitiveImplications: [
+      'Proporciona daño de cobertura y longevidad simultánea a Pokémon defensivos u ofensivos especiales.',
+    ],
+    commonMisconceptions: [
+      'Gigadrenado NUNCA requiere un turno de carga; ataca de forma instantánea en cualquier clima.',
+      'Gigadrenado NO requiere Sol ni Hierba Única para usarse en un solo turno.',
+      'Gigadrenado NO recupera salud sin infligir daño; la curación se calcula a partir del daño causado.',
+      'NUNCA debe confundirse con Rayo Solar.',
+    ],
+  },
+}
+
+/**
+ * Catálogo canónico de objetos competitivos verificados (Fase 2.5).
+ */
+export const CANONICAL_ITEM_KNOWLEDGE: Record<string, VerifiedItemFacts> = {
+  'white-herb': {
+    id: 'white-herb',
+    name: 'white-herb',
+    canonicalName: 'White Herb (Hierba Blanca)',
+    isConsumption: true,
+    mechanics: [
+      'Restaura automáticamente a cero cualquier modificación negativa de estadísticas (stat drops) que sufra el portador.',
+      'Se consume de forma inmediata tras restaurar la estadística afectada, desapareciendo del portador.',
+    ],
+    conditions: [
+      'Se activa únicamente cuando una o más estadísticas del portador caen por debajo de 0 etapas.',
+      'No se activa por daño directo, cambios de estado ni bajadas de PS.',
+    ],
+    competitiveImplications: [
+      'Permite mitigar penalizaciones auto-infligidas de movimientos potentes como A Bocajarro, Sofoco o Rompecoraza.',
+      'Al consumirse y dejar al Pokémon sin objeto, es el catalizador óptimo para activar Liviano de forma controlada.',
+    ],
+    commonMisconceptions: [
+      'La Hierba Blanca NO aumenta la Velocidad directamente: restaura las defensas y se consume; es la pérdida del objeto lo que activa Liviano.',
+      'No devuelve las estadísticas a sus valores base absolutos, sino que restablece a 0 las etapas negativas de modificación de estadísticas.',
+    ],
+  },
+  'air-balloon': {
+    id: 'air-balloon',
+    name: 'air-balloon',
+    canonicalName: 'Air Balloon (Globo Helio)',
+    isConsumption: false,
+    mechanics: [
+      'Otorga inmunidad total a movimientos y peligros de tipo Tierra (como Terremoto o Púas) mientras permanezca intacto.',
+      'Se pierde (estalla) cuando el portador recibe daño directo de un movimiento de ataque rival.',
+    ],
+    conditions: [
+      'No se pierde por daño indirecto (clima, veneno, quemadura, vidaesfera).',
+      'Requiere recibir un ataque ofensivo directo para estallar.',
+    ],
+    competitiveImplications: [
+      'Otorga oportunidades seguras de cambio ante atacantes de tipo Tierra.',
+      'Su pérdida al recibir daño puede activar Liviano como vía secundaria o alternativa.',
+    ],
+    commonMisconceptions: [
+      'El Globo Helio NO se consume; se pierde por estallido tras recibir daño directo.',
+      'El Globo Helio NO activa Liviano de forma universal ni garantizada al inicio; depende de recibir daño para estallar.',
+    ],
+  },
+  'sitrus-berry': {
+    id: 'sitrus-berry',
+    name: 'sitrus-berry',
+    canonicalName: 'Sitrus Berry (Baya Zidra)',
+    isConsumption: true,
+    mechanics: [
+      'Restaura automáticamente un 25% de los PS máximos del portador cuando su salud cae al 50% o menos.',
+      'Se consume en el proceso, dejando al portador sin objeto.',
+    ],
+    conditions: [
+      'Requiere que los PS caigan al 50% o menos para activarse.',
+    ],
+    competitiveImplications: [
+      'Proporciona supervivencia crucial para resistir un golpe y contraatacar.',
+      'Al consumirse, activa Liviano como alternativa defensiva/reactiva.',
+    ],
+    commonMisconceptions: [
+      'La Baya Zidra NO debe desplazar a Hierba Blanca + A Bocajarro como estrategia prioritaria de Sneasler; pertenece a la categoría de alternativas.',
+      'No se activa si el Pokémon es debilitado de un solo golpe desde más del 50% de PS.',
+    ],
+  },
 }
 
 /**
@@ -128,6 +476,12 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
       label: 'Excelente',
       source: 'deterministic',
     },
+    relevantMoves: [
+      CANONICAL_MOVE_KNOWLEDGE['solar-beam'],
+      CANONICAL_MOVE_KNOWLEDGE['giga-drain'],
+      CANONICAL_MOVE_KNOWLEDGE['trick-room'],
+      CANONICAL_MOVE_KNOWLEDGE['sucker-punch'],
+    ],
     prohibitedClaims: [
       'activa lluvia',
       'activa tormenta de arena',
@@ -411,6 +765,46 @@ const CANONICAL_KNOWLEDGE_BASE: Record<string, Partial<VerifiedAbilityFacts>> = 
       'obligatorio para sneasler',
       'la mejor estrategia en todos los formatos',
     ],
+    verifiedCounterplay: [
+      {
+        tool: 'Golpe Bajo (Sucker Punch)',
+        mechanism: 'Movimiento de prioridad +1 de tipo Siniestro. Opera mediante el sistema de prioridad, independiente del valor de Velocidad del objetivo.',
+        consequence: 'Puede actuar antes que Sneasler aunque su Velocidad esté duplicada por Liviano, porque la prioridad se resuelve antes de comparar Velocidad.',
+        constraints: 'Golpe Bajo solo tiene éxito si el objetivo va a ejecutar ese mismo turno un movimiento que cause daño directo. Si el objetivo usa un movimiento de estado, cambia o no ejecuta una acción ofensiva compatible, Golpe Bajo falla. NO afirmar que Golpe Bajo siempre golpea primero ni que supera la Velocidad de Sneasler: no depende de la Velocidad, sino del sistema de prioridad.',
+      },
+      {
+        tool: 'Espacio Raro (Trick Room)',
+        mechanism: 'Altera el orden en que actúan los Pokémon según sus valores de Velocidad durante 5 turnos: dentro de cada nivel de prioridad, actúa primero el Pokémon con menor Velocidad.',
+        consequence: 'Bajo Espacio Raro, la Velocidad elevada de Sneasler activa con Liviano lo convierte en desventaja táctica dentro de su nivel de prioridad, ya que actuará después que rivales más lentos.',
+        constraints: 'Espacio Raro NO desactiva ni anula Liviano. La habilidad sigue activa y el multiplicador x2 de Velocidad sigue aplicándose. Lo que cambia es cómo esa Velocidad participa en el orden de acciones. Los movimientos de prioridad (como Golpe Bajo) siguen resolviendo por su sistema de prioridad habitual incluso bajo Espacio Raro.',
+      },
+      {
+        tool: 'Desarme (Knock Off)',
+        mechanism: 'Movimiento de tipo Siniestro que elimina el objeto equipado del objetivo antes de calcular el daño.',
+        consequence: 'Si Sneasler lleva el objeto que planea consumir para activar Liviano, Desarme puede provocar la pérdida del objeto antes del turno previsto. Al perder el objeto, Liviano puede activarse en ese momento según las condiciones habituales.',
+        constraints: 'Desarme NO impide ni bloquea Liviano. La pérdida del objeto mediante Desarme cumple la condición de activación de Liviano. El efecto depende del contexto: si Sneasler no lleva objeto, Desarme no tiene efecto sobre la activación. NO afirmar que Desarme fuerza una activación prematura de Liviano en términos absolutos sin precisar el contexto.',
+      },
+    ],
+    verifiedPriorityMechanics: [
+      {
+        moveName: 'Golpe Bajo (Sucker Punch)',
+        priorityValue: 1,
+        condition: 'El objetivo debe ejecutar ese mismo turno un movimiento que cause daño directo. Si el objetivo usa un movimiento de estado, cambia o no realiza una acción ofensiva compatible, el movimiento falla.',
+        explanation: 'La prioridad +1 permite actuar antes que movimientos de prioridad 0 (prioridad estándar) independientemente de los valores de Velocidad. El aumento de Velocidad de Liviano no modifica este sistema: Golpe Bajo sigue actuando primero porque opera en un nivel de prioridad diferente, no porque sea más rápido en términos de Velocidad.',
+        commonMisconception: 'NO afirmar que Golpe Bajo "supera la Velocidad", "es más rápido que Sneasler" o "contrarresta la Velocidad de Liviano". La Velocidad y la prioridad son sistemas independientes.',
+      },
+    ],
+    relevantMoves: [
+      CANONICAL_MOVE_KNOWLEDGE['close-combat'],
+      CANONICAL_MOVE_KNOWLEDGE['sucker-punch'],
+      CANONICAL_MOVE_KNOWLEDGE['trick-room'],
+      CANONICAL_MOVE_KNOWLEDGE['knock-off'],
+    ],
+    relevantItems: [
+      CANONICAL_ITEM_KNOWLEDGE['white-herb'],
+      CANONICAL_ITEM_KNOWLEDGE['air-balloon'],
+      CANONICAL_ITEM_KNOWLEDGE['sitrus-berry'],
+    ],
   },
   guts: {
     name: 'guts',
@@ -453,6 +847,70 @@ function toAbilitySlug(name: string): string {
 }
 
 /**
+ * Obtiene los hechos verificados de un movimiento catalogado.
+ */
+export function getVerifiedMoveFacts(moveIdOrName: string): VerifiedMoveFacts | undefined {
+  const norm = moveIdOrName.toLowerCase().trim().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '')
+  return CANONICAL_MOVE_KNOWLEDGE[norm] || Object.values(CANONICAL_MOVE_KNOWLEDGE).find(
+    (m) => m.name.toLowerCase() === norm || m.canonicalName.toLowerCase().includes(norm),
+  )
+}
+
+/**
+ * Obtiene los hechos verificados de un objeto catalogado.
+ */
+export function getVerifiedItemFacts(itemIdOrName: string): VerifiedItemFacts | undefined {
+  const norm = itemIdOrName.toLowerCase().trim().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '')
+  return CANONICAL_ITEM_KNOWLEDGE[norm] || Object.values(CANONICAL_ITEM_KNOWLEDGE).find(
+    (it) => it.name.toLowerCase() === norm || it.canonicalName.toLowerCase().includes(norm),
+  )
+}
+
+/**
+ * Determina los movimientos verificados relevantes para el análisis de una habilidad/Pokémon.
+ */
+export function getRelevantMoveFacts(abilityName: string, pokemonName?: string): VerifiedMoveFacts[] {
+  const normAbility = (abilityName || '').toLowerCase().trim()
+  const normPokemon = (pokemonName || '').toLowerCase().trim()
+  const list: VerifiedMoveFacts[] = []
+
+  if (normAbility === 'unburden' || normPokemon === 'sneasler') {
+    list.push(
+      CANONICAL_MOVE_KNOWLEDGE['close-combat'],
+      CANONICAL_MOVE_KNOWLEDGE['sucker-punch'],
+      CANONICAL_MOVE_KNOWLEDGE['trick-room'],
+      CANONICAL_MOVE_KNOWLEDGE['knock-off'],
+    )
+  } else if (normAbility === 'drought' || normPokemon === 'torkoal') {
+    list.push(
+      CANONICAL_MOVE_KNOWLEDGE['solar-beam'],
+      CANONICAL_MOVE_KNOWLEDGE['giga-drain'],
+      CANONICAL_MOVE_KNOWLEDGE['trick-room'],
+      CANONICAL_MOVE_KNOWLEDGE['sucker-punch'],
+    )
+  }
+  return list
+}
+
+/**
+ * Determina los objetos verificados relevantes para el análisis de una habilidad/Pokémon.
+ */
+export function getRelevantItemFacts(abilityName: string, pokemonName?: string): VerifiedItemFacts[] {
+  const normAbility = (abilityName || '').toLowerCase().trim()
+  const normPokemon = (pokemonName || '').toLowerCase().trim()
+  const list: VerifiedItemFacts[] = []
+
+  if (normAbility === 'unburden' || normPokemon === 'sneasler') {
+    list.push(
+      CANONICAL_ITEM_KNOWLEDGE['white-herb'],
+      CANONICAL_ITEM_KNOWLEDGE['air-balloon'],
+      CANONICAL_ITEM_KNOWLEDGE['sitrus-berry'],
+    )
+  }
+  return list
+}
+
+/**
  * Construye hechos verificados objetivos para cualquier habilidad dada.
  * Combina el registro curado y análisis heurístico de descripción oficial.
  */
@@ -460,6 +918,7 @@ export function buildVerifiedAbilityFacts(
   abilityName: string,
   abilityDescription?: string,
   localizedAbilityName?: string,
+  pokemonName?: string,
 ): VerifiedAbilityFacts {
   const slug = toAbilitySlug(abilityName)
 
@@ -484,6 +943,10 @@ export function buildVerifiedAbilityFacts(
       verifiedConditions: base.verifiedConditions || [],
       verifiedSynergies: base.verifiedSynergies || [],
       verifiedActivations: base.verifiedActivations || [],
+      verifiedCounterplay: base.verifiedCounterplay || [],
+      verifiedPriorityMechanics: base.verifiedPriorityMechanics || [],
+      relevantMoves: base.relevantMoves || getRelevantMoveFacts(slug, pokemonName),
+      relevantItems: base.relevantItems || getRelevantItemFacts(slug, pokemonName),
       prohibitedClaims: base.prohibitedClaims || [],
     }
   }
@@ -518,6 +981,8 @@ export function buildVerifiedAbilityFacts(
     },
     activation: 'Condiciones descritas en el juego oficial.',
     category: isHindrance ? 'hindrance' : 'utility',
+    relevantMoves: getRelevantMoveFacts(slug, pokemonName),
+    relevantItems: getRelevantItemFacts(slug, pokemonName),
     prohibitedClaims,
   }
 }

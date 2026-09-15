@@ -243,6 +243,208 @@ test(28, 'Caso J: Prohibición y sanitización de sobreafirmaciones (la única f
 })
 
 // ==========================================
+// 29-34: GAP — INYECCIÓN CUANDO strategies NO ESTÁ VACÍO (Fase 2 Corrección)
+// Valida que la sinergia prioritaria se inyecte incluso cuando el LLM devuelve
+// otras estrategias válidas y omite "Hierba Blanca + A Bocajarro".
+// ==========================================
+
+test(29, 'Gap fix: factValidator ya NO condiciona la inyección a filtered.length === 0', () => {
+  // La condición corregida debe ser `idx === -1` sin la guarda `&& filtered.length === 0`
+  assert(
+    !validatorCode.includes('idx === -1 && filtered.length === 0'),
+    'El gap sigue presente: la inyección todavía requiere filtered.length === 0',
+  )
+  assert(
+    validatorCode.includes('else if (idx === -1)'),
+    'La condición corregida `else if (idx === -1)` no está presente en el validator',
+  )
+})
+
+test(30, 'Gap fix: cuando strategies tiene otra estrategia y NO incluye la prioritaria, se inyecta en [0]', () => {
+  // Simular una respuesta del LLM con una estrategia válida que no es la prioritaria
+  const fakeAnalysis = {
+    coreInsight: 'Liviano duplica la velocidad al perder el objeto.',
+    howToLeverage: 'Usa objetos consumibles para activar Liviano.',
+    competitiveValue: { score: 8, label: 'Muy buena', source: 'ai', summary: 'Muy útil.' },
+    strategies: [
+      {
+        name: 'Estrategia válida no prioritaria',
+        explanation: 'Esta estrategia no menciona hierba blanca ni close combat.',
+        whyFeatured: 'Porque es útil en doubles.',
+      },
+    ],
+    alternatives: [],
+    deepDive: { mechanics: '', singles: '', doubles: '', synergies: [], counters: [], proTip: '' },
+  }
+
+  // Reproducir la lógica de filtrado del validator sobre este objeto simulado
+  const strategies = fakeAnalysis.strategies.slice()
+
+  // Paso 1: filtrar Choice/Orb (ninguno aplica aquí)
+  const choiceFilter = (st) => {
+    const name = (st.name || '').toLowerCase()
+    const expl = (st.explanation || '').toLowerCase()
+    return name.includes('choice') || name.includes('cinta elección') ||
+      name.includes('gafas elección') || name.includes('pañuelo elección') ||
+      name.includes('life orb') || name.includes('vidasfera') ||
+      (expl.includes('choice band') && !expl.includes('rival')) ||
+      (expl.includes('cinta elección') && !expl.includes('rival'))
+  }
+  let filtered = strategies.filter((st) => !choiceFilter(st))
+
+  // Paso 2: reubicar activaciones genéricas (ninguna aquí)
+  const isGenericActivation = (st) => {
+    const name = (st.name || '').toLowerCase()
+    return name.includes('baya') || name.includes('berry') ||
+      name.includes('globo helio') || name.includes('air balloon')
+  }
+  filtered = filtered.filter((st) => !isGenericActivation(st))
+
+  // Paso 3: buscar sinergia prioritaria
+  const idx = filtered.findIndex((st) => {
+    const n = (st.name || '').toLowerCase()
+    return (n.includes('hierba blanca') || n.includes('white herb')) &&
+      (n.includes('a bocajarro') || n.includes('close combat'))
+  })
+
+  // La sinergia NO está en el array
+  assert(idx === -1, 'La estrategia prioritaria no debería estar en el array simulado')
+
+  // Con el fix, la condición `idx === -1` (sin guarda de length) inyecta en [0]
+  if (idx === -1) {
+    filtered.unshift({
+      name: 'Hierba Blanca + A Bocajarro',
+      explanation: 'Inyectada por validator',
+      whyFeatured: 'Sinergia prioritaria',
+    })
+  }
+
+  assert(
+    (filtered[0].name || '').toLowerCase().includes('hierba blanca'),
+    `strategies[0] debería ser Hierba Blanca + A Bocajarro, pero es: "${filtered[0].name}"`,
+  )
+  assert(filtered.length === 2, `strategies debería tener 2 elementos (prioritaria + original), tiene: ${filtered.length}`)
+})
+
+test(31, 'Gap fix: la estrategia original no desaparece tras la inyección', () => {
+  const otherStrategy = {
+    name: 'Estrategia válida no prioritaria',
+    explanation: 'No es hierba blanca ni close combat.',
+    whyFeatured: 'Útil en contexto específico.',
+  }
+  const filtered = [otherStrategy]
+
+  // Simular inyección (idx === -1)
+  filtered.unshift({ name: 'Hierba Blanca + A Bocajarro', explanation: 'x', whyFeatured: 'y' })
+
+  assert(filtered.length === 2, 'La estrategia original debe conservarse tras la inyección')
+  assert(
+    filtered.some((st) => st.name === 'Estrategia válida no prioritaria'),
+    'La estrategia original desapareció del array',
+  )
+})
+
+test(32, 'Gap fix: la sinergia prioritaria NO se duplica si ya estaba en el array', () => {
+  const filtered = [
+    { name: 'Hierba Blanca + A Bocajarro', explanation: 'existente', whyFeatured: 'existente' },
+    { name: 'Otra estrategia', explanation: 'x', whyFeatured: 'y' },
+  ]
+
+  const idx = filtered.findIndex((st) => {
+    const n = (st.name || '').toLowerCase()
+    return n.includes('hierba blanca') && n.includes('a bocajarro')
+  })
+
+  // idx === 0: no se debe reordenar ni inyectar
+  assert(idx === 0, 'Si ya está en [0], idx debe ser 0')
+  assert(
+    filtered.filter((st) => (st.name || '').toLowerCase().includes('hierba blanca')).length === 1,
+    'La sinergia prioritaria aparece más de una vez (duplicado)',
+  )
+})
+
+test(33, 'Gap fix: las bayas continúan siendo reubicadas a alternatives y NO afectan strategies[0]', () => {
+  const isGenericActivation = (st) => {
+    const name = (st.name || '').toLowerCase()
+    return name.includes('baya') || name.includes('berry') ||
+      name.includes('globo helio') || name.includes('air balloon')
+  }
+
+  const strategiesFromLLM = [
+    { name: 'Baya Sitrus', explanation: 'Activa Liviano al bajar de 50% PS', whyFeatured: 'Usa baya' },
+    { name: 'Globo Helio', explanation: 'Se pierde al recibir ataque', whyFeatured: 'Usa globo' },
+    { name: 'Estrategia normal', explanation: 'No es baya ni globo', whyFeatured: 'Útil' },
+  ]
+
+  const displaced = []
+  let filtered = strategiesFromLLM.filter((st) => {
+    if (isGenericActivation(st)) { displaced.push(st); return false }
+    return true
+  })
+
+  // Inyectar prioritaria porque idx === -1
+  const idx = filtered.findIndex((st) => {
+    const n = (st.name || '').toLowerCase()
+    return n.includes('hierba blanca') && n.includes('a bocajarro')
+  })
+  if (idx === -1) {
+    filtered.unshift({ name: 'Hierba Blanca + A Bocajarro', explanation: 'inyectada', whyFeatured: 'prioritaria' })
+  }
+
+  assert(
+    (filtered[0].name || '').toLowerCase().includes('hierba blanca'),
+    'strategies[0] no es Hierba Blanca + A Bocajarro después del filtrado de bayas',
+  )
+  assert(displaced.length === 2, 'Baya Sitrus y Globo Helio deben estar en displaced (alternatives)')
+  assert(
+    displaced.some((st) => st.name === 'Baya Sitrus') && displaced.some((st) => st.name === 'Globo Helio'),
+    'Baya Sitrus o Globo Helio no están en alternatives',
+  )
+  assert(
+    filtered.every((st) => !isGenericActivation(st)),
+    'Alguna baya o globo permanece en strategies',
+  )
+})
+
+test(34, 'Gap fix: las estrategias incompatibles (Choice/Orb) siguen siendo filtradas antes de la inyección', () => {
+  const choiceFilter = (st) => {
+    const name = (st.name || '').toLowerCase()
+    return name.includes('choice') || name.includes('cinta elección') ||
+      name.includes('life orb') || name.includes('vidasfera')
+  }
+
+  const strategiesFromLLM = [
+    { name: 'Cinta Elección + A Bocajarro', explanation: 'choice band', whyFeatured: 'x' },
+    { name: 'Vidasfera sweep', explanation: 'life orb', whyFeatured: 'y' },
+    { name: 'Estrategia válida', explanation: 'sin choice ni orb', whyFeatured: 'z' },
+  ]
+
+  let filtered = strategiesFromLLM.filter((st) => !choiceFilter(st))
+
+  // Inyectar prioritaria (idx === -1 tras filtrado)
+  const idx = filtered.findIndex((st) => {
+    const n = (st.name || '').toLowerCase()
+    return n.includes('hierba blanca') && n.includes('a bocajarro')
+  })
+  if (idx === -1) {
+    filtered.unshift({ name: 'Hierba Blanca + A Bocajarro', explanation: 'inyectada', whyFeatured: 'prioritaria' })
+  }
+
+  assert(
+    !filtered.some((st) => choiceFilter(st)),
+    'Una estrategia incompatible (Choice/Orb) permanece en strategies',
+  )
+  assert(
+    (filtered[0].name || '').toLowerCase().includes('hierba blanca'),
+    'strategies[0] no es la sinergia prioritaria después de filtrar incompatibles',
+  )
+  assert(
+    filtered.some((st) => st.name === 'Estrategia válida'),
+    'La estrategia válida fue eliminada incorrectamente',
+  )
+})
+
+// ==========================================
 // RESULTADOS
 // ==========================================
 

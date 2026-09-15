@@ -517,7 +517,8 @@ Deno.serve(async (req: Request) => {
     const abilityName = payload.ability?.name || ''
     const abilityDesc = payload.ability?.description || ''
     const abilityLocalName = payload.ability?.localizedName || ''
-    const verifiedFacts = buildVerifiedAbilityFacts(abilityName, abilityDesc, abilityLocalName)
+    const pokemonName = payload.pokemon?.name || ''
+    const verifiedFacts = buildVerifiedAbilityFacts(abilityName, abilityDesc, abilityLocalName, pokemonName)
 
     // 6. Normalización y validación estricta de parámetros contextuales V2
     const pokemonId = String(payload.pokemon?.name || payload.pokemon?.id || '')

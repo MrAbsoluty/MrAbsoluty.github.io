@@ -833,10 +833,10 @@ function PokemonDetail({
                           type="button"
                           className="ability-ai-action-btn"
                           onClick={(e) => handleAbilityAIAnalysis(e, activeSelectedAbility)}
-                          aria-label={t.aiAnalysis?.analyzeButton || '✨ Analizar con IA'}
+                          aria-label={t.aiAnalysis?.analyzeButton || 'Analizar con IA'}
                         >
                           <span className="ability-ai-btn-sparkle" aria-hidden="true">✨</span>
-                          <span>{t.aiAnalysis?.analyzeButton || '✨ Analizar con IA'}</span>
+                          <span>{t.aiAnalysis?.analyzeButton || 'Analizar con IA'}</span>
                         </button>
                       </div>
                     </div>

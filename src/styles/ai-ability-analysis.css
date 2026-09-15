@@ -1573,33 +1573,85 @@
 }
 
 .ctx-badge-art {
-  width: 48px;
-  height: 48px;
+  height: 52px;
+  min-width: 52px;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.ctx-badge-art.ctx-art-has-logo {
+  padding: 4px 10px;
+  width: auto;
+  max-width: 125px;
 }
 
 .context-option-card:hover .ctx-badge-art {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
 .ctx-art-champions {
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(180, 83, 9, 0.08) 100%);
+  border-color: rgba(245, 158, 11, 0.38);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.context-option-card:hover .ctx-art-champions {
+  border-color: rgba(245, 158, 11, 0.65);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25), 0 0 12px rgba(245, 158, 11, 0.2);
 }
 
 .ctx-art-showdown {
-  background: rgba(59, 130, 246, 0.14);
-  border-color: rgba(59, 130, 246, 0.35);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16) 0%, rgba(29, 78, 216, 0.08) 100%);
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.context-option-card:hover .ctx-art-showdown {
+  border-color: rgba(59, 130, 246, 0.65);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25), 0 0 12px rgba(59, 130, 246, 0.2);
 }
 
 .ctx-art-general {
-  background: rgba(237, 109, 93, 0.14);
-  border-color: rgba(237, 109, 93, 0.35);
+  width: 52px;
+  background: linear-gradient(135deg, rgba(237, 109, 93, 0.16) 0%, rgba(185, 28, 28, 0.08) 100%);
+  border-color: rgba(237, 109, 93, 0.38);
+  box-shadow: 0 4px 16px rgba(237, 109, 93, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.context-option-card:hover .ctx-art-general {
+  border-color: rgba(237, 109, 93, 0.65);
+  box-shadow: 0 6px 20px rgba(237, 109, 93, 0.25), 0 0 12px rgba(237, 109, 93, 0.2);
+}
+
+.ctx-logo-img {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  image-rendering: -webkit-optimize-contrast;
+  user-select: none;
+  pointer-events: none;
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.ctx-logo-champions {
+  height: 42px;
+  max-width: 96px;
+}
+
+.ctx-logo-showdown {
+  height: 30px;
+  max-width: 110px;
+}
+
+.context-option-card:hover .ctx-logo-img {
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.6));
 }
 
 .ctx-svg-art {
@@ -1710,9 +1762,22 @@
 }
 
 .context-formats-platform-chip .ctx-badge-art {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: auto;
+  height: 28px;
+  min-width: 28px;
+  max-width: 65px;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.context-formats-platform-chip .ctx-logo-champions {
+  height: 20px;
+  max-width: 46px;
+}
+
+.context-formats-platform-chip .ctx-logo-showdown {
+  height: 15px;
+  max-width: 50px;
 }
 
 .context-formats-platform-chip .ctx-svg-art {
@@ -1859,6 +1924,25 @@
 
   .context-option-top {
     margin-bottom: 8px;
+  }
+
+  .ctx-badge-art {
+    height: 46px;
+    min-width: 46px;
+  }
+
+  .ctx-art-general {
+    width: 46px;
+  }
+
+  .ctx-logo-champions {
+    height: 36px;
+    max-width: 82px;
+  }
+
+  .ctx-logo-showdown {
+    height: 25px;
+    max-width: 95px;
   }
 
   .context-option-name {

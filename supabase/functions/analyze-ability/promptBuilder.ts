@@ -380,6 +380,37 @@ export function buildVerifiedFactsSection(facts?: VerifiedAbilityFacts): string 
     activationsBlock = `\n\n[MECANISMOS DE ACTIVACIÓN VERIFICADOS]\n${facts.verifiedActivations.map((a) => `- ${a.trigger}: ${a.itemOrCondition} (${a.isConsumption ? 'Consumo' : 'Pérdida - NO consumo'}). ${a.explanation} ${a.constraints || ''}`).join('\n')}`
   }
 
+  let counterplayBlock = ''
+  if (facts.verifiedCounterplay && facts.verifiedCounterplay.length > 0) {
+    counterplayBlock = `\n\n[COUNTERPLAY VERIFICADO]\nLas siguientes herramientas de respuesta del rival están verificadas mecánicamente. Cada una sigue la estructura: Herramienta → Mecanismo → Consecuencia → Restricciones.\n${facts.verifiedCounterplay.map((c) => `- ${c.tool}
+  Mecanismo: ${c.mechanism}
+  Consecuencia: ${c.consequence}
+  Restricciones: ${c.constraints || 'Ninguna adicional.'}`).join('\n\n')}`
+  }
+
+  let priorityBlock = ''
+  if (facts.verifiedPriorityMechanics && facts.verifiedPriorityMechanics.length > 0) {
+    priorityBlock = `\n\n[MECÁNICAS DE PRIORIDAD VERIFICADAS]\nLos siguientes movimientos utilizan el sistema de prioridad, independiente de la Velocidad:\n${facts.verifiedPriorityMechanics.map((p) => `- ${p.moveName} (Prioridad ${p.priorityValue > 0 ? `+${p.priorityValue}` : p.priorityValue}): ${p.explanation}${p.condition ? ` Condición: ${p.condition}` : ''}${p.commonMisconception ? ` MALENTENDIDO A EVITAR: ${p.commonMisconception}` : ''}`).join('\n')}`
+  }
+
+  let movesBlock = ''
+  if (facts.relevantMoves && facts.relevantMoves.length > 0) {
+    movesBlock = `\n\n[MOVIMIENTOS VERIFICADOS (VERIFIED MOVES)]\nLos siguientes movimientos están verificados mecánicamente por el Knowledge Layer. La IA debe respetar estrictamente sus propiedades:\n${facts.relevantMoves.map((m) => `- ${m.canonicalName} (${m.type.toUpperCase()}, ${m.category.toUpperCase()}, Prioridad ${m.priority > 0 ? `+${m.priority}` : m.priority}${m.isChargeMove ? ', Movimiento de carga' : ''}):
+  * Mecánica: ${m.mechanics.join(' ')}
+  * Condiciones: ${m.conditions.join(' ')}
+  * Implicación competitiva: ${m.competitiveImplications.join(' ')}
+  * MALENTENDIDOS PROHIBIDOS: ${m.commonMisconceptions.join(' ')}`).join('\n')}`
+  }
+
+  let itemsBlock = ''
+  if (facts.relevantItems && facts.relevantItems.length > 0) {
+    itemsBlock = `\n\n[OBJETOS VERIFICADOS (VERIFIED ITEMS)]\nLos siguientes objetos están verificados mecánicamente por el Knowledge Layer:\n${facts.relevantItems.map((it) => `- ${it.canonicalName} (${it.isConsumption ? 'Consumible' : 'No consumible - se pierde bajo condición'}):
+  * Mecánica: ${it.mechanics.join(' ')}
+  * Condiciones: ${it.conditions.join(' ')}
+  * Implicación competitiva: ${it.competitiveImplications.join(' ')}
+  * MALENTENDIDOS PROHIBIDOS: ${it.commonMisconceptions.join(' ')}`).join('\n')}`
+  }
+
   return `
 [HECHOS VERIFICADOS OBLIGATORIOS (KNOWLEDGE LAYER - VERIFIED FACTS)]
 Los siguientes datos son inmutables y la ÚNICA fuente de verdad para este análisis:
@@ -391,7 +422,7 @@ Los siguientes datos son inmutables y la ÚNICA fuente de verdad para este anál
 - Activación: ${facts.activation}
 - Categoría táctica: ${facts.category}${conditionsBlock}
 ${ratingHint}
-- AFIRMACIONES ESTRICTAMENTE PROHIBIDAS: ${prohibitedStr}${synergiesBlock}${activationsBlock}
+- AFIRMACIONES ESTRICTAMENTE PROHIBIDAS: ${prohibitedStr}${synergiesBlock}${activationsBlock}${counterplayBlock}${priorityBlock}${movesBlock}${itemsBlock}
 
 REGLAS FACTUALES Y DE SINERGIAS OBLIGATORIAS:
 1. No puedes contradecir, modificar ni reinterpretar estos hechos verificados.
@@ -408,6 +439,7 @@ REGLAS FACTUALES Y DE SINERGIAS OBLIGATORIAS:
 12. En los consejos avanzados o proTip, no formules prohibiciones absolutas (ej. "evita equipar X"); formula pedagógicamente el principio: "Si buscas activar Liviano mediante la pérdida del objeto, necesitas utilizar un objeto que pueda perderse o consumirse durante el combate".
 13. PRIORIDAD DE SINERGIA DESTACADA: Las sinergias verificadas marcadas como prioritarias tienen preferencia absoluta sobre mecanismos de activación genéricos al seleccionar 'strategies'. Para Liviano en Sneasler, la sinergia prioritaria 'Hierba Blanca + A Bocajarro' DEBE aparecer como la primera estrategia destacada (strategies[0]). Los mecanismos de activación genéricos (como Bayas o Globo Helio) NO deben desplazar a la sinergia destacada principal; deben ubicarse en 'alternatives' cuando sean relevantes.
 14. NO SOBREAFIRMAR: La prioridad de una estrategia destacada NO significa afirmar que sea la única forma de jugar, obligatoria para el Pokémon, o la mejor en todos los formatos. Preséntala con rigor como una interacción destacada y verificada que optimiza la activación de la habilidad de forma controlada.
+15. PRECISIÓN DE MOVIMIENTOS Y OBJETOS: NUNCA confundas Rayo Solar con Gigadrenado (Rayo Solar es un movimiento de carga de 2 turnos que omite carga en Sol o con Hierba Única y no cura; Gigadrenado es un ataque directo de 1 turno que cura el 50% del daño y nunca requiere carga). NUNCA afirmes que la Hierba Blanca aumenta directamente la Velocidad (restaura las defensas y se consume, siendo este consumo lo que activa Liviano).
 `
 }
 
@@ -456,12 +488,67 @@ DIRECTRICES ESTRATÉGICAS PARA NIVEL AVANZADO (advanced):
 `
   } else if (userLevel === 'competitive') {
     pedagogicalGuidance = `
-DIRECTRICES DE ÉLITE PARA NIVEL COMPETITIVO (competitive):
-- Objetivo: Usuario avanzado/competitivo y jugador de torneos.
-- Utiliza terminología técnica completa y análisis profundo.
-- Analiza el metajuego específico, roles, teambuilding, distribución de amenazas, daño relativo y counterplay óptimo.
-- Asume conocimientos previos avanzados sin explicaciones introductorias.
-- Ejemplo de adaptación: "Liviano proporciona un multiplicador de ×2 a la Velocidad tras la pérdida del objeto, permitiendo alcanzar benchmarks relevantes y convertir ciertas interacciones de consumo o remoción de objeto en una condición de snowball."
+DIRECTRICES DE ÉLITE Y PRECISIÓN PARA NIVEL COMPETITIVO (competitive):
+- Objetivo: Usuario avanzado, analista y competidor de torneos.
+- PRINCIPIO DE PRECISIÓN Y DENSIDAD INFORMATIVA:
+  * La profundidad competitiva NO se logra extendiendo la respuesta con relleno, sino maximizando el valor analítico por frase.
+  * Cuando la información disponible lo permita, explica la cadena causal completa:
+    Mecánica → Condición de activación → Consecuencia práctica → Valor competitivo → Counterplay legítimo.
+  * Asume conocimientos avanzados completos; no incluyas definiciones básicas ni explicaciones obvias.
+- CRITERIOS OBLIGATORIOS PARA EL VALOR COMPETITIVO:
+  * Toda afirmación sobre el valor competitivo debe identificar, cuando sea posible:
+    1. Qué ventaja concreta proporciona la habilidad.
+    2. Bajo qué condición exacta se obtiene.
+    3. Qué tipo de situación competitiva aprovecha.
+    4. Qué formas de counterplay pueden limitarla.
+  * NO utilices afirmaciones como "supera a muchos rivales", "extremadamente rápido" o "amenaza decisiva" si no se acompañan de una explicación concreta y causal.
+  * Si no existe información verificada suficiente para identificar amenazas concretas, NO inventes nombres de Pokémon, benchmarks ni Speed tiers: en ese caso, describe la ventaja de forma estrictamente mecánica y condicional.
+- REDUCCIÓN DE LENGUAJE VAGO E HIPERBÓLICO:
+  * Evita expresiones genéricas o imprecisas como: "muchos rivales", "muchos Pokémon", "muy rápido", "extremadamente rápido", "muy fuerte", "muy poderoso", "muy útil", "gran ventaja", "amenaza enorme", "amenaza decisiva", "puede barrer fácilmente", "supera a casi todo".
+  * Sustitúyelas por formulaciones condicionales, contextuales y mecánicas exactas (ej. "superar a amenazas que dependen de su Velocidad natural para actuar primero", "ofrece una ventana ofensiva favorable mientras permanezca sin objeto").
+- PROHIBICIÓN ESTRICTA DE INVENTAR PRECISIÓN (NO ALUCINAR DATOS TÉCNICOS):
+  * NUNCA inventes datos que no figuren en el contexto verificado: Speed tiers, speed benchmarks numéricos, EV spreads, IVs, cálculos de daño, porcentajes, estadísticas, rankings, tiers, usage rates, matchups específicos, sets competitivos o probabilidades de simulación.
+  * La precisión competitiva debe provenir del rigor de las mecánicas y condiciones reales, NUNCA de fabricar números o estadísticas arbitrarias.
+- CONDICIONES COMPETITIVAS Y EVITACIÓN DE ABSOLUTOS:
+  * Evita absolutos injustificados como: "siempre", "nunca", "garantiza", "imparable", "invencible", "asegura la victoria", "anula completamente", "obliga al rival".
+  * Prefiere formulaciones matizadas y condicionales: "mientras permanezca sin objeto", "si el rival depende de su Velocidad para actuar primero", "si no existe control de Velocidad", "si el rival no dispone de prioridad relevante", "tiende a", "depende de", "es vulnerable a", "pierde eficacia ante".
+- DISTINCIÓN RIGUROSA ENTRE VELOCIDAD, PRIORIDAD Y SPEED CONTROL:
+  * Velocidad y prioridad de movimientos son sistemas completamente independientes. NUNCA describas la prioridad como una forma de superar, igualar o contraatacar la Velocidad.
+  * La Velocidad determina el orden entre acciones dentro del mismo nivel de prioridad. Un movimiento con prioridad positiva se ejecuta antes que uno de prioridad inferior con independencia total de los valores de Velocidad de los Pokémon involucrados.
+  * NUNCA afirmes que un aumento de Velocidad permite superar movimientos prioritarios.
+  * NUNCA afirmes que Golpe Bajo (Sucker Punch) "supera la Velocidad de Sneasler", "es más rápido que Sneasler" o "contrarresta la Velocidad de Liviano". La razón correcta es que Golpe Bajo usa prioridad +1, no que supere en Velocidad. Sin embargo, Golpe Bajo tiene su propia condición: solo funciona si el objetivo va a ejecutar un movimiento que cause daño directo ese mismo turno.
+  * Al mencionar Espacio Raro (Trick Room): NO lo describas como "reduce la Velocidad", "desactiva Liviano" ni "anula la habilidad". La formulación correcta es: Trick Room altera el orden en que actúan los Pokémon según sus valores de Velocidad dentro de cada nivel de prioridad (actúan primero los de menor Velocidad relativa), convirtiendo una Velocidad elevada en desventaja táctica durante su duración. Liviano sigue activo; lo que cambia es cómo esa Velocidad participa en el orden de acción.
+  * Espacio Raro NO afecta el sistema de prioridad de movimientos: Golpe Bajo sigue siendo un movimiento de prioridad +1 incluso bajo Espacio Raro.
+- REGLAS ESPECÍFICAS DE COUNTERPLAY CAUSAL (estructura obligatoria):
+  * Al describir una herramienta de counterplay, sigue siempre esta estructura: Herramienta → Mecanismo → Consecuencia → Restricción o condición.
+  * Golpe Bajo / Sucker Punch: prioridad +1 → actúa antes que movimientos de prioridad 0 → puede dañar a Sneasler antes de que actúe → pero solo si Sneasler va a usar un movimiento de daño directo ese turno; falla si Sneasler usa movimiento de estado, cambia o no realiza una acción ofensiva compatible.
+  * Espacio Raro / Trick Room: altera el orden basado en Velocidad dentro de cada nivel de prioridad → Sneasler con Velocidad alta actúa después de rivales más lentos → reduce la ventaja práctica de la duplicación de Velocidad mientras Trick Room esté activo.
+  * Desarme / Knock Off: elimina el objeto equipado → puede activar Liviano prematuramente si Sneasler llevaba el objeto planeado para la activación → pero NO impide Liviano; la pérdida del objeto cumple la condición de activación. Si Sneasler no lleva objeto, no hay efecto sobre la activación.
+  * Globo Helio / Air Balloon: se pierde (estalla) al recibir daño de un movimiento ofensivo rival → esa pérdida puede activar Liviano si Sneasler lleva ese objeto → NO afirmar que Globo Helio "siempre activa Liviano" ni que sea un activador universal; depende de que el Globo Helio sea el objeto equipado y de que se pierda en las condiciones habituales.
+- PROHIBICIÓN DE FALSEDADES SOBRE MECANISMOS DE ORDEN:
+  * NUNCA usar: "Golpe Bajo supera la velocidad", "Golpe Bajo es más rápido que", "Trick Room desactiva Liviano", "Trick Room anula la habilidad", "Globo Helio siempre activa Liviano", "Desarme impide Liviano", "garantiza la activación de Liviano", "impide que Liviano funcione".
+  * Usar siempre formulaciones que reflejen el mecanismo real: "Golpe Bajo actúa antes por su prioridad +1", "Trick Room convierte la Velocidad elevada en desventaja táctica mientras esté activo", "la pérdida del objeto por Desarme puede activar Liviano".
+- CAUSALIDAD MECÁNICA EXPLÍCITA:
+  * Explica el POR QUÉ de los acontecimientos paso a paso. No saltes directo a la consecuencia sin la causa mecánica (ej. en Sneasler con Hierba Blanca: A Bocajarro reduce defensas; Hierba Blanca las restaura y se consume; quedar sin objeto activa Liviano y duplica su Velocidad mientras permanezca sin objeto).
+- DISTINCIÓN DE ACTIVACIÓN VS VALOR COMPETITIVO:
+  * Mecanismo de activación ≠ Sinergia ≠ Estrategia destacada ≠ Valor competitivo. No conviertas cualquier vía de activación en la mejor estrategia. Para Sneasler + Liviano, la estrategia prioritaria destacada sigue siendo Hierba Blanca + A Bocajarro en contexto general/competitivo.
+- TERMINOLOGÍA TÉCNICA APROPIADA:
+  * Utiliza terminología técnica completa y precisa: sweeper, win condition, counterplay, speed control, priority, setup, momentum, role compression, positioning, pressure, matchup, endgame, wallbreaking, pivot, trade-off. Cada término debe emplearse con exactitud funcional.
+- COUNTERPLAY LEGÍTIMO SIN ALUCINACIONES:
+  * Expresa tanto la ventaja obtenida como las herramientas reales de respuesta del rival (prioridad, control de velocidad, Trick Room, remoción de objetos, presión ofensiva, resistencias e inmunidades), únicamente cuando estén respaldadas por mecánicas verificables.
+- EJEMPLO DE PRECISIÓN MECÁNICA (Fase 2.3):
+  Liviano duplica la Velocidad de Sneasler después de perder su objeto, mejorando su capacidad de actuar antes en el orden basado en Velocidad mientras permanezca sin objeto. Esta ventaja no modifica el sistema de prioridad: movimientos como Golpe Bajo (Sucker Punch) pueden actuar antes que Sneasler independientemente de su Velocidad, ya que operan mediante prioridad +1, no mediante comparación de Velocidad. No obstante, Golpe Bajo solo tiene éxito si Sneasler va a ejecutar un movimiento de daño directo ese mismo turno. Ante Espacio Raro (Trick Room), la Velocidad duplicada de Sneasler se convierte en desventaja táctica dentro de su nivel de prioridad, aunque Liviano continúa activo y el multiplicador x2 sigue aplicándose.
+- REGLAS ESTRICTAS DE MOVIMIENTOS Y ANTI-MEZCLA (Fase 2.5):
+  * Rayo Solar (Solar Beam) vs Gigadrenado (Giga Drain): NUNCA los confundas ni mezcles sus propiedades.
+    - Rayo Solar es un ataque de carga (2 turnos) que omite la carga bajo Sol o con Hierba Única. NUNCA recupera PS.
+    - Gigadrenado se ejecuta de forma instantánea (1 turno) y recupera el 50% del daño infligido. NUNCA requiere turno de carga, ni Sol, ni Hierba Única, y NUNCA recupera salud sin infligir daño.
+  * Hierba Blanca (White Herb): Restaura reducciones de etapas defensivas/ofensivas negativas a 0 y se consume en el proceso. Es este consumo (quedar sin objeto) lo que activa Liviano para duplicar la Velocidad. NUNCA afirmes que la Hierba Blanca aumenta directamente la Velocidad.
+  * A Bocajarro (Close Combat): Reduce Defensa y Defensa Especial en 1 nivel al usuario (-1 cada una), activando el consumo de Hierba Blanca.
+  * Golpe Bajo (Sucker Punch): Prioridad +1; solo tiene éxito si el rival selecciona un ataque de daño directo. NUNCA afirmes que supera a rivales por Velocidad.
+  * Espacio Raro (Trick Room): Invierte el orden de turnos por Velocidad durante 5 turnos; NO desactiva Liviano ni afecta la prioridad de los movimientos.
+  * Desarme (Knock Off): Remueve el objeto del portador; esta pérdida CUMPLE la condición de Liviano y la activa; NO impide ni cancela Liviano.
+  * Sorpresa (Fake Out): Prioridad +3 y retroceso garantizado en el primer turno del usuario; no causa retroceso contra Fantasmas, Foco Interno o Capa Furtiva.
+  * Protección (Protect): Prioridad +4 defensiva; scout y control de turnos temporales; no garantiza éxito en usos consecutivos.
 `
   }
 
