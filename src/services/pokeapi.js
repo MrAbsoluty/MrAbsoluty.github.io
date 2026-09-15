@@ -22,6 +22,7 @@ import {
   POKEMON_ID_TO_SLUG,
   SPANISH_NAME_TO_CANONICAL,
 } from '../utils/pokemonNames.js'
+import { getMoveLocalizedText } from '../data/moveTranslations.js'
 
 export { cleanPokemonSlug, getPokemonDisplayName }
 
@@ -3014,19 +3015,36 @@ export async function getMove(query, locale = 'es', messages = {}) {
   const localizedName = nameEntry?.name || formatName(data.name)
 
   // Descripción (flavor_text_entries)
-  const flavorEntry = data.flavor_text_entries?.find(
-    (f) => f?.language?.name === locale || (isSpanish && f?.language?.name === 'es'),
-  ) || data.flavor_text_entries?.find((f) => f?.language?.name === 'en')
+  const esFlavor = data.flavor_text_entries?.find(
+    (f) => f?.language?.name === locale || (isSpanish && (f?.language?.name === 'es' || f?.language?.name === 'es-419')),
+  )
+  const enFlavor = data.flavor_text_entries?.find((f) => f?.language?.name === 'en')
+  const rawFlavorEntry = isSpanish ? (esFlavor || enFlavor) : (enFlavor || esFlavor)
+  const isDescriptionSpanish = Boolean(esFlavor && isSpanish)
+  const rawDescription = cleanFlavorText(rawFlavorEntry?.flavor_text || '')
 
-  const description = cleanFlavorText(flavorEntry?.flavor_text || '')
+  // Efecto factual (effect_entries)
+  const esEffect = data.effect_entries?.find(
+    (e) => e?.language?.name === locale || (isSpanish && (e?.language?.name === 'es' || e?.language?.name === 'es-419')),
+  )
+  const enEffect = data.effect_entries?.find((e) => e?.language?.name === 'en')
+  const rawEffectEntry = isSpanish ? (esEffect || enEffect) : (enEffect || esEffect)
+  const isEffectSpanish = Boolean(esEffect && isSpanish)
 
-  // Efecto factual
-  const effectEntry = data.effect_entries?.find(
-    (e) => e?.language?.name === locale || (isSpanish && e?.language?.name === 'es'),
-  ) || data.effect_entries?.find((e) => e?.language?.name === 'en')
+  const rawShortEffect = cleanFlavorText(rawEffectEntry?.short_effect || rawEffectEntry?.effect || '')
+  const rawFullEffect = cleanFlavorText(rawEffectEntry?.effect || '')
 
-  const shortEffect = cleanFlavorText(effectEntry?.short_effect || effectEntry?.effect || '')
-  const fullEffect = cleanFlavorText(effectEntry?.effect || '')
+  // Resolución mediante la capa de traducción local verificada y fallback seguro
+  const { description, effect, fullEffect } = getMoveLocalizedText({
+    moveId: data.id,
+    moveSlug: data.name,
+    locale,
+    rawDescription,
+    rawEffect: rawShortEffect,
+    rawFullEffect,
+    isEffectSpanish,
+    isDescriptionSpanish,
+  })
 
   const statChanges = (data.stat_changes || []).map((sc) => ({
     stat: sc.stat?.name || '',
@@ -3057,7 +3075,7 @@ export async function getMove(query, locale = 'es', messages = {}) {
     target: data.target?.name || 'selected-pokemon',
     effectChance: typeof data.effect_chance === 'number' ? data.effect_chance : null,
     description,
-    effect: shortEffect || description,
+    effect,
     fullEffect,
     statChanges,
     generation: data.generation?.name || 'generation-i',
