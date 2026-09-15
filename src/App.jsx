@@ -5,6 +5,7 @@ import ItemDetail from './pages/ItemDetail'
 import Items from './pages/Items'
 import Pokedex from './pages/Pokedex'
 import PokemonDetail from './pages/PokemonDetail'
+import UnderConstruction from './pages/UnderConstruction'
 import { defaultLocale, getTranslations, SUPPORTED_LOCALES } from './locales'
 import { getItem, getPokemon } from './services/pokeapi'
 import MusicPlayer from './components/MusicPlayer'
@@ -44,6 +45,7 @@ function App() {
   const { openUserProfile } = useAuth()
   const [view, setView] = useState('home')
   const [profileUsername, setProfileUsername] = useState(null)
+  const [constructionFeature, setConstructionFeature] = useState(null)
   const [pokemon, setPokemon] = useState(null)
   const [item, setItem] = useState(null)
   const [itemReturnView, setItemReturnView] = useState('home')
@@ -167,6 +169,11 @@ function App() {
         setPokemon(null)
         setItem(null)
         setError(null)
+      } else if (hash === '#construction' || hash === '#en-construccion' || hash === '#construccion') {
+        setView('construction')
+        setPokemon(null)
+        setItem(null)
+        setError(null)
       } else {
         setView('home')
         setPokemon(null)
@@ -214,10 +221,20 @@ function App() {
 
   function handleHome() {
     setView('home')
+    setConstructionFeature(null)
     setPokemon(null)
     setItem(null)
     setError(null)
     window.history.pushState({}, '', '/#top')
+  }
+
+  function handleConstructionOpen(featureName = '') {
+    setView('construction')
+    setConstructionFeature(featureName)
+    setPokemon(null)
+    setItem(null)
+    setError(null)
+    window.history.pushState({}, '', '/#construction')
   }
 
   function handlePokemonFromPokedex(query) {
@@ -277,7 +294,7 @@ function App() {
   }
 
   function handleBack() {
-    if (view === 'profile') {
+    if (view === 'profile' || view === 'construction') {
       handleHome()
       return
     }
@@ -385,6 +402,20 @@ function App() {
         onLocaleChange={handleLocaleChange}
       />
     )
+  } else if (view === 'construction') {
+    currentView = (
+      <UnderConstruction
+        onBack={handleBack}
+        onHomeClick={handleHome}
+        onPokedexClick={handlePokedexOpen}
+        onItemsClick={handleItemsOpen}
+        onFavoritesClick={handleFavoritesOpen}
+        featureName={constructionFeature}
+        t={t}
+        locale={locale}
+        onLocaleChange={handleLocaleChange}
+      />
+    )
   } else {
     currentView = (
       <Home
@@ -394,6 +425,7 @@ function App() {
         onItemsClick={handleItemsOpen}
         onPokedexClick={handlePokedexOpen}
         onFavoritesClick={handleFavoritesOpen}
+        onConstructionClick={handleConstructionOpen}
         isLoading={isLoading}
         t={t}
         locale={locale}

@@ -11,6 +11,7 @@ function Navbar({
   onHomeClick,
   onFavoritesClick,
   onProfileClick,
+  onConstructionClick,
   activeNav = 'home',
 }) {
   const { unseenCount, markFavoritesAsSeen } = useFavorites()
@@ -82,8 +83,28 @@ function Navbar({
             )}
           </a>
         )}
-        <a href="#categories">{t.nav.competitive}</a>
-        <a href="#categories">{t.nav.guide}</a>
+        <a
+          href="#construction"
+          onClick={(e) => {
+            if (onConstructionClick) {
+              e.preventDefault()
+              onConstructionClick(t?.nav?.competitive)
+            }
+          }}
+        >
+          {t.nav.competitive}
+        </a>
+        <a
+          href="#construction"
+          onClick={(e) => {
+            if (onConstructionClick) {
+              e.preventDefault()
+              onConstructionClick(t?.nav?.guide)
+            }
+          }}
+        >
+          {t.nav.guide}
+        </a>
       </nav>
       <div className="header-actions">
         {!isAuthenticated && (
@@ -98,7 +119,16 @@ function Navbar({
                 ))}
               </select>
             </label>
-            <button className="ai-link" type="button" aria-label={t.nav.ai}>
+            <button
+              className="ai-link"
+              type="button"
+              aria-label={t.nav.ai}
+              onClick={() => {
+                if (onConstructionClick) {
+                  onConstructionClick('PokeGuide AI')
+                }
+              }}
+            >
               <span className="spark" aria-hidden="true">✦</span>
               <span>{t.nav.ai}</span>
             </button>
