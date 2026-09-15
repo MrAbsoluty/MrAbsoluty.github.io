@@ -15,11 +15,11 @@ const featuredItems = [
   { name: 'poke-ball', localizedName: 'Poké Ball', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png' }, { name: 'rare-candy', localizedName: 'Caramelo Raro', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png' }, { name: 'leftovers', localizedName: 'Restos', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/leftovers.png' }, { name: 'master-ball', localizedName: 'Master Ball', category: 'Objeto', image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png' },
 ]
 
-function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onPokedexClick, onFavoritesClick, onConstructionClick, isLoading, t, locale, onLocaleChange }) {
+function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onMovesClick, onPokedexClick, onFavoritesClick, onConstructionClick, isLoading, t, locale, onLocaleChange }) {
   const categoryKeys = ['pokedex', 'competitive', 'learn', 'items', 'moves']
   return (
     <div className="page-shell">
-      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onFavoritesClick={onFavoritesClick} onConstructionClick={onConstructionClick} activeNav="home" />
+      <Navbar t={t} locale={locale} onLocaleChange={onLocaleChange} onPokedexClick={onPokedexClick} onMovesClick={onMovesClick} onFavoritesClick={onFavoritesClick} onConstructionClick={onConstructionClick} activeNav="home" />
       <main>
         <Hero onSearch={onSearch} onPokemonClick={onPokemonClick} isLoading={isLoading} t={t} locale={locale} />
         <section className="content-section categories-section" id="categories">
@@ -35,18 +35,21 @@ function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onPokedexCl
               const [title, description] = t.categories.items[categoryKeys[index]]
               const isItems = categoryKeys[index] === 'items'
               const isPokedex = categoryKeys[index] === 'pokedex'
+              const isMoves = categoryKeys[index] === 'moves'
               return (
                 <CategoryCard
                   key={title}
                   {...category}
                   title={title}
                   description={description}
-                  href={isItems ? '#items' : isPokedex ? '#pokedex' : '#construction'}
+                  href={isItems ? '#items' : isPokedex ? '#pokedex' : isMoves ? '#moves' : '#construction'}
                   onClick={
                     isItems
                       ? onItemsClick
                       : isPokedex
                       ? onPokedexClick
+                      : isMoves
+                      ? onMovesClick
                       : onConstructionClick
                       ? () => onConstructionClick(title)
                       : undefined

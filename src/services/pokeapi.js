@@ -2806,4 +2806,440 @@ export async function getPokedexList({
   }
 }
 
+/* ==========================================================================
+   MOVE DEX — SERVICIO Y CACHÉ CENTRALIZADO DE MOVIMIENTOS
+   ========================================================================== */
+
+const moveDetailCache = new Map()
+const moveTypeMapCache = new Map()
+const moveCategoryMapCache = new Map()
+let allMoveSlugsPromise = null
+
+export const COMMON_MOVE_SLUGS_ES = {
+  'a bocajarro': 'close-combat',
+  'bocajarro': 'close-combat',
+  'terremoto': 'earthquake',
+  'hidrobomba': 'hydro-pump',
+  'lanzallamas': 'flamethrower',
+  'rayo': 'thunderbolt',
+  'trueno': 'thunder',
+  'danza espada': 'swords-dance',
+  'paz mental': 'calm-mind',
+  'toxico': 'toxic',
+  'ida y vuelta': 'u-turn',
+  'desarme': 'knock-off',
+  'bola sombra': 'shadow-ball',
+  'rayo hielo': 'ice-beam',
+  'ventisca': 'blizzard',
+  'llamarada': 'fire-blast',
+  'cometa draco': 'draco-meteor',
+  'esfera aural': 'aura-sphere',
+  'respiro': 'roost',
+  'mofa': 'taunt',
+  'trampa rocas': 'stealth-rock',
+  'escaldar': 'scald',
+  'fuerza lunar': 'moonblast',
+  'brillo magico': 'dazzling-gleam',
+  'pulso dragon': 'dragon-pulse',
+  'onda certera': 'focus-blast',
+  'onda vacio': 'vacuum-wave',
+  'ultrapuno': 'mach-punch',
+  'puno bala': 'bullet-punch',
+  'cabeza de hierro': 'iron-head',
+  'puno hielo': 'ice-punch',
+  'puno fuego': 'fire-punch',
+  'puno trueno': 'thunder-punch',
+  'puno certero': 'focus-punch',
+  'acua cola': 'aqua-tail',
+  'acua jet': 'aqua-jet',
+  'surf': 'surf',
+  'cascada': 'waterfall',
+  'envite igneo': 'flare-blitz',
+  'nitrocarga': 'flame-charge',
+  'giro fuego': 'fire-spin',
+  'rayo solar': 'solar-beam',
+  'lluevehojas': 'leaf-storm',
+  'gigadrenado': 'giga-drain',
+  'energibola': 'energy-ball',
+  'drenadoras': 'leech-seed',
+  'sintesis': 'synthesis',
+  'esporas': 'spore',
+  'somnifero': 'sleep-powder',
+  'paralizador': 'stun-spore',
+  'onda trueno': 'thunder-wave',
+  'fuerza': 'strength',
+  'corte': 'cut',
+  'vuelo': 'fly',
+  'buceo': 'dive',
+  'excavar': 'dig',
+  'terratemblor': 'bulldoze',
+  'tierra viva': 'earth-power',
+  'roca afilada': 'stone-edge',
+  'avalancha': 'rock-slide',
+  'poder pasado': 'ancient-power',
+  'ataque rapido': 'quick-attack',
+  'velocidad extrema': 'extreme-speed',
+  'golpe cuerpo': 'body-slam',
+  'doble filo': 'double-edge',
+  'retribucion': 'return',
+  'frustracion': 'frustration',
+  'placaje': 'tackle',
+  'destructor': 'pound',
+  'aranazo': 'scratch',
+  'mordisco': 'bite',
+  'triturar': 'crunch',
+  'golpe bajo': 'sucker-punch',
+  'persecucion': 'pursuit',
+  'juego sucio': 'foul-play',
+  'pulso umbrio': 'dark-pulse',
+  'psiquico': 'psychic',
+  'psicocarga': 'psyshock',
+  'premonicion': 'future-sight',
+  'recuperacion': 'recover',
+  'deseo': 'wish',
+  'proteccion': 'protect',
+  'deteccion': 'detect',
+  'sustituto': 'substitute',
+  'otra vez': 'encore',
+  'anulacion': 'disable',
+  'niebla': 'haze',
+  'niebla clara': 'clear-smog',
+  'bomba lodo': 'sludge-bomb',
+  'onda toxica': 'sludge-wave',
+  'puya nociva': 'poison-jab',
+  'colmillo veneno': 'poison-fang',
+  'colmillo hielo': 'ice-fang',
+  'colmillo igneo': 'fire-fang',
+  'colmillo rayo': 'thunder-fang',
+  'pico taladro': 'drill-peck',
+  'pajaro osado': 'brave-bird',
+  'acrobata': 'acrobatics',
+  'vendaval': 'hurricane',
+  'aire afilado': 'air-slash',
+  'viento afin': 'tailwind',
+  'danza dragon': 'dragon-dance',
+  'enfado': 'outrage',
+  'garra dragon': 'dragon-claw',
+  'cola ferrea': 'iron-tail',
+  'cuerpo pesado': 'heavy-slam',
+  'foco resplandor': 'flash-cannon',
+  'giro bola': 'gyro-ball',
+  'carantona': 'play-rough',
+  'beso drenaje': 'draining-kiss',
+  'sol matinal': 'morning-sun',
+  'luz lunar': 'moonlight',
+  'danza aleteo': 'quiver-dance',
+  'zumbido': 'bug-buzz',
+  'tijera x': 'x-scissor',
+  'chupavidas': 'leech-life',
+  'megacuerno': 'megahorn',
+}
+
+function normalizeMoveQuery(query) {
+  if (!query) return ''
+  return String(query).trim().toLowerCase().replace(/[\s_]+/g, '-').replace(/^-|-$/g, '')
+}
+
+export async function getAllMoveSlugs() {
+  if (!allMoveSlugsPromise) {
+    allMoveSlugsPromise = fetch('https://pokeapi.co/api/v2/move?limit=1000')
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load move catalog')
+        const data = await res.json()
+        return (data.results || []).map((r) => r.name)
+      })
+      .catch((err) => {
+        allMoveSlugsPromise = null
+        throw err
+      })
+  }
+  return await allMoveSlugsPromise
+}
+
+export async function getMove(query, locale = 'es', messages = {}) {
+  const norm = normalizeSearchText(String(query || ''))
+  if (!norm) {
+    throw new PokeApiError(
+      getErrorMessage('empty', query, messages),
+      'empty',
+    )
+  }
+
+  // Resolver primero por diccionario en español o como slug directo
+  const resolvedSlug = COMMON_MOVE_SLUGS_ES[norm] || normalizeMoveQuery(query)
+
+  const cacheKey = `${resolvedSlug}:${locale}`
+  if (moveDetailCache.has(cacheKey)) {
+    return moveDetailCache.get(cacheKey)
+  }
+
+  let response
+  try {
+    response = await fetch(`https://pokeapi.co/api/v2/move/${encodeURIComponent(resolvedSlug)}`)
+  } catch {
+    throw new PokeApiError(
+      getErrorMessage('network', query, messages),
+      'network',
+    )
+  }
+
+  if (response.status === 404) {
+    throw new PokeApiError(
+      getErrorMessage('not-found', query, messages),
+      'not-found',
+    )
+  }
+
+  if (!response.ok) {
+    throw new PokeApiError(
+      getErrorMessage('api', query, messages),
+      'api',
+    )
+  }
+
+  let data
+  try {
+    data = await response.json()
+  } catch {
+    throw new PokeApiError(
+      getErrorMessage('invalid', query, messages),
+      'invalid',
+    )
+  }
+
+  const isSpanish = locale.startsWith('es')
+  const nameEntry = data.names?.find(
+    (n) => n?.language?.name === locale || (isSpanish && n?.language?.name === 'es'),
+  )
+  const localizedName = nameEntry?.name || formatName(data.name)
+
+  // Descripción (flavor_text_entries)
+  const flavorEntry = data.flavor_text_entries?.find(
+    (f) => f?.language?.name === locale || (isSpanish && f?.language?.name === 'es'),
+  ) || data.flavor_text_entries?.find((f) => f?.language?.name === 'en')
+
+  const description = cleanFlavorText(flavorEntry?.flavor_text || '')
+
+  // Efecto factual
+  const effectEntry = data.effect_entries?.find(
+    (e) => e?.language?.name === locale || (isSpanish && e?.language?.name === 'es'),
+  ) || data.effect_entries?.find((e) => e?.language?.name === 'en')
+
+  const shortEffect = cleanFlavorText(effectEntry?.short_effect || effectEntry?.effect || '')
+  const fullEffect = cleanFlavorText(effectEntry?.effect || '')
+
+  const statChanges = (data.stat_changes || []).map((sc) => ({
+    stat: sc.stat?.name || '',
+    change: sc.change,
+  }))
+
+  const learnedBy = (data.learned_by_pokemon || []).map((p) => {
+    const segments = p.url ? p.url.split('/').filter(Boolean) : []
+    const parsedId = Number(segments[segments.length - 1]) || null
+    return {
+      name: p.name,
+      id: parsedId,
+    }
+  })
+
+  const moveObject = {
+    id: data.id,
+    name: data.name,
+    displayName: localizedName,
+    localizedName,
+    originalName: formatName(data.name),
+    type: data.type?.name || 'normal',
+    category: data.damage_class?.name || 'status',
+    power: typeof data.power === 'number' ? data.power : null,
+    accuracy: typeof data.accuracy === 'number' ? data.accuracy : null,
+    pp: typeof data.pp === 'number' ? data.pp : 0,
+    priority: typeof data.priority === 'number' ? data.priority : 0,
+    target: data.target?.name || 'selected-pokemon',
+    effectChance: typeof data.effect_chance === 'number' ? data.effect_chance : null,
+    description,
+    effect: shortEffect || description,
+    fullEffect,
+    statChanges,
+    generation: data.generation?.name || 'generation-i',
+    learnedBy,
+  }
+
+  moveDetailCache.set(cacheKey, moveObject)
+  return moveObject
+}
+
+export async function getMovesByType(type) {
+  if (!type) return null
+  if (moveTypeMapCache.has(type)) {
+    return moveTypeMapCache.get(type)
+  }
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/type/${encodeURIComponent(type)}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const slugs = new Set((data.moves || []).map((m) => m.name))
+    moveTypeMapCache.set(type, slugs)
+    return slugs
+  } catch {
+    return null
+  }
+}
+
+export async function getMovesByCategory(category) {
+  if (!category || category === 'all') return null
+  if (moveCategoryMapCache.has(category)) {
+    return moveCategoryMapCache.get(category)
+  }
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/move-damage-class/${encodeURIComponent(category)}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const slugs = new Set((data.moves || []).map((m) => m.name))
+    moveCategoryMapCache.set(category, slugs)
+    return slugs
+  } catch {
+    return null
+  }
+}
+
+export async function getMovesList({
+  limit = 24,
+  offset = 0,
+  query = '',
+  type = '',
+  category = '',
+  power = '',
+  priority = '',
+  locale = 'es',
+  messages = {},
+} = {}) {
+  let allSlugs = []
+  try {
+    allSlugs = await getAllMoveSlugs()
+  } catch {
+    throw new PokeApiError(
+      getErrorMessage('network', 'moves', messages),
+      'network',
+    )
+  }
+
+  let typeFilterSet = null
+  if (type && type !== 'all') {
+    typeFilterSet = await getMovesByType(type)
+  }
+
+  let categoryFilterSet = null
+  if (category && category !== 'all') {
+    categoryFilterSet = await getMovesByCategory(category)
+  }
+
+  const normalizedQuery = query ? normalizeSearchText(query) : ''
+  const directSpanishSlug = normalizedQuery ? COMMON_MOVE_SLUGS_ES[normalizedQuery] : null
+  const queryWords = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : []
+
+  // 1. Filtrar los slugs candidatos
+  const matchedSlugs = allSlugs.filter((slug) => {
+    if (typeFilterSet && !typeFilterSet.has(slug)) return false
+    if (categoryFilterSet && !categoryFilterSet.has(slug)) return false
+
+    if (normalizedQuery) {
+      if (directSpanishSlug && slug === directSpanishSlug) return true
+      const normSlug = normalizeSearchText(slug)
+      if (normSlug.includes(normalizedQuery)) return true
+      if (queryWords.length > 0 && queryWords.every((word) => normSlug.includes(word))) return true
+
+      // Si ya está en caché de detalle, comprobar nombre localizado
+      const cached = moveDetailCache.get(`${slug}:${locale}`)
+      if (cached) {
+        const cachedNameNorm = normalizeSearchText(cached.displayName || cached.localizedName || '')
+        if (cachedNameNorm.includes(normalizedQuery)) return true
+      }
+      return false
+    }
+
+    return true
+  })
+
+  // Si hay coincidencia directa en español, colocarla al frente
+  if (directSpanishSlug && matchedSlugs.includes(directSpanishSlug)) {
+    const idx = matchedSlugs.indexOf(directSpanishSlug)
+    if (idx > 0) {
+      matchedSlugs.splice(idx, 1)
+      matchedSlugs.unshift(directSpanishSlug)
+    }
+  }
+
+  const totalCount = matchedSlugs.length
+  const pageSlice = matchedSlugs.slice(offset, offset + limit)
+
+  // Obtener los detalles de los movimientos de la página actual
+  const results = await Promise.allSettled(
+    pageSlice.map((slug) => getMove(slug, locale, messages)),
+  )
+
+  let cards = results
+    .filter((r) => r.status === 'fulfilled' && r.value)
+    .map((r) => r.value)
+
+  // Filtros post-obtención de potencia y prioridad si se solicitan en la vista
+  if (power && power !== 'all') {
+    cards = cards.filter((m) => {
+      if (power === 'status') return m.power === null || m.power === 0
+      if (power === 'low') return m.power !== null && m.power >= 1 && m.power <= 50
+      if (power === 'medium') return m.power !== null && m.power >= 51 && m.power <= 80
+      if (power === 'high') return m.power !== null && m.power >= 81 && m.power <= 120
+      if (power === 'extreme') return m.power !== null && m.power > 120
+      return true
+    })
+  }
+
+  if (priority && priority !== 'all') {
+    const numPriority = Number(priority)
+    if (!Number.isNaN(numPriority)) {
+      cards = cards.filter((m) => m.priority === numPriority)
+    }
+  }
+
+  const hasMore = offset + limit < totalCount
+  const nextOffset = hasMore ? offset + limit : null
+
+  return {
+    moves: cards,
+    totalCount,
+    hasMore,
+    nextOffset,
+  }
+}
+
+const FEATURED_MOVE_CANDIDATES = [
+  'close-combat',
+  'earthquake',
+  'flamethrower',
+  'surf',
+  'thunderbolt',
+  'shadow-ball',
+  'ice-beam',
+  'moonblast',
+  'draco-meteor',
+  'swords-dance',
+  'calm-mind',
+  'roost',
+]
+
+export async function getFeaturedMove(locale = 'es') {
+  // Selección determinista basada en el día del año
+  const now = new Date()
+  const startOfYear = new Date(now.getFullYear(), 0, 0)
+  const diff = now - startOfYear
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const candidateIndex = dayOfYear % FEATURED_MOVE_CANDIDATES.length
+  const selectedSlug = FEATURED_MOVE_CANDIDATES[candidateIndex] || 'close-combat'
+
+  try {
+    return await getMove(selectedSlug, locale)
+  } catch {
+    return null
+  }
+}
+
 

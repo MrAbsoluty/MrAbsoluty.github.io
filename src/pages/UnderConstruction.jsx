@@ -7,6 +7,7 @@ function UnderConstruction({
   onBack,
   onHomeClick,
   onPokedexClick,
+  onMovesClick,
   onItemsClick,
   onFavoritesClick,
   t,
@@ -49,6 +50,13 @@ function UnderConstruction({
     }
   }
 
+  function handleMovesClick(e) {
+    e.preventDefault()
+    if (onMovesClick) {
+      onMovesClick()
+    }
+  }
+
   function handleItemsClick(e) {
     e.preventDefault()
     if (onItemsClick) {
@@ -64,6 +72,7 @@ function UnderConstruction({
         onLocaleChange={onLocaleChange}
         onHomeClick={onHomeClick}
         onPokedexClick={onPokedexClick}
+        onMovesClick={onMovesClick}
         onFavoritesClick={onFavoritesClick}
         activeNav=""
       />

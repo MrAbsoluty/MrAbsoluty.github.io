@@ -8,6 +8,7 @@ function Navbar({
   locale,
   onLocaleChange,
   onPokedexClick,
+  onMovesClick,
   onHomeClick,
   onFavoritesClick,
   onProfileClick,
@@ -40,6 +41,13 @@ function Navbar({
     }
   }
 
+  function handleMovesNavClick(event) {
+    if (onMovesClick) {
+      event.preventDefault()
+      onMovesClick()
+    }
+  }
+
   function handleFavoritesNavClick(event) {
     markFavoritesAsSeen?.()
     if (onFavoritesClick) {
@@ -68,6 +76,13 @@ function Navbar({
           onClick={handlePokedexNavClick}
         >
           {t.nav.pokedex}
+        </a>
+        <a
+          className={activeNav === 'moves' ? 'active' : ''}
+          href="#moves"
+          onClick={handleMovesNavClick}
+        >
+          {t?.nav?.moves || 'Movimientos'}
         </a>
         {!isAuthenticated && (
           <a
