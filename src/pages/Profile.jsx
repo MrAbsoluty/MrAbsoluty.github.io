@@ -48,6 +48,7 @@ export default function Profile({
     openFollowing,
     openFollowRequests,
     pendingRequestsCount,
+    openChatWithFriend,
   } = useAuth()
 
   const { favorites: localFavorites } = useFavorites()
@@ -531,15 +532,32 @@ export default function Profile({
                         )}
                       </div>
                     ) : (
-                      <FollowButton
-                        targetUserId={profileData.id}
-                        targetUsername={profileData.username}
-                        isTargetPrivate={profileData.profile_visibility === 'private'}
-                        initialStatus={profileData.followStatus || 'none'}
-                        onStatusChange={handleFollowStatusChange}
-                        size="large"
-                        t={t}
-                      />
+                      <div className="trainer-visitor-controls">
+                        <FollowButton
+                          targetUserId={profileData.id}
+                          targetUsername={profileData.username}
+                          isTargetPrivate={profileData.profile_visibility === 'private'}
+                          initialStatus={profileData.followStatus || 'none'}
+                          onStatusChange={handleFollowStatusChange}
+                          size="large"
+                          t={t}
+                        />
+                        <button
+                          type="button"
+                          className="trainer-action-btn btn-message-profile"
+                          onClick={() =>
+                            openChatWithFriend({
+                              id: profileData.id,
+                              username: profileData.username,
+                              avatar_url: profileData.avatar_url,
+                            })
+                          }
+                          onMouseEnter={playHoverBubbleSound}
+                          title="Enviar mensaje privado"
+                        >
+                          💬 {t?.social?.sendMessage || 'Mensaje'}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

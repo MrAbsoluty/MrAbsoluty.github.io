@@ -33,7 +33,7 @@ CREATE POLICY "Users can send friend requests" ON public.friend_requests FOR INS
 CREATE POLICY "Recipients can answer friend requests" ON public.friend_requests FOR UPDATE TO authenticated USING (auth.uid() = recipient_id AND status = 'pending') WITH CHECK (auth.uid() = recipient_id AND status IN ('accepted', 'rejected'));
 CREATE POLICY "Friends can remove their own relation" ON public.friend_requests FOR DELETE TO authenticated USING (auth.uid() IN (requester_id, recipient_id));
 CREATE POLICY "Users can read their own messages" ON public.messages FOR SELECT TO authenticated USING (auth.uid() IN (sender_id, receiver_id));
-CREATE POLICY "Friends can send private messages" ON public.messages FOR INSERT TO authenticated WITH CHECK (auth.uid() = sender_id AND EXISTS (SELECT 1 FROM public.friend_requests f WHERE f.status = 'accepted' AND ((f.requester_id = sender_id AND f.recipient_id = receiver_id) OR (f.requester_id = receiver_id AND f.recipient_id = sender_id))));
+CREATE POLICY "Authenticated users can send messages" ON public.messages FOR INSERT TO authenticated WITH CHECK (auth.uid() = sender_id AND sender_id <> receiver_id);
 CREATE POLICY "Recipients can mark received messages as read" ON public.messages FOR UPDATE TO authenticated USING (auth.uid() = receiver_id) WITH CHECK (auth.uid() = receiver_id);
 
 DO $$ BEGIN

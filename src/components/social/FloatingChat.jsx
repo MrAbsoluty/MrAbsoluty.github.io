@@ -320,7 +320,18 @@ export default function FloatingChat() {
 
           if (isCurrentlyViewing) {
             setMessages((prev) => {
-              if (prev.some((m) => m.id === newMsg.id)) return prev
+              const existingIdx = prev.findIndex(
+                (m) =>
+                  m.id === newMsg.id ||
+                  (m.isOptimistic &&
+                    m.sender_id === newMsg.sender_id &&
+                    m.content === newMsg.content)
+              )
+              if (existingIdx !== -1) {
+                const next = [...prev]
+                next[existingIdx] = newMsg
+                return next
+              }
               return [...prev, newMsg]
             })
             if (isIncoming) {
@@ -397,23 +408,63 @@ export default function FloatingChat() {
     if (!draft.trim() || !activeChatFriend || isSending) return
 
     const text = draft.trim()
+    const tempId = `optimistic-${Date.now()}`
+    const nowIso = new Date().toISOString()
+
+    const optimisticMsg = {
+      id: tempId,
+      sender_id: user?.id,
+      receiver_id: activeChatFriend.id,
+      content: text,
+      created_at: nowIso,
+      isOptimistic: true,
+    }
+
+    // 1. Mostrar de inmediato el mensaje en la pantalla del emisor
+    setMessages((prev) => [...prev, optimisticMsg])
+    setDraft('')
     setIsSending(true)
+
     try {
-      await sendMessage(activeChatFriend.id, text)
-      setDraft('')
+      const result = await sendMessage(activeChatFriend.id, text, user?.id)
+
+      if (!result?.success) {
+        console.error('[FloatingChat] Error al enviar mensaje:', result?.error)
+        // Restaurar borrador y quitar mensaje temporal
+        setMessages((prev) => prev.filter((m) => m.id !== tempId))
+        setDraft(text)
+        alert(
+          result?.code === '42501'
+            ? 'No se pudo enviar el mensaje por permisos en la base de datos (RLS). Por favor ejecuta el script de migración SQL en Supabase.'
+            : `No se pudo enviar el mensaje: ${result?.error || 'Error de conexión'}`
+        )
+        return
+      }
+
+      const confirmedMsg = result.data || {
+        ...optimisticMsg,
+        id: `msg-${Date.now()}`,
+        isOptimistic: false,
+      }
+
+      // 2. Reemplazar mensaje temporal con el confirmado
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? confirmedMsg : m))
+      )
+
+      // 3. Actualizar mapa de últimos mensajes
       setLastMessagesMap((prev) => {
         const next = new Map(prev)
-        next.set(activeChatFriend.id, {
-          sender_id: user.id,
-          receiver_id: activeChatFriend.id,
-          content: text,
-          created_at: new Date().toISOString(),
-        })
+        next.set(activeChatFriend.id, confirmedMsg)
         return next
       })
-      await loadMessages(activeChatFriend.id)
-    } catch {
-      // Error silencioso
+
+      // 4. Actualizar lista de contactos para que este chat nuevo figure siempre
+      loadFriends()
+    } catch (err) {
+      console.error('[FloatingChat] Excepción en handleSendMessage:', err)
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      setDraft(text)
     } finally {
       setIsSending(false)
     }

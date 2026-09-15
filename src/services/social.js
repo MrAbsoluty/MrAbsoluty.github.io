@@ -730,15 +730,56 @@ export async function getConversation(userId, otherUserId) {
   }
 }
 
-export async function sendMessage(receiver_id, content) {
+export async function sendMessage(receiver_id, content, sender_id = null) {
   const sb = client()
-  if (!sb) return
+  if (!sb) {
+    console.error('[Social] Error en sendMessage: Supabase no configurado')
+    return { success: false, error: 'Supabase no configurado' }
+  }
   const text = content?.trim()
-  if (!text) return
+  if (!text) {
+    return { success: false, error: 'El contenido del mensaje está vacío' }
+  }
+
+  let finalSenderId = sender_id
+  if (!finalSenderId) {
+    try {
+      const { data } = await sb.auth.getUser()
+      finalSenderId = data?.user?.id
+    } catch {
+      // Continuar con fallback
+    }
+  }
+
+  if (!finalSenderId) {
+    console.error('[Social] Error en sendMessage: Usuario emisor no autenticado')
+    return { success: false, error: 'Usuario no autenticado' }
+  }
+
+  if (finalSenderId === receiver_id) {
+    return { success: false, error: 'No puedes enviarte mensajes a ti mismo' }
+  }
+
   try {
-    await sb.from('messages').insert({ receiver_id, content: text })
-  } catch {
-    // Silencioso
+    const { data, error } = await sb
+      .from('messages')
+      .insert({
+        sender_id: finalSenderId,
+        receiver_id,
+        content: text,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[Social] Error en Supabase al enviar mensaje:', error.message, error)
+      return { success: false, error: error.message, code: error.code }
+    }
+
+    return { success: true, data }
+  } catch (err) {
+    console.error('[Social] Excepción en sendMessage:', err)
+    return { success: false, error: err.message }
   }
 }
 
@@ -791,13 +832,59 @@ export async function getUnreadSenderIds(userId) {
 }
 
 /**
- * Compatible stub para FloatingChat: conecta con la lista de usuarios seguidos.
+ * Compatible stub y gestor de contactos para FloatingChat:
+ * Conecta con usuarios seguidos (following), seguidores (followers) y
+ * cualquier usuario con el que se haya mantenido una conversación reciente.
  */
 export async function getRelationships(userId) {
   if (!userId) return []
+  const sb = client()
+  if (!sb) return []
+
   try {
-    const following = await getFollowing(userId, userId)
-    return following.map((f) => ({
+    const [following, followers, recents] = await Promise.all([
+      getFollowing(userId, userId).catch(() => []),
+      getFollowers(userId, userId).catch(() => []),
+      getRecentConversations(userId).catch(() => []),
+    ])
+
+    const contactsMap = new Map()
+
+    // 1. Agregar usuarios a quienes se sigue
+    for (const f of following) {
+      if (f && f.id && f.id !== userId) {
+        contactsMap.set(f.id, f)
+      }
+    }
+
+    // 2. Agregar usuarios que nos siguen
+    for (const f of followers) {
+      if (f && f.id && f.id !== userId && !contactsMap.has(f.id)) {
+        contactsMap.set(f.id, f)
+      }
+    }
+
+    // 3. Agregar cualquier usuario de conversaciones recientes que no esté en la lista
+    const recentOtherUserIds = [
+      ...new Set(
+        recents.map((m) => (m.sender_id === userId ? m.receiver_id : m.sender_id))
+      ),
+    ].filter((id) => id && id !== userId && !contactsMap.has(id))
+
+    if (recentOtherUserIds.length > 0) {
+      const { data: missingProfiles } = await sb
+        .from('profiles')
+        .select('id, username, avatar_url, bio, profile_visibility')
+        .in('id', recentOtherUserIds)
+
+      for (const p of missingProfiles || []) {
+        if (p && p.id && !contactsMap.has(p.id)) {
+          contactsMap.set(p.id, p)
+        }
+      }
+    }
+
+    return Array.from(contactsMap.values()).map((f) => ({
       id: f.id,
       requester_id: userId,
       recipient_id: f.id,
@@ -805,7 +892,8 @@ export async function getRelationships(userId) {
       recipient: f,
       requester: { id: userId },
     }))
-  } catch {
+  } catch (err) {
+    console.warn('[Social] Error unificando contactos de chat:', err)
     return []
   }
 }

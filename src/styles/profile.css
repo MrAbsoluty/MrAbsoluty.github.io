@@ -1108,6 +1108,33 @@
   transform: translateY(-1px);
 }
 
+.trainer-visitor-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-message-profile {
+  background: #ffffff;
+  color: var(--navy, #1e293b);
+  border: 1.5px solid var(--line, #e2e8f0);
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-message-profile:hover {
+  border-color: var(--coral, #ed6d5d);
+  color: var(--coral, #ed6d5d);
+  background: #fff5f3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(237, 109, 93, 0.18);
+}
+
 /* Edición Formulario */
 .trainer-edit-form {
   display: flex;
