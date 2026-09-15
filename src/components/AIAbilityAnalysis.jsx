@@ -574,8 +574,99 @@ export function AbilityAIFocusMode({
 }
 
 /**
+ * Panel visual integrado de análisis de habilidad (Fase 3).
+ * Se renderiza directamente dentro de la tarjeta de habilidad en la Pokédex.
+ */
+export function AIAbilityIntegratedPanel({
+  pokemonName,
+  abilityName,
+  abilityRawName,
+  analysis,
+  context,
+  t,
+  locale = 'es',
+  onClose,
+}) {
+  const aiT = t?.aiAnalysis || {}
+  const abilityIcon = getAbilityIcon(abilityName, abilityRawName)
+  const isEn = String(locale).toLowerCase().startsWith('en')
+
+  const rawContext = context?.context || context?.platform || 'general'
+  const battleMode = context?.battleMode || 'singles'
+  const userLevel = context?.userLevel || 'beginner'
+
+  const contextLabel = formatCompetitiveContextBadge(rawContext, isEn ? 'en' : 'es')
+  const battleModeLabel = battleMode === 'doubles' ? 'Doubles' : 'Singles'
+  const userLevelLabels = {
+    beginner: isEn ? 'Beginner' : 'Principiante',
+    intermediate: isEn ? 'Intermediate' : 'Intermedio',
+    advanced: isEn ? 'Advanced' : 'Avanzado',
+    competitive: isEn ? 'Competitive' : 'Competitivo',
+  }
+  const levelLabel = userLevelLabels[userLevel] || userLevelLabels.beginner
+  const disclaimerText = aiT.disclaimer || (isEn ? 'AI-generated tactical interpretation · Unofficial' : 'Interpretación táctica generada por IA · No oficial')
+
+  return (
+    <div
+      className="ability-ai-integrated-panel"
+      role="region"
+      aria-label={aiT.title || (isEn ? 'AI Tactical Analysis' : 'Análisis Táctico con IA')}
+    >
+      <div className="ability-ai-integrated-header">
+        <div className="ability-ai-integrated-meta">
+          <div className="ability-ai-integrated-badge-row">
+            <span className="ai-brand-badge">
+              <span className="ai-spark-icon" aria-hidden="true">✨</span>
+              <span>{aiT.badge || 'PokeGuide AI'}</span>
+            </span>
+            <span className="ability-ai-context-pill">{contextLabel}</span>
+          </div>
+          <h4 className="ability-ai-integrated-title">
+            <span className="ability-ai-icon-weather" aria-hidden="true">{abilityIcon}</span>
+            <span>{aiT.subtitle || (isEn ? 'Competitive Analysis' : 'Análisis competitivo')}</span>
+          </h4>
+          <div className="ability-ai-integrated-submeta">
+            <span className="ability-ai-submeta-target">{pokemonName} · {abilityName}</span>
+            <span className="ability-ai-submeta-dot" aria-hidden="true">•</span>
+            <span className="ability-ai-submeta-config">{levelLabel} · {battleModeLabel}</span>
+          </div>
+        </div>
+
+        {onClose && (
+          <button
+            type="button"
+            className="ability-ai-integrated-close-btn"
+            onClick={onClose}
+            aria-label={aiT.hide || aiT.close || (isEn ? 'Hide analysis' : 'Ocultar análisis')}
+            title={aiT.hide || aiT.close || (isEn ? 'Hide analysis' : 'Ocultar análisis')}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="ability-ai-integrated-body">
+        <AIAbilityAnalysisContent
+          analysis={analysis}
+          t={t}
+          locale={locale}
+        />
+      </div>
+
+      <div className="ability-ai-integrated-footer">
+        <span className="ability-ai-disclaimer-dot" aria-hidden="true" />
+        <span className="ability-ai-disclaimer-text">{disclaimerText}</span>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Componente por defecto para retrocompatibilidad directa.
  */
 export default function AIAbilityAnalysis(props) {
+  if (props.isIntegrated) {
+    return <AIAbilityIntegratedPanel {...props} />
+  }
   return <AIAbilityAnalysisContent {...props} />
 }

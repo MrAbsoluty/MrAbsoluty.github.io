@@ -7,7 +7,12 @@ import PokemonTypeAffinities from '../components/PokemonTypeAffinities'
 import PokemonFocusMenu from '../components/PokemonFocusMenu'
 import PokemonFavoriteButton from '../components/PokemonFavoriteButton'
 import { getMegaForms, getRegionalForms, getAbilityDetails } from '../services/pokeapi'
-import { AbilityAIFocusMode } from '../components/AIAbilityAnalysis'
+import {
+  AbilityAIFocusMode,
+  AIAbilityIntegratedPanel,
+  AIAbilityLoadingCard,
+  AIAbilityErrorCard,
+} from '../components/AIAbilityAnalysis'
 import AbilityContextSelector from '../components/AbilityContextSelector'
 import { analyzeAbility, AI_STATUS } from '../services/pokeguideAI'
 import { useAuth } from '../context/AuthContext'
@@ -70,6 +75,19 @@ function PokemonDetail({
     format: null,
     regulation: null,
   })
+  const [isAnalysisHidden, setIsAnalysisHidden] = useState(false)
+  const [aiLocale, setAiLocale] = useState(locale || 'es')
+
+  // Sincronizar idioma del análisis si cambia el selector de idioma en PokeGuide
+  useEffect(() => {
+    if (aiLocale !== locale) {
+      setAiLocale(locale)
+      setAiStatus(AI_STATUS.IDLE)
+      setAiData(null)
+      setAiError(null)
+      setIsAnalysisHidden(false)
+    }
+  }, [locale, aiLocale])
 
   // Reset active form and states safely when pokemon changes
   useEffect(() => {
@@ -94,6 +112,7 @@ function PokemonDetail({
     setAiTargetAbility(null)
     setIsAiFocusOpen(false)
     setIsContextSelectorOpen(false)
+    setIsAnalysisHidden(false)
     setSelectedCompetitiveContext({ context: 'general', format: null, regulation: null })
   }, [pokemon?.id])
 
@@ -426,6 +445,10 @@ function PokemonDetail({
   }
 
   function executeAIAnalysis(targetKey, competitiveContext = { context: 'general', format: null, regulation: null }) {
+    if (!targetKey) return
+    // Guard estricto para evitar doble request simultánea
+    if (aiStatus === AI_STATUS.LOADING) return
+
     const abilityName =
       extraAbilityData[targetKey]?.name ||
       currentAbilityLabels[targetKey] ||
@@ -438,7 +461,7 @@ function PokemonDetail({
     setAiStatus(AI_STATUS.LOADING)
     setAiTargetAbility(targetKey)
     setAiError(null)
-    setIsAiFocusOpen(true)
+    setIsAnalysisHidden(false)
 
     const payload = {
       pokemon: {
@@ -490,12 +513,23 @@ function PokemonDetail({
     const targetKey = abilityKey || activeSelectedAbility || aiTargetAbility
     if (!targetKey) return
 
+    // Si ya existe un análisis completado para esta misma habilidad y estaba oculto, lo desocultamos inmediatamente sin volver a consultar
+    if (aiTargetAbility === targetKey && aiData && aiStatus === AI_STATUS.SUCCESS && isAnalysisHidden) {
+      setIsAnalysisHidden(false)
+      return
+    }
+
     setAiTargetAbility(targetKey)
     // El análisis comienza directamente en contexto General (Progressive AI Analysis)
     const defaultContext = { context: 'general', format: null, regulation: null }
     setSelectedCompetitiveContext(defaultContext)
     setIsContextSelectorOpen(false)
     executeAIAnalysis(targetKey, defaultContext)
+  }
+
+  function handleHideAnalysis() {
+    playClickSound()
+    setIsAnalysisHidden(true)
   }
 
   function handleSelectContextAndAnalyze(chosenContext) {
@@ -518,7 +552,7 @@ function PokemonDetail({
     const targetKey = aiTargetAbility || activeSelectedAbility
     if (targetKey) {
       setAiData(null)
-      executeAIAnalysis(targetKey, selectedCompetitiveContext)
+      executeAIAnalysis(targetKey, selectedCompetitiveContext, false)
     }
   }
 
@@ -530,6 +564,7 @@ function PokemonDetail({
     setSelectedAbility(null)
     setIsAiFocusOpen(false)
     setIsContextSelectorOpen(false)
+    setIsAnalysisHidden(false)
   }
 
   const currentHeight = currentData?.height
@@ -765,6 +800,12 @@ function PokemonDetail({
                 currentAbilityDescriptions[activeSelectedAbility] ||
                 t.detail.abilityNoDescription
 
+              const isCurrentTarget = aiTargetAbility === activeSelectedAbility
+              const isCurrentLoading = isCurrentTarget && aiStatus === AI_STATUS.LOADING
+              const isCurrentSuccess = isCurrentTarget && aiStatus === AI_STATUS.SUCCESS && Boolean(aiData)
+              const isCurrentError = isCurrentTarget && aiStatus === AI_STATUS.ERROR
+              const showIntegratedAnalysis = isCurrentSuccess && !isAnalysisHidden
+
               return (
                 <div
                   id={`ability-panel-${activeSelectedAbility}`}
@@ -782,12 +823,12 @@ function PokemonDetail({
                     <div className="ability-panel-actions">
                       <button
                         type="button"
-                        className={`ability-ai-btn ${aiStatus === AI_STATUS.LOADING && aiTargetAbility === activeSelectedAbility ? 'is-loading' : ''} ${aiStatus === AI_STATUS.SUCCESS && aiTargetAbility === activeSelectedAbility ? 'is-active' : ''}`}
-                        onClick={(e) => handleAbilityAIAnalysis(e, activeSelectedAbility)}
-                        disabled={aiStatus === AI_STATUS.LOADING && aiTargetAbility === activeSelectedAbility}
+                        className={`ability-ai-btn ${isCurrentLoading ? 'is-loading' : ''} ${isCurrentSuccess ? 'is-active' : ''}`}
+                        onClick={(e) => handleAbilityAIAnalysis(e, activeSelectedAbility, true)}
+                        disabled={isCurrentLoading}
                         title={t.detail.abilityAiTooltip || 'Analizar viabilidad con IA'}
                         aria-label={t.detail.abilityAiTooltip || 'Analizar viabilidad con IA'}
-                        aria-busy={aiStatus === AI_STATUS.LOADING && aiTargetAbility === activeSelectedAbility}
+                        aria-busy={isCurrentLoading}
                       >
                         <span className="ability-ai-icon" aria-hidden="true">✦</span>
                         <span className="ability-ai-tooltip">{t.detail.abilityAiTooltip || 'Analizar viabilidad con IA'}</span>
@@ -810,6 +851,82 @@ function PokemonDetail({
                     <p className="ability-panel-text">
                       {activeAbilityDescription}
                     </p>
+
+                    {/* Sección nativa integrada de PokeGuide AI (Fase 3) */}
+                    <div className="ability-panel-ai-section">
+                      {!showIntegratedAnalysis && !isCurrentLoading && !isCurrentError && (
+                        <div className="ability-ai-trigger-wrap">
+                          <button
+                            type="button"
+                            className="ability-ai-action-btn"
+                            onClick={(e) => handleAbilityAIAnalysis(e, activeSelectedAbility, false)}
+                            disabled={isCurrentLoading}
+                            aria-busy={isCurrentLoading}
+                          >
+                            <span className="ability-ai-btn-sparkle" aria-hidden="true">✨</span>
+                            <span>
+                              {isCurrentSuccess && isAnalysisHidden
+                                ? (t.aiAnalysis?.viewAnalysisButton || '✨ Ver análisis de IA')
+                                : (t.aiAnalysis?.analyzeButton || '✨ Analizar con IA')}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+
+                      {isCurrentLoading && (
+                        <>
+                          <div className="ability-ai-trigger-wrap">
+                            <button
+                              type="button"
+                              className="ability-ai-action-btn is-loading"
+                              disabled
+                              aria-busy="true"
+                            >
+                              <span className="ability-ai-btn-spinner" aria-hidden="true" />
+                              <span>{t.aiAnalysis?.analyzing || 'Analizando habilidad...'}</span>
+                            </button>
+                          </div>
+                          <div className="ability-ai-inline-loading">
+                            <AIAbilityLoadingCard
+                              pokemonName={currentName}
+                              abilityName={activeAbilityName}
+                              t={t}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {isCurrentError && (
+                        <div className="ability-ai-inline-error">
+                          <AIAbilityErrorCard
+                            error={aiError}
+                            onRetry={handleAiRetry}
+                            t={t}
+                          />
+                        </div>
+                      )}
+
+                      {showIntegratedAnalysis && (
+                        <AIAbilityIntegratedPanel
+                          pokemonName={currentName}
+                          abilityName={activeAbilityName}
+                          abilityRawName={activeSelectedAbility}
+                          analysis={aiData}
+                          context={{
+                            context: selectedCompetitiveContext.context,
+                            platform: selectedCompetitiveContext.context,
+                            format: selectedCompetitiveContext.format,
+                            regulation: selectedCompetitiveContext.regulation,
+                            battleMode: 'singles',
+                            userLevel: profile?.ai_level || 'beginner',
+                            locale,
+                          }}
+                          t={t}
+                          locale={locale}
+                          onClose={handleHideAnalysis}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               )

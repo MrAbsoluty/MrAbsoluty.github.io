@@ -2244,3 +2244,228 @@
   }
 }
 
+/* ==========================================================================
+   17. POKEGUIDE AI — FASE 3: PANEL INTEGRADO NATIVO EN SECCIÓN DE HABILIDADES
+   ========================================================================== */
+
+.ability-panel-ai-section {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.ability-ai-trigger-wrap {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.ability-ai-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #fff7f5 0%, #ffede8 100%);
+  border: 1px solid rgba(237, 109, 93, 0.4);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font: 600 13px var(--display);
+  color: var(--coral);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(237, 109, 93, 0.12);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  user-select: none;
+}
+
+.ability-ai-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ffece7 0%, #ffdcd3 100%);
+  border-color: var(--coral);
+  box-shadow: 0 4px 14px rgba(237, 109, 93, 0.28);
+  transform: translateY(-1px);
+}
+
+.ability-ai-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(237, 109, 93, 0.18);
+}
+
+.ability-ai-action-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ability-ai-action-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.ability-ai-action-btn.is-loading {
+  cursor: wait;
+}
+
+.ability-ai-btn-sparkle {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.ability-ai-action-btn:hover:not(:disabled) .ability-ai-btn-sparkle {
+  transform: scale(1.2) rotate(10deg);
+}
+
+.ability-ai-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(237, 109, 93, 0.25);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  animation: aiButtonSpin 0.75s linear infinite;
+  display: inline-block;
+}
+
+.ability-ai-inline-loading,
+.ability-ai-inline-error {
+  width: 100%;
+  animation: aiSlideDown 0.25s ease-out;
+}
+
+/* Panel integrado */
+.ability-ai-integrated-panel {
+  background: #ffffff;
+  border: 1px solid rgba(237, 109, 93, 0.28);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 6px 20px rgba(237, 109, 93, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: aiSlideDown 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ability-ai-integrated-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf1ec;
+}
+
+.ability-ai-integrated-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ability-ai-integrated-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ability-ai-context-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f4f0;
+  color: var(--muted);
+  border-radius: 100px;
+  padding: 2px 8px;
+  font: 600 10.5px var(--sans);
+  text-transform: capitalize;
+}
+
+.ability-ai-integrated-title {
+  font: 700 16px/1.3 var(--display);
+  color: var(--navy);
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ability-ai-icon-weather {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ability-ai-integrated-submeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 11.5px var(--sans);
+  color: var(--muted);
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.ability-ai-submeta-target {
+  font-weight: 600;
+  color: var(--ink, #17212b);
+}
+
+.ability-ai-submeta-dot {
+  opacity: 0.4;
+}
+
+.ability-ai-submeta-config {
+  color: var(--muted);
+}
+
+.ability-ai-integrated-close-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.ability-ai-integrated-close-btn:hover {
+  background: #f3f6f3;
+  color: var(--navy);
+  border-color: var(--line);
+}
+
+.ability-ai-integrated-close-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 1px;
+}
+
+.ability-ai-integrated-body {
+  width: 100%;
+}
+
+.ability-ai-integrated-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid #edf1ec;
+  font: 400 11px var(--sans);
+  color: var(--muted);
+}
+
+@media (max-width: 768px) {
+  .ability-ai-integrated-panel {
+    padding: 14px 14px;
+  }
+
+  .ability-ai-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
