@@ -107,9 +107,13 @@ export const VERIFIED_MOVE_EFFECTS_ES = {
     effect: 'Elimina trampas y ataduras del campo, y aumenta la Velocidad del usuario en un nivel.',
     fullEffect: 'Gira a gran velocidad para eliminar Trampa Rocas, Púas y ataduras, además de aumentar la Velocidad.',
   },
-  defog: {
-    effect: 'Elimina barreras y trampas de ambos campos y reduce la Evasión del objetivo.',
-    fullEffect: 'Despeja la niebla, barreras defensivas y trampas de rocas o púas de ambos lados del campo.',
+  'flare-blitz': {
+    effect: 'El usuario recibe como daño de retroceso un tercio del daño infligido. Tiene un 10% de probabilidad de quemar al objetivo.',
+    fullEffect: 'El usuario se cubre de llamas y carga contra el objetivo. Recibe un tercio del daño causado en retroceso y tiene un 10% de probabilidad de causar quemaduras.',
+  },
+  'volt-tackle': {
+    effect: 'El usuario recibe como daño de retroceso un tercio del daño infligido. Tiene un 10% de probabilidad de paralizar al objetivo.',
+    fullEffect: 'Carga eléctrica arriesgada. Recibe un tercio del daño causado en retroceso y tiene un 10% de probabilidad de paralizar al objetivo.',
   },
 }
 
@@ -136,8 +140,20 @@ const RECURRING_PATTERNS_ES = [
     translation: 'El usuario recibe como daño de retroceso un tercio del daño infligido.',
   },
   {
-    pattern: /^user receives 1\/4 the damage inflicted in recoil\.?$/i,
+    pattern: /^user receives 1\/4 the damage (?:it inflicts|inflicted) in recoil\.?$/i,
     translation: 'El usuario recibe como daño de retroceso un cuarto del daño infligido.',
+  },
+  {
+    pattern: /^user takes 1\/4 its max hp in recoil\.?$/i,
+    translation: 'El usuario recibe como daño de retroceso un cuarto de sus PS máximos.',
+  },
+  {
+    pattern: /^user takes 1\/3 the damage inflicted in recoil\.  has a (?:10% )?chance to burn the target\.?$/i,
+    translation: 'El usuario recibe como daño de retroceso un tercio del daño infligido. Tiene un 10% de probabilidad de quemar al objetivo.',
+  },
+  {
+    pattern: /^user takes 1\/3 the damage inflicted in recoil\.  has a (?:10% )?chance to paralyze the target\.?$/i,
+    translation: 'El usuario recibe como daño de retroceso un tercio del daño infligido. Tiene un 10% de probabilidad de paralizar al objetivo.',
   },
   {
     pattern: /^user receives 1\/2 the damage inflicted in recoil\.?$/i,
@@ -188,11 +204,11 @@ const RECURRING_PATTERNS_ES = [
     translation: 'El usuario cambia por otro Pokémon inmediatamente tras atacar.',
   },
   {
-    pattern: /^user recovers half the damage inflicted\.?$/i,
+    pattern: /^(?:user recovers|drains) half the damage inflicted(?: to heal the user)?\.?$/i,
     translation: 'El usuario recupera la mitad del daño infligido.',
   },
   {
-    pattern: /^restores half of the user's maximum hp\.?$/i,
+    pattern: /^(?:restores half of the user's maximum hp|heals the user by half its max hp)\.?$/i,
     translation: 'Restaura hasta la mitad de los PS máximos del usuario.',
   },
 ]
@@ -213,40 +229,88 @@ const STAGES_ES = {
   three: 'tres niveles',
 }
 
-function translatePatternWithChance(englishText) {
+function translatePatternWithChance(englishText, effectChance = null) {
   if (!englishText) return null
 
-  // Has a X% chance to...
-  const poisonMatch = englishText.match(/has an? (\d+)% chance to poison the target/i)
-  if (poisonMatch) return `Tiene un ${poisonMatch[1]}% de probabilidad de envenenar al objetivo.`
+  // Normalizar comillas curvas tipográficas (U+2018, U+2019) y comillas dobles
+  const clean = englishText
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .trim()
 
-  const paralyzeMatch = englishText.match(/has an? (\d+)% chance to paralyze the target/i)
-  if (paralyzeMatch) return `Tiene un ${paralyzeMatch[1]}% de probabilidad de paralizar al objetivo.`
+  const chanceText = (pct) => (pct !== null && pct !== undefined ? ` un ${pct}% de` : '')
 
-  const burnMatch = englishText.match(/has an? (\d+)% chance to burn the target/i)
-  if (burnMatch) return `Tiene un ${burnMatch[1]}% de probabilidad de quemar al objetivo.`
+  // Estados con probabilidad porcentual (en el texto o pasada por effectChance)
+  const poisonMatch = clean.match(/has (?:an? )?(?:(\d+)% )?chance to poison the target/i)
+  if (poisonMatch) {
+    const pct = poisonMatch[1] || effectChance
+    return `Tiene${chanceText(pct)} probabilidad de envenenar al objetivo.`
+  }
 
-  const freezeMatch = englishText.match(/has an? (\d+)% chance to freeze the target/i)
-  if (freezeMatch) return `Tiene un ${freezeMatch[1]}% de probabilidad de congelar al objetivo.`
+  const paralyzeMatch = clean.match(/has (?:an? )?(?:(\d+)% )?chance to paralyze the target/i)
+  if (paralyzeMatch) {
+    const pct = paralyzeMatch[1] || effectChance
+    return `Tiene${chanceText(pct)} probabilidad de paralizar al objetivo.`
+  }
 
-  const flinchMatch = englishText.match(/has an? (\d+)% chance to make the target flinch/i)
-  if (flinchMatch) return `Tiene un ${flinchMatch[1]}% de probabilidad de hacer retroceder al objetivo.`
+  const burnMatch = clean.match(/has (?:an? )?(?:(\d+)% )?chance to burn the target/i)
+  if (burnMatch) {
+    const pct = burnMatch[1] || effectChance
+    return `Tiene${chanceText(pct)} probabilidad de quemar al objetivo.`
+  }
 
-  const confuseMatch = englishText.match(/has an? (\d+)% chance to confuse the target/i)
-  if (confuseMatch) return `Tiene un ${confuseMatch[1]}% de probabilidad de confundir al objetivo.`
+  const freezeMatch = clean.match(/has (?:an? )?(?:(\d+)% )?chance to freeze the target/i)
+  if (freezeMatch) {
+    const pct = freezeMatch[1] || effectChance
+    return `Tiene${chanceText(pct)} probabilidad de congelar al objetivo.`
+  }
 
-  // Lowers the target's stat by stage
-  const lowerMatch = englishText.match(/lowers the target's ([a-z\s-]+) by (one|two|three) stages?/i)
+  const flinchMatch = clean.match(/has (?:an? )?(?:(\d+)% )?chance to make the target flinch/i)
+  if (flinchMatch) {
+    const pct = flinchMatch[1] || effectChance
+    return `Tiene${chanceText(pct)} probabilidad de hacer retroceder al objetivo.`
+  }
+
+  const confuseMatch = clean.match(/has (?:an? )?(?:(\d+)% )?chance to confuse the target/i)
+  if (confuseMatch) {
+    const pct = confuseMatch[1] || effectChance
+    return `Tiene${chanceText(pct)} probabilidad de confundir al objetivo.`
+  }
+
+  const STAT_REGEX = '(?:attack|defense|special[\\s-]attack|special[\\s-]defense|speed|accuracy|evasion)'
+
+  // Reducciones de estadísticas tras causar daño (self-drops: overheat, leaf-storm)
+  const selfDropMatch = clean.match(new RegExp(`^lowers (?:the )?user's (${STAT_REGEX}) by (one|two|three) stages? after inflicting damage\\.?$`, 'i'))
+  if (selfDropMatch) {
+    const statKey = selfDropMatch[1].trim().toLowerCase().replace(/\s+/g, '-')
+    const stat = STAT_NAMES_ES[statKey] || selfDropMatch[1]
+    const stage = STAGES_ES[selfDropMatch[2].toLowerCase()] || selfDropMatch[2]
+    return `Reduce ${stat} del usuario en ${stage} tras causar daño.`
+  }
+
+  // Reducción auto-infligida simple (ej. Hammer Arm: lowers user's Speed by one stage)
+  const userLowerMatch = clean.match(new RegExp(`^lowers (?:the )?user's (${STAT_REGEX}) by (one|two|three) stages?\\.?$`, 'i'))
+  if (userLowerMatch) {
+    const statKey = userLowerMatch[1].trim().toLowerCase().replace(/\s+/g, '-')
+    const stat = STAT_NAMES_ES[statKey] || userLowerMatch[1]
+    const stage = STAGES_ES[userLowerMatch[2].toLowerCase()] || userLowerMatch[2]
+    return `Reduce ${stat} del usuario en ${stage}.`
+  }
+
+  // Reducción al objetivo (ej. screech, tail-whip, fake-tears, scary-face)
+  const lowerMatch = clean.match(new RegExp(`^lowers (?:the )?target's (${STAT_REGEX}) by (one|two|three) stages?\\.?$`, 'i'))
   if (lowerMatch) {
-    const stat = STAT_NAMES_ES[lowerMatch[1].trim().toLowerCase()] || lowerMatch[1]
+    const statKey = lowerMatch[1].trim().toLowerCase().replace(/\s+/g, '-')
+    const stat = STAT_NAMES_ES[statKey] || lowerMatch[1]
     const stage = STAGES_ES[lowerMatch[2].toLowerCase()] || lowerMatch[2]
     return `Reduce ${stat} del objetivo en ${stage}.`
   }
 
-  // Raises the user's stat by stage
-  const raiseMatch = englishText.match(/raises the user's ([a-z\s-]+) by (one|two|three) stages?/i)
+  // Aumento al usuario (ej. cotton-guard, swords-dance, iron-defense, agility)
+  const raiseMatch = clean.match(new RegExp(`^raises (?:the )?user's (${STAT_REGEX}) by (one|two|three) stages?\\.?$`, 'i'))
   if (raiseMatch) {
-    const stat = STAT_NAMES_ES[raiseMatch[1].trim().toLowerCase()] || raiseMatch[1]
+    const statKey = raiseMatch[1].trim().toLowerCase().replace(/\s+/g, '-')
+    const stat = STAT_NAMES_ES[statKey] || raiseMatch[1]
     const stage = STAGES_ES[raiseMatch[2].toLowerCase()] || raiseMatch[2]
     return `Aumenta ${stat} del usuario en ${stage}.`
   }
@@ -264,6 +328,7 @@ export function getMoveLocalizedText({
   rawDescription = '',
   rawEffect = '',
   rawFullEffect = '',
+  effectChance = null,
   isEffectSpanish = false,
   isDescriptionSpanish = false,
 }) {
@@ -310,7 +375,7 @@ export function getMoveLocalizedText({
     }
 
     if (!effect) {
-      const dynamicTranslation = translatePatternWithChance(rawEffect)
+      const dynamicTranslation = translatePatternWithChance(rawEffect, effectChance)
       if (dynamicTranslation) {
         effect = dynamicTranslation
         fullEffect = dynamicTranslation

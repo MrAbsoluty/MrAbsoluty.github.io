@@ -3,6 +3,7 @@ import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
 import { formatName } from '../services/pokeapi'
 import { playClickSound, playButtonSound } from '../utils/audio'
+import { selectRepresentativePokemon } from '../utils/representativePokemon'
 
 const typeColors = {
   bug: '#65a47b',
@@ -50,13 +51,13 @@ function MoveDetail({
     onPokemonClick?.(pokemonName)
   }
 
-  // Selección determinista de usuarios destacados:
-  // Tomamos los primeros aprendices canónicos (hasta 8)
+  // Selección determinista de Pokémon representativos (4 especies diversas y características)
   const { featuredLearners, allLearners } = useMemo(() => {
     if (!move?.learnedBy) return { featuredLearners: [], allLearners: [] }
     const valid = move.learnedBy.filter((p) => p.id && p.id <= 1025)
+    const representatives = selectRepresentativePokemon({ move, learners: valid, limit: 4 })
     return {
-      featuredLearners: valid.slice(0, 8),
+      featuredLearners: representatives,
       allLearners: valid,
     }
   }, [move])

@@ -8,6 +8,7 @@ import shinylessSoundUrl from '../audio/shinyless.mp3'
 import favoritoSoundUrl from '../audio/favorito.mp3'
 import despliegueSoundUrl from '../audio/despliegue.mp3'
 import clickuserSoundUrl from '../audio/clickuser.mp3'
+import messageSoundUrl from '../audio/message.mp3'
 
 let lastBuscarTime = 0
 export function playBuscarSound() {
@@ -161,5 +162,22 @@ export function playClickUserSound() {
     // Ignore playback restrictions/errors
   }
 }
+
+let lastMessageTime = 0
+export function playMessageSound() {
+  const now = Date.now()
+  if (now - lastMessageTime < 150) return
+  lastMessageTime = now
+
+  try {
+    const audio = new Audio(messageSoundUrl)
+    audio.currentTime = 0
+    audio.volume = 0.85
+    audio.play().catch(() => {})
+  } catch {
+    // Ignore playback restrictions/errors
+  }
+}
+
 
 

@@ -9,7 +9,7 @@ import {
   getUnreadSenderIds,
 } from '../../services/social'
 import { supabase } from '../../services/supabase'
-import { playBubbleSound, playHoverBubbleSound } from '../../utils/audio'
+import { playBubbleSound, playHoverBubbleSound, playMessageSound } from '../../utils/audio'
 import '../../styles/floating-chat.css'
 
 function formatMessageTime(timestamp) {
@@ -103,6 +103,16 @@ export default function FloatingChat() {
   const messagesEndRef = useRef(null)
   const typingTimerRef = useRef(null)
   const lastBroadcastRef = useRef(0)
+
+  const isChatOpenRef = useRef(isChatOpen)
+  const isChatMinimizedRef = useRef(isChatMinimized)
+  const activeChatFriendRef = useRef(activeChatFriend)
+
+  useEffect(() => {
+    isChatOpenRef.current = isChatOpen
+    isChatMinimizedRef.current = isChatMinimized
+    activeChatFriendRef.current = activeChatFriend
+  }, [isChatOpen, isChatMinimized, activeChatFriend])
 
   const userId = user?.id
 
@@ -315,8 +325,11 @@ export default function FloatingChat() {
             return next
           })
 
-          const isCurrentlyViewing =
-            isChatOpen && !isChatMinimized && activeChatFriend?.id === otherUserId
+          const isCurrentlyViewing = Boolean(
+            isChatOpenRef.current &&
+            !isChatMinimizedRef.current &&
+            activeChatFriendRef.current?.id === otherUserId
+          )
 
           if (isCurrentlyViewing) {
             setMessages((prev) => {
@@ -339,7 +352,8 @@ export default function FloatingChat() {
               markConversationAsRead(user.id, otherUserId)
             }
           } else if (isIncoming) {
-            playBubbleSound()
+            // Sonido 'message' al recibir mensaje fuera del chat o dentro de la caja de amigos
+            playMessageSound()
             setHasUnreadChat(true)
             setUnreadFriendIds((prev) => new Set([...prev, otherUserId]))
           }
@@ -354,7 +368,7 @@ export default function FloatingChat() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, isChatOpen, isChatMinimized, activeChatFriend?.id, setHasUnreadChat, loadFriends])
+  }, [user?.id, setHasUnreadChat, loadFriends])
 
   // Canal de Broadcast en tiempo real para la animación de tecleo (typing)
   useEffect(() => {

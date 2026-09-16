@@ -23,6 +23,7 @@ import {
   SPANISH_NAME_TO_CANONICAL,
 } from '../utils/pokemonNames.js'
 import { getMoveLocalizedText } from '../data/moveTranslations.js'
+import { MOVE_CATALOG_NAMES } from '../data/moveCatalogNames.js'
 
 export { cleanPokemonSlug, getPokemonDisplayName }
 
@@ -2966,8 +2967,23 @@ export async function getMove(query, locale = 'es', messages = {}) {
     )
   }
 
-  // Resolver primero por diccionario en español o como slug directo
-  const resolvedSlug = COMMON_MOVE_SLUGS_ES[norm] || normalizeMoveQuery(query)
+  // Resolver primero por diccionario rápido, catálogo completo de 937 movimientos o slug normalizado
+  let resolvedSlug = COMMON_MOVE_SLUGS_ES[norm]
+  if (!resolvedSlug && MOVE_CATALOG_NAMES) {
+    for (const [slug, names] of Object.entries(MOVE_CATALOG_NAMES)) {
+      if (
+        normalizeSearchText(names.es) === norm ||
+        normalizeSearchText(names.en) === norm ||
+        slug === norm
+      ) {
+        resolvedSlug = slug
+        break
+      }
+    }
+  }
+  if (!resolvedSlug) {
+    resolvedSlug = normalizeMoveQuery(query)
+  }
 
   const cacheKey = `${resolvedSlug}:${locale}`
   if (moveDetailCache.has(cacheKey)) {
@@ -3012,7 +3028,7 @@ export async function getMove(query, locale = 'es', messages = {}) {
   const nameEntry = data.names?.find(
     (n) => n?.language?.name === locale || (isSpanish && n?.language?.name === 'es'),
   )
-  const localizedName = nameEntry?.name || formatName(data.name)
+  const localizedName = nameEntry?.name || (isSpanish && MOVE_CATALOG_NAMES?.[data.name]?.es) || formatName(data.name)
 
   // Descripción (flavor_text_entries)
   const esFlavor = data.flavor_text_entries?.find(
@@ -3042,6 +3058,7 @@ export async function getMove(query, locale = 'es', messages = {}) {
     rawDescription,
     rawEffect: rawShortEffect,
     rawFullEffect,
+    effectChance: data.effect_chance,
     isEffectSpanish,
     isDescriptionSpanish,
   })
@@ -3156,17 +3173,31 @@ export async function getMovesList({
   const queryWords = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : []
 
   // 1. Filtrar los slugs candidatos
-  const matchedSlugs = allSlugs.filter((slug) => {
+  let matchedSlugs = allSlugs.filter((slug) => {
     if (typeFilterSet && !typeFilterSet.has(slug)) return false
     if (categoryFilterSet && !categoryFilterSet.has(slug)) return false
 
     if (normalizedQuery) {
       if (directSpanishSlug && slug === directSpanishSlug) return true
-      const normSlug = normalizeSearchText(slug)
-      if (normSlug.includes(normalizedQuery)) return true
-      if (queryWords.length > 0 && queryWords.every((word) => normSlug.includes(word))) return true
 
-      // Si ya está en caché de detalle, comprobar nombre localizado
+      const catalogEntry = MOVE_CATALOG_NAMES?.[slug]
+      const esNameNorm = catalogEntry ? normalizeSearchText(catalogEntry.es) : ''
+      const enNameNorm = catalogEntry ? normalizeSearchText(catalogEntry.en) : ''
+      const normSlug = normalizeSearchText(slug)
+
+      // a) Coincidencia directa o parcial en español, inglés o slug
+      if (esNameNorm.includes(normalizedQuery) || enNameNorm.includes(normalizedQuery) || normSlug.includes(normalizedQuery)) {
+        return true
+      }
+
+      // b) Coincidencia por palabras individuales (todas las palabras coinciden en español o en inglés)
+      if (queryWords.length > 1) {
+        const matchesEs = queryWords.every((word) => esNameNorm.includes(word))
+        const matchesEn = queryWords.every((word) => enNameNorm.includes(word) || normSlug.includes(word))
+        if (matchesEs || matchesEn) return true
+      }
+
+      // c) Si ya está en caché de detalle, comprobar nombre localizado
       const cached = moveDetailCache.get(`${slug}:${locale}`)
       if (cached) {
         const cachedNameNorm = normalizeSearchText(cached.displayName || cached.localizedName || '')
@@ -3178,13 +3209,33 @@ export async function getMovesList({
     return true
   })
 
-  // Si hay coincidencia directa en español, colocarla al frente
-  if (directSpanishSlug && matchedSlugs.includes(directSpanishSlug)) {
-    const idx = matchedSlugs.indexOf(directSpanishSlug)
-    if (idx > 0) {
-      matchedSlugs.splice(idx, 1)
-      matchedSlugs.unshift(directSpanishSlug)
-    }
+  // 2. Ordenar candidatos para que las coincidencias exactas y prefijos aparezcan primero
+  if (normalizedQuery && matchedSlugs.length > 1) {
+    matchedSlugs.sort((a, b) => {
+      if (directSpanishSlug) {
+        if (a === directSpanishSlug) return -1
+        if (b === directSpanishSlug) return 1
+      }
+
+      const aEntry = MOVE_CATALOG_NAMES?.[a]
+      const bEntry = MOVE_CATALOG_NAMES?.[b]
+      const aEs = aEntry ? normalizeSearchText(aEntry.es) : ''
+      const bEs = bEntry ? normalizeSearchText(bEntry.es) : ''
+      const aEn = aEntry ? normalizeSearchText(aEntry.en) : normalizeSearchText(a)
+      const bEn = bEntry ? normalizeSearchText(bEntry.en) : normalizeSearchText(b)
+
+      const aExact = aEs === normalizedQuery || aEn === normalizedQuery || a === normalizedQuery
+      const bExact = bEs === normalizedQuery || bEn === normalizedQuery || b === normalizedQuery
+      if (aExact && !bExact) return -1
+      if (!aExact && bExact) return 1
+
+      const aStarts = aEs.startsWith(normalizedQuery) || aEn.startsWith(normalizedQuery) || a.startsWith(normalizedQuery)
+      const bStarts = bEs.startsWith(normalizedQuery) || bEn.startsWith(normalizedQuery) || b.startsWith(normalizedQuery)
+      if (aStarts && !bStarts) return -1
+      if (!aStarts && bStarts) return 1
+
+      return 0
+    })
   }
 
   const totalCount = matchedSlugs.length

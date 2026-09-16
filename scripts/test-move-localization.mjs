@@ -101,6 +101,43 @@ async function runTests() {
     assert(!hasEnglishWords, `Movimiento "${slug}" (${move.displayName}): efecto localizado en español sin inglés`)
   }
 
+  // --- TEST 10: Búsqueda bidireccional y robustez ante mayúsculas/minúsculas/acentos ---
+  console.log('\nTest 10: Búsqueda flexible (español/inglés, mayúsculas, minúsculas, acentos, parciales)')
+  const { getMovesList } = await import('../src/services/pokeapi.js')
+
+  const searchCases = [
+    { q: 'A Bocajarro', expectedSlug: 'close-combat' },
+    { q: 'A bOcajarro', expectedSlug: 'close-combat' },
+    { q: 'a bocajarro', expectedSlug: 'close-combat' },
+    { q: 'A BOCAJARRO', expectedSlug: 'close-combat' },
+    { q: 'boca', expectedSlug: 'close-combat' },
+    { q: 'Close Combat', expectedSlug: 'close-combat' },
+    { q: 'arañazo', expectedSlug: 'scratch' },
+    { q: 'aranazo', expectedSlug: 'scratch' },
+    { q: 'Pájaro Osado', expectedSlug: 'brave-bird' },
+    { q: 'pajaro osado', expectedSlug: 'brave-bird' },
+  ]
+
+  for (const { q, expectedSlug } of searchCases) {
+    const searchRes = await getMovesList({ query: q, locale: 'es' })
+    const hasMatch = searchRes.moves.some((m) => m.name === expectedSlug)
+    assert(hasMatch, `Búsqueda "${q}" encuentra el movimiento correcto (${expectedSlug})`)
+  }
+
+  // --- TEST 11: Preservación factual de mecánicas auditadas ---
+  console.log('\nTest 11: Preservación factual de mecánicas auditadas')
+  const takeDown = await getMove('take-down', 'es')
+  assert(takeDown.effect.includes('un cuarto') || takeDown.effect.includes('1/4'), 'Take Down preserva la fracción de retroceso 1/4')
+
+  const struggle = await getMove('struggle', 'es')
+  assert(struggle.effect.includes('un cuarto') || struggle.effect.includes('1/4'), 'Struggle preserva la fracción de retroceso sobre PS máximos')
+
+  const cottonGuard = await getMove('cotton-guard', 'es')
+  assert(cottonGuard.effect.includes('tres niveles'), 'Cotton Guard preserva aumento en tres niveles')
+
+  const firePunch = await getMove('fire-punch', 'es')
+  assert(firePunch.effect.includes('10%') && firePunch.effect.includes('quemar'), 'Fire Punch preserva probabilidad del 10% de quemar')
+
   console.log('\n==================================================')
   console.log(`RESULTADOS: ${passed} PASADOS | ${failed} FALLADOS`)
   console.log('==================================================\n')

@@ -80,7 +80,12 @@ function Home({ onSearch, onPokemonClick, onItemClick, onItemsClick, onMovesClic
           </div>
           <div className="pokemon-grid">
             {featuredPokemon.map((pokemon) => (
-              <PokemonCard key={pokemon.number} {...pokemon} type={pokemon.typeKeys.map((type) => t.types[type]).join(' · ')} />
+              <PokemonCard
+                key={pokemon.number}
+                {...pokemon}
+                type={pokemon.typeKeys.map((type) => t.types[type]).join(' · ')}
+                onClick={() => onPokemonClick(pokemon.name.toLowerCase())}
+              />
             ))}
           </div>
         </section>

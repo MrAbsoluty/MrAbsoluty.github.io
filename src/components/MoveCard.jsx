@@ -1,5 +1,6 @@
 import { playClickSound } from '../utils/audio'
 import { formatName } from '../services/pokeapi'
+import { selectRepresentativePokemon } from '../utils/representativePokemon'
 
 const typeColors = {
   bug: '#65a47b',
@@ -43,8 +44,11 @@ function MoveCard({ move, onClick, t }) {
   const localizedTypeName = t?.types?.[type] || type.toUpperCase()
   const localizedCategoryName = t?.moves?.categories?.[category] || category.toUpperCase()
 
-  // Selección determinista del usuario representativo
-  const firstLearner = learnedBy[0]?.name ? formatName(learnedBy[0].name) : null
+  // Selección determinista del usuario representativo más característico
+  const topRepresentative = selectRepresentativePokemon({ move, learners: learnedBy, limit: 1 })[0]
+  const firstLearner = topRepresentative?.name
+    ? formatName(topRepresentative.name)
+    : (learnedBy[0]?.name ? formatName(learnedBy[0].name) : null)
 
   function handleClick() {
     playClickSound()

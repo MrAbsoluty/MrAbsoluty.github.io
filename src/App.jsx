@@ -25,6 +25,7 @@ import FollowRequestsModal from './components/social/FollowRequestsModal'
 import PrivacySettingsModal from './components/social/PrivacySettingsModal'
 import UserSearchModal from './components/social/UserSearchModal'
 import { useAuth } from './context/AuthContext'
+import { scrollToTop } from './utils/scroll'
 import './styles/profile.css'
 import './styles/social.css'
 import './App.css'
@@ -60,6 +61,7 @@ function App() {
   const t = getTranslations(locale)
 
   async function loadPokemonByQuery(query, pushHistory = true) {
+    scrollToTop('instant')
     setView('detail')
     setPokemon(null)
     setError(null)
@@ -83,6 +85,7 @@ function App() {
   }
 
   async function loadItemByName(name, pushHistory = true) {
+    scrollToTop('instant')
     setView('item-detail')
     setItem(null)
     setError(null)
@@ -105,6 +108,7 @@ function App() {
   }
 
   async function loadMoveByName(name, pushHistory = true) {
+    scrollToTop('instant')
     setView('move-detail')
     setMove(null)
     setError(null)
@@ -138,8 +142,32 @@ function App() {
     loadMoveByName(name, true)
   }
 
+  // Desactivar restauración automática de scroll del navegador para controlar el comportamiento SPA
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+  }, [])
+
+  // Posicionar siempre la ventana en el encabezado (tope superior) al cambiar de página o detalle
+  useEffect(() => {
+    scrollToTop('instant')
+  }, [
+    view,
+    profileUsername,
+    pokemon?.id,
+    pokemon?.name,
+    item?.id,
+    item?.name,
+    move?.id,
+    move?.name,
+    constructionFeature,
+  ])
+
   useEffect(() => {
     function handlePopState() {
+      scrollToTop('instant')
+
       // 1. Verificar ruta en pathname: /profile/:username
       const pathname = window.location.pathname
       const profilePathMatch = pathname.match(/^\/profile\/([^/]+)/i)
@@ -233,11 +261,16 @@ function App() {
     handlePopState()
 
     window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    window.addEventListener('hashchange', handlePopState)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('hashchange', handlePopState)
+    }
   }, [locale])
 
   function handleProfileOpen(username) {
     if (!username) return
+    scrollToTop('instant')
     setView('profile')
     setProfileUsername(username)
     setPokemon(null)
@@ -247,6 +280,7 @@ function App() {
   }
 
   function handleItemsOpen() {
+    scrollToTop('instant')
     setView('items')
     setPokemon(null)
     setItem(null)
@@ -256,6 +290,7 @@ function App() {
   }
 
   function handleMovesOpen() {
+    scrollToTop('instant')
     setView('moves')
     setPokemon(null)
     setItem(null)
@@ -265,14 +300,17 @@ function App() {
   }
 
   function handlePokedexOpen() {
+    scrollToTop('instant')
     setView('pokedex')
     setPokemon(null)
     setItem(null)
+    setMove(null)
     setError(null)
     window.history.pushState({}, '', '/#pokedex')
   }
 
   function handleFavoritesOpen() {
+    scrollToTop('instant')
     setView('favorites')
     setPokemon(null)
     setItem(null)
@@ -281,6 +319,7 @@ function App() {
   }
 
   function handleHome() {
+    scrollToTop('instant')
     setView('home')
     setConstructionFeature(null)
     setPokemon(null)
@@ -290,6 +329,7 @@ function App() {
   }
 
   function handleConstructionOpen(featureName = '') {
+    scrollToTop('instant')
     setView('construction')
     setConstructionFeature(featureName)
     setPokemon(null)
@@ -367,6 +407,7 @@ function App() {
   }
 
   function handleBack() {
+    scrollToTop('instant')
     if (view === 'profile' || view === 'construction') {
       handleHome()
       return
