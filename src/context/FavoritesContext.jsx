@@ -1,54 +1,77 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { useAuth } from './AuthContext'
+import { useAuth } from './AuthContext.jsx'
+import { supabase } from '../services/supabase.js'
 import {
   addFavoriteToSupabase,
   removeFavoriteFromSupabase,
   syncFavoritesToSupabase,
   getUserFavorites,
-} from '../services/social'
+  GRAMITOS_CANONICAL_FAVORITES,
+} from '../services/social.js'
 import {
   cleanPokemonSlug,
   POKEMON_ID_TO_SLUG,
   POKEMON_SLUG_TO_ID,
-} from '../utils/pokemonNames'
+} from '../utils/pokemonNames.js'
 
-const FAVORITES_STORAGE_KEY = 'pokeguide-favorites'
+const LEGACY_STORAGE_KEY = 'pokeguide-favorites'
 const LAST_VIEWED_KEY = 'pokeguide-favorites-last-viewed'
+
+export const MR_GRAMITOS_ID = 'b3bdfa84-2188-4b9a-a70c-1db4f07815d7'
+export const MR_ABSOLUTY_ID = 'b08dfadd-0c8c-4104-b4ef-5761070dcbc4'
+
+export function getFavoritesStorageKey(userId) {
+  if (userId) return `pokeguide-favorites_${userId}`
+  return 'pokeguide-favorites_guest'
+}
 
 export const FavoritesContext = createContext(null)
 export { normalizePokemonForFavorite } from '../utils/pokemonNames'
 import { normalizePokemonForFavorite } from '../utils/pokemonNames'
 
-function loadInitialFavorites() {
+function loadInitialFavorites(userId) {
   if (typeof window === 'undefined' || !window.localStorage) return []
   try {
-    const raw = window.localStorage.getItem(FAVORITES_STORAGE_KEY)
-    if (!raw) return []
+    // MrAbsoluty nunca debe tener favoritos cargados desde almacenamiento local
+    if (userId === MR_ABSOLUTY_ID) return []
+
+    const key = getFavoritesStorageKey(userId)
+    let raw = window.localStorage.getItem(key)
+
+    // Si no existe la clave individual pero es MrGramitos o invitado, verificar clave legada
+    if (!raw) {
+      if (userId === MR_GRAMITOS_ID || !userId) {
+        raw = window.localStorage.getItem(LEGACY_STORAGE_KEY)
+      }
+    }
+
+    if (!raw) {
+      if (userId === MR_GRAMITOS_ID) {
+        return GRAMITOS_CANONICAL_FAVORITES.map((f, i) => ({
+          id: f.id,
+          name: f.name,
+          addedAt: Date.now() - i * 1000,
+        }))
+      }
+      return []
+    }
+
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) {
-      let hasRepaired = false
-      const list = parsed
-        .filter((item) => item && (typeof item.id === 'number' || typeof item.name === 'string'))
-        .map((item) => {
-          const norm = normalizePokemonForFavorite(item)
-          const repairedName = norm?.name || (item.name || '').toLowerCase()
-          const repairedId = norm?.id || item.id || null
-          if (repairedName !== item.name || repairedId !== item.id) {
-            hasRepaired = true
-          }
-          return {
-            id: repairedId,
-            name: repairedName,
-            addedAt: typeof item.addedAt === 'number' ? item.addedAt : 0,
-          }
+      const seen = new Set()
+      const list = []
+      for (const item of parsed) {
+        if (!item) continue
+        const norm = normalizePokemonForFavorite(item)
+        if (!norm) continue
+        const mapKey = (norm.id ? String(norm.id) : norm.name).toLowerCase()
+        if (seen.has(mapKey)) continue
+        seen.add(mapKey)
+        list.push({
+          id: norm.id,
+          name: norm.name,
+          addedAt: typeof item?.addedAt === 'number' ? item.addedAt : Date.now(),
         })
-
-      if (hasRepaired) {
-        try {
-          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(list))
-        } catch {
-          // Silencioso
-        }
       }
       return list
     }
@@ -77,14 +100,15 @@ function loadInitialLastViewed() {
 
 export function FavoritesProvider({ children }) {
   const { user } = useAuth()
-  const [favorites, setFavorites] = useState(loadInitialFavorites)
+  const [favorites, setFavorites] = useState(() => loadInitialFavorites(user?.id))
   const [lastViewedTime, setLastViewedTime] = useState(loadInitialLastViewed)
 
   // Sincronizar con eventos de almacenamiento externo (otras pestañas)
   useEffect(() => {
     function handleStorage(e) {
-      if (e.key === FAVORITES_STORAGE_KEY) {
-        setFavorites(loadInitialFavorites())
+      const activeKey = getFavoritesStorageKey(user?.id)
+      if (e.key === activeKey || e.key === LEGACY_STORAGE_KEY) {
+        setFavorites(loadInitialFavorites(user?.id))
       }
       if (e.key === LAST_VIEWED_KEY) {
         setLastViewedTime(loadInitialLastViewed())
@@ -93,65 +117,104 @@ export function FavoritesProvider({ children }) {
 
     window.addEventListener('storage', handleStorage)
     return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+  }, [user?.id])
 
-  // Sincronizar con Supabase cuando el usuario inicia sesión
+  // Sincronizar con Supabase y aislar datos cuando el usuario cambia
   useEffect(() => {
-    if (!user?.id) return
-
     let isMounted = true
 
-    async function syncWithRemote() {
+    async function handleUserSync() {
+      // 1. Caso: Cuenta secundaria MrAbsoluty conectada
+      // Purgar los favoritos filtrados accidentalmente de la base de datos y de localStorage
+      if (user?.id === MR_ABSOLUTY_ID) {
+        setFavorites([])
+        try {
+          window.localStorage.removeItem(getFavoritesStorageKey(MR_ABSOLUTY_ID))
+          window.localStorage.removeItem(LEGACY_STORAGE_KEY)
+          if (supabase) {
+            await supabase.from('user_favorites').delete().eq('user_id', MR_ABSOLUTY_ID)
+          }
+        } catch (e) {
+          console.warn('[FavoritesContext] Error limpiando favoritos de MrAbsoluty:', e)
+        }
+        return
+      }
+
+      // 2. Caso: Usuario no autenticado (invitado)
+      if (!user?.id) {
+        const guestFavs = loadInitialFavorites(null)
+        if (isMounted) setFavorites(guestFavs)
+        return
+      }
+
+      // 3. Caso: Usuario autenticado (ej: MrGramitos u otro)
       try {
         const remoteFavorites = await getUserFavorites(user.id)
         if (!isMounted) return
 
-        // Combinar favoritos remotos con locales existentes sin duplicados y normalizados
-        const local = loadInitialFavorites()
+        const localFavs = loadInitialFavorites(user.id)
         const combinedMap = new Map()
 
-        // Primero agregar locales normalizados
-        local.forEach((item) => {
-          const norm = normalizePokemonForFavorite(item)
-          if (!norm) return
-          const itemKey = (norm.id ? String(norm.id) : norm.name).toLowerCase()
-          combinedMap.set(itemKey, {
-            id: norm.id,
-            name: norm.name,
-            addedAt: typeof item.addedAt === 'number' ? item.addedAt : Date.now(),
+        // Prioridad: favoritos canónicos de MrGramitos si no hay nada
+        if (user.id === MR_GRAMITOS_ID && remoteFavorites.length === 0 && localFavs.length === 0) {
+          GRAMITOS_CANONICAL_FAVORITES.forEach((item, i) => {
+            combinedMap.set(String(item.id), {
+              id: item.id,
+              name: item.name,
+              addedAt: Date.now() - (i * 1000),
+            })
           })
-        })
-
-        // Luego agregar o actualizar con remotos normalizados
-        remoteFavorites.forEach((item) => {
-          const norm = normalizePokemonForFavorite(item)
-          if (!norm) return
-          const itemKey = (norm.id ? String(norm.id) : norm.name).toLowerCase()
-          if (!combinedMap.has(itemKey)) {
-            combinedMap.set(itemKey, {
+        } else {
+          // Agregar favoritos locales deduplicados
+          localFavs.forEach((item) => {
+            const norm = normalizePokemonForFavorite(item)
+            if (!norm) return
+            const key = (norm.id ? String(norm.id) : norm.name).toLowerCase()
+            combinedMap.set(key, {
               id: norm.id,
               name: norm.name,
               addedAt: typeof item.addedAt === 'number' ? item.addedAt : Date.now(),
             })
-          }
-        })
+          })
+
+          // Combinar con remotos
+          remoteFavorites.forEach((item) => {
+            const norm = normalizePokemonForFavorite(item)
+            if (!norm) return
+            const key = (norm.id ? String(norm.id) : norm.name).toLowerCase()
+            if (!combinedMap.has(key)) {
+              combinedMap.set(key, {
+                id: norm.id,
+                name: norm.name,
+                addedAt: typeof item.addedAt === 'number' ? item.addedAt : Date.now(),
+              })
+            }
+          })
+        }
 
         const mergedList = Array.from(combinedMap.values())
         setFavorites(mergedList)
+
+        // Guardar en la clave aislada del usuario
         try {
-          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(mergedList))
+          const userKey = getFavoritesStorageKey(user.id)
+          window.localStorage.setItem(userKey, JSON.stringify(mergedList))
+          // Limpiar clave legada si este era MrGramitos
+          if (user.id === MR_GRAMITOS_ID) {
+            window.localStorage.removeItem(LEGACY_STORAGE_KEY)
+          }
         } catch {
           // Silencioso
         }
 
-        // Subir a Supabase cualquier favorito que estuviese en local
+        // Subir a Supabase con RLS del usuario conectado
         await syncFavoritesToSupabase(user.id, mergedList)
       } catch (err) {
         console.warn('[FavoritesContext] Error sincronizando con Supabase:', err)
       }
     }
 
-    syncWithRemote()
+    handleUserSync()
 
     return () => {
       isMounted = false
@@ -159,12 +222,21 @@ export function FavoritesProvider({ children }) {
   }, [user?.id])
 
   function saveFavorites(nextFavorites) {
-    setFavorites(nextFavorites)
+    const seen = new Set()
+    const deduplicated = []
+    for (const item of nextFavorites) {
+      const norm = normalizePokemonForFavorite(item)
+      if (!norm) continue
+      const mapKey = (norm.id ? String(norm.id) : norm.name).toLowerCase()
+      if (seen.has(mapKey)) continue
+      seen.add(mapKey)
+      deduplicated.push(item)
+    }
+
+    setFavorites(deduplicated)
     try {
-      window.localStorage.setItem(
-        FAVORITES_STORAGE_KEY,
-        JSON.stringify(nextFavorites),
-      )
+      const key = getFavoritesStorageKey(user?.id)
+      window.localStorage.setItem(key, JSON.stringify(deduplicated))
     } catch (err) {
       console.error('Error guardando favoritos en localStorage:', err)
     }

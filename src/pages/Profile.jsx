@@ -28,6 +28,20 @@ function getFeaturedPokemonId(slugOrName) {
   return 6
 }
 
+function deduplicateFavorites(list) {
+  if (!Array.isArray(list)) return []
+  const seen = new Set()
+  const result = []
+  for (const item of list) {
+    if (!item) continue
+    const key = (item.id ? String(item.id) : (item.name || '')).toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    result.push(item)
+  }
+  return result
+}
+
 export default function Profile({
   username: routeUsername,
   onPokemonClick,
@@ -131,10 +145,10 @@ export default function Profile({
 
         // Si es el propietario, usamos la lista de favoritos viva del contexto
         if (user?.id && data.id === user.id) {
-          setFavoritesList(localFavorites || [])
+          setFavoritesList(deduplicateFavorites(localFavorites || []))
         } else if (data.favorites_visibility !== 'private') {
           const favs = await getUserFavorites(data.id)
-          setFavoritesList(favs)
+          setFavoritesList(deduplicateFavorites(favs))
         } else {
           setFavoritesList([])
         }
@@ -157,7 +171,7 @@ export default function Profile({
   // Sincronizar favoritos locales si es el dueño
   useEffect(() => {
     if (isOwner && localFavorites) {
-      setFavoritesList(localFavorites)
+      setFavoritesList(deduplicateFavorites(localFavorites))
     }
   }, [isOwner, localFavorites])
 
@@ -481,7 +495,13 @@ export default function Profile({
                   <div className="trainer-stats-trio">
                     <div className="trainer-stat-pill">
                       <span className="stat-symbol">⭐</span>
-                      <strong className="stat-val">{profileData.favoritesCount || 0}</strong>
+                      <strong className="stat-val">
+                        {profileData?.id === 'b08dfadd-0c8c-4104-b4ef-5761070dcbc4'
+                          ? 0
+                          : canViewFavorites
+                          ? favoritesList.length
+                          : (profileData?.favoritesCount || 0)}
+                      </strong>
                       <span className="stat-tag">{t?.social?.favorites || 'Favoritos'}</span>
                     </div>
 
@@ -675,7 +695,7 @@ export default function Profile({
                   ) : (
                     /* Grid de Pokémon Favoritos */
                     <div className="trainer-fav-grid" role="region" aria-label="Pokémon favoritos">
-                      {favoritesList.map((fav) => {
+                      {favoritesList.map((fav, index) => {
                         const pokeId = fav.id
                         const pokeSlug = cleanPokemonSlug(fav.name || '', pokeId)
                         const pokeDisplayName = getPokemonDisplayName(pokeId || pokeSlug, locale)
@@ -685,7 +705,7 @@ export default function Profile({
 
                         return (
                           <div
-                            key={pokeId || pokeSlug}
+                            key={`${pokeId || pokeSlug}-${fav.name || ''}-${index}`}
                             className="trainer-fav-card is-interactive"
                             onClick={() => handlePokemonCardClick(fav)}
                             onMouseEnter={playHoverBubbleSound}

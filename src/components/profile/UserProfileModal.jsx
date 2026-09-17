@@ -14,6 +14,20 @@ import {
   getPokemonDisplayName,
 } from '../../utils/pokemonNames'
 
+function deduplicateFavorites(list) {
+  if (!Array.isArray(list)) return []
+  const seen = new Set()
+  const result = []
+  for (const item of list) {
+    if (!item) continue
+    const key = (item.id ? String(item.id) : (item.name || '')).toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    result.push(item)
+  }
+  return result
+}
+
 export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
   const {
     isUserProfileOpen,
@@ -109,10 +123,10 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
 
         // Si es el propietario, usamos la lista de favoritos viva del contexto o de la BD
         if (user?.id && data.id === user.id) {
-          setFavoritesList(localFavorites || [])
+          setFavoritesList(deduplicateFavorites(localFavorites || []))
         } else if (data.favorites_visibility !== 'private') {
           const favs = await getUserFavorites(data.id)
-          setFavoritesList(favs)
+          setFavoritesList(deduplicateFavorites(favs))
         } else {
           setFavoritesList([])
         }
@@ -377,7 +391,13 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
               <div className="user-profile-stats-row">
                 <div className="user-stat-card">
                   <span className="stat-icon">⭐</span>
-                  <strong className="stat-number">{profileData.favoritesCount || 0}</strong>
+                  <strong className="stat-number">
+                    {profileData?.id === 'b08dfadd-0c8c-4104-b4ef-5761070dcbc4'
+                      ? 0
+                      : canViewFavorites
+                      ? favoritesList.length
+                      : (profileData?.favoritesCount || 0)}
+                  </strong>
                   <span className="stat-label">{t?.social?.favorites || 'Favoritos'}</span>
                 </div>
 
@@ -465,7 +485,7 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
                 </div>
               ) : (
                 <div className="user-profile-favorites-grid">
-                  {favoritesList.map((fav) => {
+                  {favoritesList.map((fav, index) => {
                     const pokeId = fav.id
                     const pokeSlug = cleanPokemonSlug(fav.name || '', pokeId)
                     const displayName = getPokemonDisplayName(pokeId || pokeSlug, locale)
@@ -481,7 +501,7 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
 
                     return (
                       <div
-                        key={pokeId || pokeSlug}
+                        key={`${pokeId || pokeSlug}-${fav.name || ''}-${index}`}
                         className="profile-fav-card"
                         onClick={() => handlePokemonCardClick(fav)}
                         role="button"

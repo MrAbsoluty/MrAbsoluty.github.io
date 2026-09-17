@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || ''
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() || ''
+const supabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL?.trim()) || (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL?.trim()) || ''
+const supabaseKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()) || (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()) || ''
 
 // Validar si las variables de entorno requeridas están presentes
 const missingVars = []
@@ -11,7 +11,7 @@ if (!supabaseKey) missingVars.push('VITE_SUPABASE_PUBLISHABLE_KEY')
 export const isSupabaseConfigured = missingVars.length === 0
 
 if (!isSupabaseConfigured) {
-  if (import.meta.env.DEV) {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
     console.warn(
       `[Supabase] ⚠️ Configuración incompleta en PokeGuide:\n` +
       `Faltan las siguientes variables en .env.local: ${missingVars.join(', ')}.\n` +
