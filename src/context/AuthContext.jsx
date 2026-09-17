@@ -950,6 +950,47 @@ export function AuthProvider({ children }) {
     }
   }, [user?.id])
 
+  // Presencia global de usuarios online en PokeGuide
+  const [onlineIds, setOnlineIds] = useState(new Set())
+
+  useEffect(() => {
+    if (!supabase) return undefined
+
+    const channel = supabase.channel('pokeguide-chat-presence', {
+      config: user?.id ? { presence: { key: user.id } } : {},
+    })
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        const ids = new Set(
+          Object.values(state)
+            .flat()
+            .map((entry) => entry.user_id)
+            .filter(Boolean)
+        )
+        setOnlineIds(ids)
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && user?.id) {
+          channel.track({ user_id: user.id })
+        }
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
+  const isUserOnline = useCallback(
+    (userId) => {
+      if (!userId) return false
+      if (user?.id && userId === user.id) return true
+      return onlineIds.has(userId)
+    },
+    [user?.id, onlineIds]
+  )
+
   const isAuthenticated = Boolean(user)
   const isProfileComplete = Boolean(user && profile?.username)
 
@@ -1030,6 +1071,8 @@ export function AuthProvider({ children }) {
       deleteAvatar,
       updateEmail,
       updatePasswordInSettings,
+      onlineIds,
+      isUserOnline,
     }),
     [
       user,
@@ -1102,6 +1145,8 @@ export function AuthProvider({ children }) {
       deleteAvatar,
       updateEmail,
       updatePasswordInSettings,
+      onlineIds,
+      isUserOnline,
     ]
   )
 

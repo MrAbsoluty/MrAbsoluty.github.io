@@ -44,6 +44,15 @@ function getInitialLocale() {
   }
 }
 
+function getInitialTheme() {
+  try {
+    const savedTheme = window.localStorage.getItem('pokeguide-theme')
+    return savedTheme === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
 function App() {
   const { openUserProfile } = useAuth()
   const [view, setView] = useState('home')
@@ -58,7 +67,23 @@ function App() {
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [locale, setLocale] = useState(getInitialLocale)
+  const [theme, setTheme] = useState(getInitialTheme)
   const t = getTranslations(locale)
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.style.colorScheme = theme
+    try {
+      window.localStorage.setItem('pokeguide-theme', theme)
+    } catch {
+      // ignore
+    }
+  }, [theme])
+
+  function handleThemeChange(nextTheme) {
+    const validTheme = nextTheme === 'dark' ? 'dark' : 'light'
+    setTheme(validTheme)
+  }
 
   async function loadPokemonByQuery(query, pushHistory = true) {
     scrollToTop('instant')
@@ -613,8 +638,13 @@ function App() {
       <AuthModal />
       <UsernameSetupModal />
       <ProfileModal />
-      <SettingsModal locale={locale} onLocaleChange={handleLocaleChange} t={t} />
-      <FollowersModal t={t} />
+      <SettingsModal
+        locale={locale}
+        onLocaleChange={handleLocaleChange}
+        t={t}
+        theme={theme}
+        onThemeChange={handleThemeChange}
+      />
       <FollowingModal t={t} />
       <FollowRequestsModal t={t} />
       <PrivacySettingsModal t={t} />

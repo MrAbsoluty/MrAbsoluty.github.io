@@ -27,6 +27,8 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
     openFollowing,
     openFollowRequests,
     pendingRequestsCount,
+    onlineIds,
+    isUserOnline,
   } = useAuth()
 
   const { favorites: localFavorites } = useFavorites()
@@ -43,6 +45,13 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
 
   const isOwner = Boolean(
     profileData && user?.id && profileData.id === user.id
+  )
+
+  const isOnline = Boolean(
+    isUserOnline
+      ? isUserOnline(profileData?.id)
+      : (user?.id && profileData?.id && user.id === profileData.id) ||
+        (profileData?.id && onlineIds?.has(profileData.id))
   )
 
   const isAcceptedFollower = profileData?.followStatus === 'accepted'
@@ -285,7 +294,10 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
                   ) : (
                     <span className="user-profile-avatar-fallback">{initial}</span>
                   )}
-                  <span className="user-profile-online-badge" title="En línea" />
+                  <span
+                    className={`user-profile-online-badge ${isOnline ? 'is-online' : 'is-offline'}`}
+                    title={isOnline ? (t?.social?.online || 'En línea') : (t?.social?.offline || 'Desconectado')}
+                  />
                 </div>
               </div>
 

@@ -2,7 +2,49 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth, MIN_PASSWORD_LENGTH } from '../../context/AuthContext'
 import { localeOptions } from '../../locales'
 
-function SettingsModal({ locale, onLocaleChange, t }) {
+function SunIcon({ className = 'theme-icon-animated' }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  )
+}
+
+function MoonIcon({ className = 'theme-icon-animated' }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  )
+}
+
+function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeChange: propOnThemeChange }) {
   const {
     isSettingsOpen,
     closeSettingsModal,
@@ -16,6 +58,44 @@ function SettingsModal({ locale, onLocaleChange, t }) {
     updatePasswordInSettings,
     signOut,
   } = useAuth()
+
+  // Estado para el Tema (Claro / Oscuro)
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    if (propTheme) return propTheme
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('pokeguide-theme') || (document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
+    }
+    return 'light'
+  })
+
+  useEffect(() => {
+    if (propTheme) {
+      setCurrentTheme(propTheme)
+    }
+  }, [propTheme])
+
+  useEffect(() => {
+    function handleThemeEvent(e) {
+      if (e.detail) setCurrentTheme(e.detail)
+    }
+    window.addEventListener('pokeguide-theme-change', handleThemeEvent)
+    return () => window.removeEventListener('pokeguide-theme-change', handleThemeEvent)
+  }, [])
+
+  function handleThemeSelect(selectedTheme) {
+    setCurrentTheme(selectedTheme)
+    document.documentElement.setAttribute('data-theme', selectedTheme)
+    document.documentElement.style.colorScheme = selectedTheme
+    try {
+      window.localStorage.setItem('pokeguide-theme', selectedTheme)
+    } catch {
+      // ignore
+    }
+    if (propOnThemeChange) {
+      propOnThemeChange(selectedTheme)
+    }
+    window.dispatchEvent(new CustomEvent('pokeguide-theme-change', { detail: selectedTheme }))
+  }
 
   // Estados para cambio de email
   const [newEmail, setNewEmail] = useState('')
@@ -602,7 +682,7 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                           padding: '10px 14px',
                           borderRadius: '10px',
                           border: isSelected ? '1.5px solid var(--coral)' : '1px solid var(--line)',
-                          background: isSelected ? '#fffafa' : '#ffffff',
+                          background: isSelected ? 'rgba(237, 109, 93, 0.08)' : 'var(--surface)',
                           cursor: 'pointer',
                           font: '600 13px var(--display)',
                           color: 'var(--navy)',
@@ -620,6 +700,58 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                       </button>
                     )
                   })}
+                </div>
+              </div>
+
+              {/* SECCIÓN: TEMA (CLARO / OSCURO) */}
+              <div style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h4 style={{ font: '600 15px var(--display)', color: 'var(--navy)', margin: '0 0 6px' }}>
+                  {t?.preferences?.theme || 'Tema'}
+                </h4>
+                <p style={{ font: '12.5px var(--sans)', color: 'var(--muted)', margin: '0 0 14px' }}>
+                  {t?.preferences?.themeDescription || 'Elige cómo quieres ver PokeGuide.'}
+                </p>
+
+                <div
+                  role="radiogroup"
+                  aria-label={t?.preferences?.theme || 'Tema'}
+                  className="theme-selector-group"
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={currentTheme === 'light'}
+                    className={`theme-option-btn ${currentTheme === 'light' ? 'is-selected' : ''}`}
+                    onClick={() => handleThemeSelect('light')}
+                  >
+                    <div className="theme-option-left">
+                      <span className="theme-icon-container" aria-hidden="true">
+                        <SunIcon />
+                      </span>
+                      <span>{t?.preferences?.lightTheme || 'Claro'}</span>
+                    </div>
+                    {currentTheme === 'light' && (
+                      <span className="theme-check-mark" aria-hidden="true">✓</span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={currentTheme === 'dark'}
+                    className={`theme-option-btn ${currentTheme === 'dark' ? 'is-selected' : ''}`}
+                    onClick={() => handleThemeSelect('dark')}
+                  >
+                    <div className="theme-option-left">
+                      <span className="theme-icon-container" aria-hidden="true">
+                        <MoonIcon />
+                      </span>
+                      <span>{t?.preferences?.darkTheme || 'Oscuro'}</span>
+                    </div>
+                    {currentTheme === 'dark' && (
+                      <span className="theme-check-mark" aria-hidden="true">✓</span>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -660,7 +792,7 @@ function SettingsModal({ locale, onLocaleChange, t }) {
                           padding: '12px 14px',
                           borderRadius: '10px',
                           border: isSelected ? '1.5px solid var(--coral)' : '1px solid var(--line)',
-                          background: isSelected ? '#fffafa' : '#ffffff',
+                          background: isSelected ? 'rgba(237, 109, 93, 0.08)' : 'var(--surface)',
                           cursor: 'pointer',
                           textAlign: 'left',
                           transition: 'all 0.18s ease',

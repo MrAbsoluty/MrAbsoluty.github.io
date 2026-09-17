@@ -49,6 +49,8 @@ export default function Profile({
     openFollowRequests,
     pendingRequestsCount,
     openChatWithFriend,
+    onlineIds,
+    isUserOnline,
   } = useAuth()
 
   const { favorites: localFavorites } = useFavorites()
@@ -73,6 +75,13 @@ export default function Profile({
 
   const isOwner = Boolean(
     profileData && user?.id && profileData.id === user.id
+  )
+
+  const isOnline = Boolean(
+    isUserOnline
+      ? isUserOnline(profileData?.id)
+      : (user?.id && profileData?.id && user.id === profileData.id) ||
+        (profileData?.id && onlineIds?.has(profileData.id))
   )
 
   const isAcceptedFollower = profileData?.followStatus === 'accepted'
@@ -336,7 +345,11 @@ export default function Profile({
                         <span className="trainer-avatar-fallback">{userInitial}</span>
                       )}
                     </div>
-                    <span className="trainer-online-pip" title="Entrenador en línea" aria-hidden="true" />
+                    <span
+                      className={`trainer-online-pip ${isOnline ? 'is-online' : 'is-offline'}`}
+                      title={isOnline ? (t?.social?.online || 'Entrenador en línea') : (t?.social?.offline || 'Desconectado')}
+                      aria-label={isOnline ? (t?.social?.online || 'En línea') : (t?.social?.offline || 'Desconectado')}
+                    />
                   </div>
 
                   {/* Acciones rápidas del avatar para el dueño */}

@@ -88,13 +88,14 @@ export default function FloatingChat() {
     openFloatingChat,
     closeFloatingChat,
     minimizeFloatingChat,
+    openUserProfile,
+    onlineIds,
   } = useAuth()
 
   const [relations, setRelations] = useState([])
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [onlineIds, setOnlineIds] = useState(new Set())
   const [isFriendTyping, setIsFriendTyping] = useState(false)
   const [unreadFriendIds, setUnreadFriendIds] = useState(new Set())
   const [lastMessagesMap, setLastMessagesMap] = useState(new Map())
@@ -225,26 +226,6 @@ export default function FloatingChat() {
       supabase.removeChannel(channel)
     }
   }, [user?.id, loadFriends])
-
-  // Presencia online
-  useEffect(() => {
-    if (!user || !supabase) return undefined
-    const channel = supabase.channel('pokeguide-chat-presence', {
-      config: { presence: { key: user.id } },
-    })
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        setOnlineIds(new Set(Object.values(state).flat().map((entry) => entry.user_id)))
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          channel.track({ user_id: user.id })
-        }
-      })
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user])
 
   // Filtrar amigos confirmados únicos
   const friends = useMemo(() => {
@@ -582,12 +563,31 @@ export default function FloatingChat() {
                 >
                   ←
                 </button>
-                <ChatAvatar
-                  person={activeChatFriend}
-                  size={32}
-                  online={onlineIds.has(activeChatFriend.id)}
-                />
-                <div className="floating-chat-header-info">
+                <button
+                  type="button"
+                  className="floating-chat-header-avatar-btn"
+                  onClick={() => openUserProfile(activeChatFriend.username || activeChatFriend.id)}
+                  title={`Ver perfil de @${activeChatFriend.username}`}
+                >
+                  <ChatAvatar
+                    person={activeChatFriend}
+                    size={32}
+                    online={onlineIds.has(activeChatFriend.id)}
+                  />
+                </button>
+                <div
+                  className="floating-chat-header-info floating-chat-clickable-user"
+                  onClick={() => openUserProfile(activeChatFriend.username || activeChatFriend.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      openUserProfile(activeChatFriend.username || activeChatFriend.id)
+                    }
+                  }}
+                  title={`Ver perfil de @${activeChatFriend.username}`}
+                >
                   <span className="floating-chat-header-name">@{activeChatFriend.username}</span>
                   <span
                     className={`floating-chat-header-status ${
@@ -652,11 +652,18 @@ export default function FloatingChat() {
                         className={`floating-chat-msg-row ${isMine ? 'mine' : 'friend'}`}
                       >
                         {!isMine && (
-                          <ChatAvatar
-                            person={activeChatFriend}
-                            size={26}
-                            online={onlineIds.has(activeChatFriend.id)}
-                          />
+                          <button
+                            type="button"
+                            className="floating-chat-msg-avatar-btn"
+                            onClick={() => openUserProfile(activeChatFriend.username || activeChatFriend.id)}
+                            title={`Ver perfil de @${activeChatFriend.username}`}
+                          >
+                            <ChatAvatar
+                              person={activeChatFriend}
+                              size={26}
+                              online={onlineIds.has(activeChatFriend.id)}
+                            />
+                          </button>
                         )}
                         <div className="floating-chat-bubble-text">
                           {msg.content}

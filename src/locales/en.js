@@ -430,6 +430,12 @@ const en = {
       },
     },
   },
+  preferences: {
+    theme: 'Theme',
+    themeDescription: 'Choose how you want to experience PokeGuide.',
+    lightTheme: 'Light',
+    darkTheme: 'Dark',
+  },
 }
 
 export default en

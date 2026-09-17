@@ -22,14 +22,13 @@ function Avatar({ person, online = false }) {
 }
 
 export default function SocialModal() {
-  const { user, isSocialOpen, closeSocialModal, openUserProfile, setPendingRequestsCount } = useAuth()
+  const { user, isSocialOpen, closeSocialModal, openUserProfile, setPendingRequestsCount, onlineIds } = useAuth()
   const [following, setFollowing] = useState([])
   const [incoming, setIncoming] = useState([])
   const [tab, setTab] = useState('following')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [error, setError] = useState('')
-  const [onlineIds, _setOnlineIds] = useState(new Set())
 
   const reload = async () => {
     if (!user?.id) return

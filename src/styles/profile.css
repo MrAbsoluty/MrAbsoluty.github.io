@@ -847,9 +847,25 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #22c55e;
-  border: 3px solid #ffffff;
+  border: 3px solid var(--paper, #ffffff);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.trainer-online-pip.is-online {
+  background: #22c55e;
+}
+
+.trainer-online-pip.is-offline {
+  background: #94a3b8;
+}
+
+[data-theme="dark"] .trainer-online-pip {
+  border-color: var(--surface, #11141d);
+}
+
+[data-theme="dark"] .trainer-online-pip.is-offline {
+  background: #64748b;
 }
 
 .trainer-avatar-edit-chip {

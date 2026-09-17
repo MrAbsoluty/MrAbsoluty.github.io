@@ -8,12 +8,76 @@
 @import './styles/under-construction.css';
 @import './styles/moves.css';
 
-:root { --ink: #17212b; --muted: #6c747d; --paper: #f7f8f5; --line: #dfe4df; --coral: #ed6d5d; --navy: #172733; --serif: Georgia, 'Times New Roman', serif; --sans: 'DM Sans', 'Segoe UI', sans-serif; --display: 'Space Grotesk', 'Segoe UI', sans-serif; }
+:root {
+  --ink: #17212b;
+  --muted: #6c747d;
+  --paper: #f7f8f5;
+  --line: #dfe4df;
+  --coral: #ed6d5d;
+  --navy: #172733;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: 'DM Sans', 'Segoe UI', sans-serif;
+  --display: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --surface: #ffffff;
+  --surface-elevated: #fafbf9;
+  --surface-card: #ffffff;
+  --text-tertiary: #899391;
+  --card-border: rgba(211, 220, 214, 0.75);
+  --shadow-card: 0 15px 35px rgba(23, 39, 51, 0.08);
+}
+
+[data-theme="dark"] {
+  --ink: #f1eef7;
+  --navy: #f1eef7;
+  --muted: #aaa5b8;
+  --paper: #080a10;
+  --line: rgba(255, 255, 255, 0.08);
+  --coral: #f27d6f;
+  --surface: #11141d;
+  --surface-elevated: #171a25;
+  --surface-card: #11141d;
+  --text-tertiary: #858091;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 16px 36px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+body,
+.page-shell,
+.site-header,
+.site-footer,
+.search-bar,
+.category-card,
+.pokemon-card,
+.move-card,
+.featured-move-card,
+.move-detail-hero,
+.move-learners-section,
+.items-search,
+.moves-search,
+.settings-modal-card,
+.nav-user-dropdown-panel,
+.ai-analysis-card {
+  transition:
+    background-color 280ms ease,
+    color 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 var(--sans); }
 a { color: inherit; text-decoration: none; } button, input { font: inherit; }
-.page-shell { max-width: 1440px; margin: 0 auto; overflow: hidden; background: var(--paper); }
+.page-shell { width: 100%; max-width: 100%; margin: 0 auto; overflow: hidden; background: var(--paper); }
 .site-header { align-items: center; display: flex; gap: 16px; height: 84px; justify-content: space-between; padding: 0 clamp(24px, 6vw, 92px); }
 .brand { align-items: center; display: inline-flex; flex-shrink: 0; font: 700 20px var(--display); gap: 10px; letter-spacing: -.04em; }
 .brand-mark { background: var(--ink); border: 2px solid var(--ink); border-radius: 50%; display: inline-block; height: 22px; overflow: hidden; position: relative; width: 22px; }
@@ -4923,5 +4987,615 @@ button.pokemon-card:focus-visible,
     gap: 10px;
   }
 }
+
+/* ==========================================================================
+   POKEGUIDE — TEMA OSCURO · COMPONENTES & ESTILOS VISUALES
+   ========================================================================== */
+
+/* 1. Header, Barra de Navegación e Idioma */
+[data-theme="dark"] .site-header {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="dark"] .brand {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .brand-mark {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+[data-theme="dark"] .brand-mark::after {
+  background: var(--paper);
+}
+
+[data-theme="dark"] .brand-mark span {
+  background: var(--paper);
+  border-color: var(--ink);
+}
+
+[data-theme="dark"] .main-nav a {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .main-nav a:hover,
+[data-theme="dark"] .main-nav a.active {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .ai-link {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+[data-theme="dark"] .ai-link:hover {
+  border-color: var(--coral);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .language-picker {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .language-picker select {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+[data-theme="dark"] .language-picker select option {
+  background: #11141d;
+  color: #f1eef7;
+}
+
+[data-theme="dark"] .nav-auth-btn.btn-login {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .nav-auth-btn.btn-login:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--ink);
+}
+
+/* 2. Hero & Buscador */
+[data-theme="dark"] .search-bar {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .search-bar:focus-within {
+  border-color: var(--coral);
+  box-shadow: 0 15px 35px rgba(242, 125, 111, 0.2);
+}
+
+[data-theme="dark"] .search-bar input {
+  background-color: transparent;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .search-bar input::placeholder {
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .search-bar .search-random-btn {
+  background: var(--surface-elevated);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .search-bar .search-random-btn:hover {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .suggestions-list {
+  background: var(--surface-elevated);
+  border-color: var(--line);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .suggestion-item {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .suggestion-item:hover,
+[data-theme="dark"] .suggestion-item.is-selected {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .hero-orbit::before {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .orbit,
+[data-theme="dark"] .orbit-two {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .hero-pokeball {
+  background: var(--surface);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 12px 20px 35px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .hero-pokeball::after {
+  background: var(--navy);
+}
+
+[data-theme="dark"] .hero-pokeball span {
+  background: var(--paper);
+  border-color: var(--navy);
+}
+
+/* 3. Secciones y Cards de Categorías */
+[data-theme="dark"] .categories-section {
+  background: #0c0f17;
+}
+
+[data-theme="dark"] .category-card {
+  background: rgba(17, 20, 29, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .category-card:hover {
+  background: var(--surface-elevated);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.5);
+}
+
+/* 4. Sección de Destacados & Cards Pokémon */
+[data-theme="dark"] .featured-section {
+  background: #080a10;
+}
+
+[data-theme="dark"] .text-link {
+  color: var(--ink);
+  border-bottom-color: var(--line);
+}
+
+[data-theme="dark"] .pokemon-card {
+  background: color-mix(in srgb, var(--card-accent) 12%, #11141d);
+  border-color: color-mix(in srgb, var(--card-accent) 22%, rgba(255, 255, 255, 0.06));
+}
+
+[data-theme="dark"] .pokemon-card:hover {
+  border-color: color-mix(in srgb, var(--card-accent) 45%, transparent);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .pokemon-meta {
+  color: var(--text-tertiary);
+}
+
+/* 5. Pokédex Page */
+[data-theme="dark"] .pokedex-page {
+  background: var(--paper);
+}
+
+[data-theme="dark"] .pokedex-search {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .pokedex-filter-btn {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+[data-theme="dark"] .pokedex-filter-btn:hover {
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .pokedex-filter-btn.is-active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+}
+
+/* 6. Detalle de Pokémon */
+[data-theme="dark"] .detail-page {
+  background: var(--paper);
+}
+
+[data-theme="dark"] .art-ring {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .art-ring::before,
+[data-theme="dark"] .art-ring::after {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .measurements {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .measurements div {
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .pokemon-stat-row {
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .stat-bar-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .evolution-chain-card {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .evolution-node {
+  background: var(--surface-elevated);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .evolution-node:hover {
+  border-color: var(--coral);
+}
+
+[data-theme="dark"] .type-affinity-table {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+/* 7. Focus Mode */
+[data-theme="dark"] .pokemon-focus-backdrop {
+  background: rgba(4, 6, 12, 0.84);
+}
+
+[data-theme="dark"] .focus-bubble {
+  background: rgba(23, 26, 37, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--ink);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .focus-bubble:hover {
+  border-color: var(--coral);
+  color: var(--coral);
+  box-shadow: 0 14px 34px rgba(242, 125, 111, 0.35);
+}
+
+[data-theme="dark"] .focus-mega-drawer,
+[data-theme="dark"] .focus-regional-drawer {
+  background: rgba(17, 20, 29, 0.96);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .focus-mega-option,
+[data-theme="dark"] .focus-regional-option {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .focus-mega-option:hover,
+[data-theme="dark"] .focus-regional-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* 8. Objetos (Items) */
+[data-theme="dark"] .items-search {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .items-search input {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .item-card {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .item-card:hover {
+  background: var(--surface-elevated);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .item-detail-hero,
+[data-theme="dark"] .item-card-block {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .item-stage-pedestal {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+}
+
+[data-theme="dark"] .item-chip {
+  background: var(--surface-elevated);
+  border-color: var(--line);
+}
+
+/* 9. Movimientos (Moves) */
+[data-theme="dark"] .moves-search {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .moves-search input {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .move-card {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--move-accent, #77858e) 25%, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .move-card:hover {
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .featured-move-card {
+  background: linear-gradient(135deg, #11141d 0%, #151924 100%);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .move-detail-hero {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--detail-accent, #77858e) 25%, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .move-learners-section {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .move-learner-chip {
+  background: var(--surface-elevated);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .move-learner-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--coral);
+}
+
+/* 10. Modales, Ajustes y UserMenu */
+[data-theme="dark"] .settings-modal-card,
+[data-theme="dark"] .auth-modal-card,
+[data-theme="dark"] .profile-modal-card {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .settings-tabs-header {
+  background: #0c0e16;
+  border-bottom-color: var(--line);
+}
+
+[data-theme="dark"] .settings-tab-btn {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .settings-tab-btn:hover {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .settings-tab-btn.is-active {
+  color: var(--coral);
+  border-bottom-color: var(--coral);
+}
+
+[data-theme="dark"] .auth-input {
+  background: #0c0e16;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .auth-input:focus {
+  border-color: var(--coral);
+  background: #11141d;
+}
+
+[data-theme="dark"] .nav-user-dropdown-panel {
+  background: rgba(17, 20, 29, 0.97);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .dropdown-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .dropdown-username {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .dropdown-user-avatar {
+  background: var(--surface-elevated);
+  border-color: var(--paper);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .privacy-radio-card {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .privacy-radio-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .privacy-radio-card.is-selected {
+  background: rgba(242, 125, 111, 0.08);
+  border-color: var(--coral);
+}
+
+[data-theme="dark"] .privacy-radio-content strong {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .privacy-radio-content p {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .settings-danger-box {
+  background: rgba(197, 48, 48, 0.12);
+  border-color: rgba(254, 215, 215, 0.2);
+}
+
+[data-theme="dark"] .settings-danger-title {
+  color: #fc8181;
+}
+
+[data-theme="dark"] .settings-danger-text {
+  color: #feb2b2;
+}
+
+/* 11. AI Ability Analysis */
+[data-theme="dark"] .ai-analysis-card {
+  background: var(--surface);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .ai-loading-card {
+  background: var(--surface);
+  border-color: rgba(242, 125, 111, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .ai-card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .ai-context-pill {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+[data-theme="dark"] .ai-skeleton-line {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .ai-skeleton-line::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 50%, transparent 100%);
+}
+
+[data-theme="dark"] .ai-error-card {
+  background: rgba(45, 18, 16, 0.6);
+  border-color: rgba(254, 215, 215, 0.2);
+}
+
+/* 12. Footer */
+[data-theme="dark"] .site-footer {
+  background: #06080d;
+  border-top: 1px solid var(--line);
+}
+
+/* ==========================================================================
+   SELECTOR DE TEMA & ANIMACIÓN SOL ↔ LUNA
+   ========================================================================== */
+
+.theme-selector-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  max-width: 440px;
+}
+
+.theme-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  color: var(--ink);
+  font: 600 13.5px var(--display);
+  transition:
+    border-color 0.22s ease,
+    background-color 0.22s ease,
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+  position: relative;
+  outline: none;
+  text-align: left;
+}
+
+.theme-option-btn:hover {
+  border-color: var(--coral);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.theme-option-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+}
+
+.theme-option-btn.is-selected {
+  border-color: var(--coral);
+  background: rgba(237, 109, 93, 0.08);
+}
+
+[data-theme="dark"] .theme-option-btn.is-selected {
+  background: rgba(242, 125, 111, 0.12);
+  border-color: var(--coral);
+}
+
+.theme-option-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-icon-container {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--coral);
+  flex-shrink: 0;
+}
+
+.theme-icon-animated {
+  width: 22px;
+  height: 22px;
+  display: block;
+  transition:
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 280ms ease,
+    color 280ms ease;
+}
+
+.theme-option-btn:hover .theme-icon-animated {
+  transform: scale(1.12) rotate(12deg);
+}
+
+.theme-check-mark {
+  color: var(--coral);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 

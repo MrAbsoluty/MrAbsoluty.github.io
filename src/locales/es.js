@@ -430,6 +430,12 @@ const es = {
       },
     },
   },
+  preferences: {
+    theme: 'Tema',
+    themeDescription: 'Elige cómo quieres ver PokeGuide.',
+    lightTheme: 'Claro',
+    darkTheme: 'Oscuro',
+  },
 }
 
 export default es

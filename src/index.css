@@ -32,6 +32,24 @@
   }
 }
 
+[data-theme="dark"] {
+  --text: #aaa5b8;
+  --text-h: #f1eef7;
+  --bg: #080a10;
+  --border: rgba(255, 255, 255, 0.09);
+  --code-bg: #141722;
+  --accent: #b855ff;
+  --accent-bg: rgba(184, 85, 255, 0.16);
+  --accent-border: rgba(184, 85, 255, 0.55);
+  --social-bg: rgba(23, 26, 37, 0.7);
+  --shadow:
+    rgba(0, 0, 0, 0.45) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+
+  color-scheme: dark;
+  color: var(--text);
+  background: var(--bg);
+}
+
 body {
   margin: 0;
 }

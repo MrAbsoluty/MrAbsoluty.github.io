@@ -135,9 +135,25 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #16a34a;
   border: 3px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
+}
+
+.user-profile-online-badge.is-online {
+  background: #16a34a;
+}
+
+.user-profile-online-badge.is-offline {
+  background: #94a3b8;
+}
+
+[data-theme="dark"] .user-profile-online-badge {
+  border-color: var(--surface, #11141d);
+}
+
+[data-theme="dark"] .user-profile-online-badge.is-offline {
+  background: #64748b;
 }
 
 .user-profile-name {
