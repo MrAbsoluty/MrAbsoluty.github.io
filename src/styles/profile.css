@@ -1521,3 +1521,110 @@
     height: 90px;
   }
 }
+
+/* ========================================================================== */
+/* TEMA OSCURO - PERFILES & BOTONES (BOTON: #222327 | LETRAS: #6c6d76)        */
+/* ========================================================================== */
+
+[data-theme="dark"] .trainer-card {
+  background: var(--surface, #11141d);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .trainer-card-ribbon {
+  background: #141722;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .trainer-pokeball-mark {
+  border-color: #6c6d76;
+}
+
+[data-theme="dark"] .trainer-pokeball-mark::after {
+  background: #6c6d76;
+}
+
+[data-theme="dark"] .trainer-stat-pill {
+  background: #171a25;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .trainer-stat-pill.is-clickable:hover {
+  background: #1e2230;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .trainer-fav-card {
+  background: var(--surface, #11141d);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .trainer-fav-card:hover {
+  background: #171a25;
+  border-color: var(--coral, #f27d6f);
+}
+
+[data-theme="dark"] .trainer-partner-pill {
+  background: #171a25;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .trainer-partner-pill:hover {
+  background: #1e2230;
+}
+
+[data-theme="dark"] .trainer-action-btn,
+[data-theme="dark"] .btn-edit-profile,
+[data-theme="dark"] .btn-privacy-settings,
+[data-theme="dark"] .btn-message-profile,
+[data-theme="dark"] .btn-requests-alert,
+[data-theme="dark"] .trainer-avatar-edit-chip,
+[data-theme="dark"] .trainer-btn-cancel,
+[data-theme="dark"] .trainer-btn-save,
+[data-theme="dark"] .trainer-explore-btn,
+[data-theme="dark"] .profile-back-btn,
+[data-theme="dark"] .profile-btn-upload,
+[data-theme="dark"] .crop-zoom-btn {
+  background-color: #222327 !important;
+  color: #6c6d76 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .trainer-action-btn *,
+[data-theme="dark"] .btn-edit-profile *,
+[data-theme="dark"] .btn-privacy-settings *,
+[data-theme="dark"] .btn-message-profile *,
+[data-theme="dark"] .btn-requests-alert *,
+[data-theme="dark"] .trainer-avatar-edit-chip *,
+[data-theme="dark"] .trainer-btn-cancel *,
+[data-theme="dark"] .trainer-btn-save *,
+[data-theme="dark"] .trainer-explore-btn *,
+[data-theme="dark"] .profile-back-btn *,
+[data-theme="dark"] .crop-zoom-btn * {
+  color: #6c6d76 !important;
+}
+
+[data-theme="dark"] .trainer-action-btn:hover,
+[data-theme="dark"] .btn-edit-profile:hover,
+[data-theme="dark"] .btn-privacy-settings:hover,
+[data-theme="dark"] .btn-message-profile:hover,
+[data-theme="dark"] .trainer-avatar-edit-chip:hover,
+[data-theme="dark"] .trainer-btn-cancel:hover,
+[data-theme="dark"] .trainer-btn-save:hover,
+[data-theme="dark"] .trainer-explore-btn:hover,
+[data-theme="dark"] .profile-back-btn:hover,
+[data-theme="dark"] .crop-zoom-btn:hover {
+  background-color: #2b2c32 !important;
+  color: #8c8e98 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+[data-theme="dark"] .trainer-action-btn:hover *,
+[data-theme="dark"] .btn-edit-profile:hover *,
+[data-theme="dark"] .btn-privacy-settings:hover *,
+[data-theme="dark"] .btn-message-profile:hover *,
+[data-theme="dark"] .trainer-avatar-edit-chip:hover *,
+[data-theme="dark"] .profile-back-btn:hover * {
+  color: #8c8e98 !important;
+}

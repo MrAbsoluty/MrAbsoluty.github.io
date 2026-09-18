@@ -39,6 +39,8 @@
   --text-tertiary: #858091;
   --card-border: rgba(255, 255, 255, 0.08);
   --shadow-card: 0 16px 36px rgba(0, 0, 0, 0.6);
+  --btn-bg: #222327;
+  --btn-color: #6c6d76;
   color-scheme: dark;
 }
 
@@ -5596,6 +5598,234 @@ button.pokemon-card:focus-visible,
   align-items: center;
   justify-content: center;
 }
+
+/* ========================================================================== */
+/* BOTONES EN MODO OSCURO (BOTON: #222327 | LETRAS: #6c6d76)                  */
+/* ========================================================================== */
+
+/* 1. Botones principales, buscadores, filtros y disparadores */
+[data-theme="dark"] .search-bar button,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button,
+[data-theme="dark"] .items-search-submit,
+[data-theme="dark"] .moves-search-submit,
+[data-theme="dark"] .search-bar .search-random-btn,
+[data-theme="dark"] .items-search-clear,
+[data-theme="dark"] .moves-search-clear,
+[data-theme="dark"] .filter-select,
+[data-theme="dark"] .shiny-toggle-btn,
+[data-theme="dark"] .language-picker,
+[data-theme="dark"] .language-picker select,
+[data-theme="dark"] .ai-link,
+[data-theme="dark"] .items-category-select,
+[data-theme="dark"] .moves-filter-field select,
+[data-theme="dark"] .items-filter-pill,
+[data-theme="dark"] .items-clear-filters-btn,
+[data-theme="dark"] .moves-clear-btn,
+[data-theme="dark"] .pokedex-pagination .load-more,
+[data-theme="dark"] .moves-pagination-btn,
+[data-theme="dark"] .items-load-more-btn,
+[data-theme="dark"] .cry-btn,
+[data-theme="dark"] .trainer-action-btn,
+[data-theme="dark"] .btn-edit-profile,
+[data-theme="dark"] .btn-privacy-settings,
+[data-theme="dark"] .btn-message-profile,
+[data-theme="dark"] .btn-requests-alert,
+[data-theme="dark"] .trainer-avatar-edit-chip,
+[data-theme="dark"] .trainer-btn-cancel,
+[data-theme="dark"] .trainer-btn-save,
+[data-theme="dark"] .trainer-explore-btn,
+[data-theme="dark"] .profile-back-btn,
+[data-theme="dark"] .back-link,
+[data-theme="dark"] .follow-btn,
+[data-theme="dark"] .follow-btn-follow,
+[data-theme="dark"] .follow-btn-following,
+[data-theme="dark"] .follow-btn-pending,
+[data-theme="dark"] .follow-btn-private,
+[data-theme="dark"] .user-btn-edit-profile,
+[data-theme="dark"] .user-btn-avatar-settings,
+[data-theme="dark"] .modal-btn-cancel,
+[data-theme="dark"] .modal-btn-save,
+[data-theme="dark"] .auth-primary-btn,
+[data-theme="dark"] .auth-google-btn,
+[data-theme="dark"] .primary-action,
+[data-theme="dark"] .secondary-action,
+[data-theme="dark"] .nav-auth-btn,
+[data-theme="dark"] .nav-auth-btn.btn-login,
+[data-theme="dark"] .nav-auth-btn.btn-register,
+[data-theme="dark"] .nav-logout-btn,
+[data-theme="dark"] .pokedex-filter-btn,
+[data-theme="dark"] .settings-tab-btn,
+[data-theme="dark"] .unfollow-btn-confirm,
+[data-theme="dark"] .unfollow-btn-cancel,
+[data-theme="dark"] .social-btn-accept,
+[data-theme="dark"] .social-btn-reject,
+[data-theme="dark"] .profile-btn-upload,
+[data-theme="dark"] .crop-zoom-btn,
+[data-theme="dark"] button.back-link,
+[data-theme="dark"] button.primary-action {
+  background-color: #222327 !important;
+  color: #6c6d76 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Dropdown select SVG flecha en tema oscuro */
+[data-theme="dark"] .filter-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236c6d76' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+[data-theme="dark"] .filter-select option,
+[data-theme="dark"] .language-picker select option,
+[data-theme="dark"] .items-category-select option,
+[data-theme="dark"] .moves-filter-field select option {
+  background-color: #222327 !important;
+  color: #6c6d76 !important;
+}
+
+/* 2. Letras, textos e iconos interiores de los botones */
+[data-theme="dark"] .search-bar button *,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button *,
+[data-theme="dark"] .items-search-submit *,
+[data-theme="dark"] .moves-search-submit *,
+[data-theme="dark"] .shiny-toggle-btn *,
+[data-theme="dark"] .ai-link *,
+[data-theme="dark"] .items-filter-pill *,
+[data-theme="dark"] .pokedex-pagination .load-more *,
+[data-theme="dark"] .moves-pagination-btn *,
+[data-theme="dark"] .items-load-more-btn *,
+[data-theme="dark"] .cry-btn *,
+[data-theme="dark"] .trainer-action-btn *,
+[data-theme="dark"] .btn-edit-profile *,
+[data-theme="dark"] .btn-privacy-settings *,
+[data-theme="dark"] .btn-message-profile *,
+[data-theme="dark"] .btn-requests-alert *,
+[data-theme="dark"] .trainer-avatar-edit-chip *,
+[data-theme="dark"] .trainer-btn-cancel *,
+[data-theme="dark"] .trainer-btn-save *,
+[data-theme="dark"] .trainer-explore-btn *,
+[data-theme="dark"] .profile-back-btn *,
+[data-theme="dark"] .back-link *,
+[data-theme="dark"] .follow-btn *,
+[data-theme="dark"] .user-btn-edit-profile *,
+[data-theme="dark"] .user-btn-avatar-settings *,
+[data-theme="dark"] .modal-btn-cancel *,
+[data-theme="dark"] .modal-btn-save *,
+[data-theme="dark"] .auth-primary-btn *,
+[data-theme="dark"] .auth-google-btn *,
+[data-theme="dark"] .primary-action *,
+[data-theme="dark"] .secondary-action *,
+[data-theme="dark"] .nav-auth-btn *,
+[data-theme="dark"] .nav-logout-btn *,
+[data-theme="dark"] .pokedex-filter-btn *,
+[data-theme="dark"] .settings-tab-btn *,
+[data-theme="dark"] .unfollow-btn-confirm *,
+[data-theme="dark"] .unfollow-btn-cancel *,
+[data-theme="dark"] .crop-zoom-btn * {
+  color: #6c6d76 !important;
+}
+
+/* Estados específicos activos / destacados */
+[data-theme="dark"] .shiny-toggle-btn.is-active {
+  background-color: #222327 !important;
+  border-color: #eab308 !important;
+  color: #eab308 !important;
+}
+
+[data-theme="dark"] .shiny-toggle-btn.is-active * {
+  color: #eab308 !important;
+}
+
+[data-theme="dark"] .cry-btn.is-playing {
+  background-color: #222327 !important;
+  border-color: var(--coral) !important;
+  color: var(--coral) !important;
+}
+
+[data-theme="dark"] .cry-btn.is-playing * {
+  color: var(--coral) !important;
+}
+
+/* 3. Estados Hover */
+[data-theme="dark"] .search-bar button:hover,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button:hover,
+[data-theme="dark"] .items-search-submit:hover,
+[data-theme="dark"] .moves-search-submit:hover,
+[data-theme="dark"] .search-bar .search-random-btn:hover,
+[data-theme="dark"] .filter-select:hover,
+[data-theme="dark"] .filter-select:focus-visible,
+[data-theme="dark"] .shiny-toggle-btn:hover,
+[data-theme="dark"] .language-picker:hover,
+[data-theme="dark"] .ai-link:hover,
+[data-theme="dark"] .items-category-select:hover,
+[data-theme="dark"] .moves-filter-field select:hover,
+[data-theme="dark"] .items-filter-pill:hover,
+[data-theme="dark"] .items-clear-filters-btn:hover,
+[data-theme="dark"] .moves-clear-btn:hover,
+[data-theme="dark"] .pokedex-pagination .load-more:hover,
+[data-theme="dark"] .moves-pagination-btn:hover,
+[data-theme="dark"] .items-load-more-btn:hover,
+[data-theme="dark"] .cry-btn:hover,
+[data-theme="dark"] .trainer-action-btn:hover,
+[data-theme="dark"] .btn-edit-profile:hover,
+[data-theme="dark"] .btn-privacy-settings:hover,
+[data-theme="dark"] .btn-message-profile:hover,
+[data-theme="dark"] .trainer-avatar-edit-chip:hover,
+[data-theme="dark"] .trainer-btn-cancel:hover,
+[data-theme="dark"] .trainer-btn-save:hover,
+[data-theme="dark"] .trainer-explore-btn:hover,
+[data-theme="dark"] .profile-back-btn:hover,
+[data-theme="dark"] .back-link:hover,
+[data-theme="dark"] .follow-btn:hover:not(:disabled),
+[data-theme="dark"] .user-btn-edit-profile:hover,
+[data-theme="dark"] .user-btn-avatar-settings:hover,
+[data-theme="dark"] .modal-btn-cancel:hover,
+[data-theme="dark"] .auth-primary-btn:hover:not(:disabled),
+[data-theme="dark"] .auth-google-btn:hover:not(:disabled),
+[data-theme="dark"] .primary-action:hover,
+[data-theme="dark"] .secondary-action:hover,
+[data-theme="dark"] .nav-auth-btn:hover,
+[data-theme="dark"] .pokedex-filter-btn:hover,
+[data-theme="dark"] .settings-tab-btn:hover,
+[data-theme="dark"] .unfollow-btn-cancel:hover,
+[data-theme="dark"] .crop-zoom-btn:hover {
+  background-color: #2a2c32 !important;
+  color: #8c8e98 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+[data-theme="dark"] .filter-select:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238c8e98' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+[data-theme="dark"] .search-bar button:hover *,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button:hover *,
+[data-theme="dark"] .items-search-submit:hover *,
+[data-theme="dark"] .moves-search-submit:hover *,
+[data-theme="dark"] .shiny-toggle-btn:hover *,
+[data-theme="dark"] .ai-link:hover *,
+[data-theme="dark"] .items-filter-pill:hover *,
+[data-theme="dark"] .pokedex-pagination .load-more:hover *,
+[data-theme="dark"] .moves-pagination-btn:hover *,
+[data-theme="dark"] .items-load-more-btn:hover *,
+[data-theme="dark"] .cry-btn:hover *,
+[data-theme="dark"] .trainer-action-btn:hover *,
+[data-theme="dark"] .btn-edit-profile:hover *,
+[data-theme="dark"] .btn-privacy-settings:hover *,
+[data-theme="dark"] .btn-message-profile:hover *,
+[data-theme="dark"] .trainer-avatar-edit-chip:hover *,
+[data-theme="dark"] .follow-btn:hover *,
+[data-theme="dark"] .profile-back-btn:hover *,
+[data-theme="dark"] .back-link:hover *,
+[data-theme="dark"] .primary-action:hover *,
+[data-theme="dark"] .secondary-action:hover *,
+[data-theme="dark"] .nav-auth-btn:hover *,
+[data-theme="dark"] .pokedex-filter-btn:hover *,
+[data-theme="dark"] .settings-tab-btn:hover *,
+[data-theme="dark"] .modal-btn-cancel:hover *,
+[data-theme="dark"] .auth-primary-btn:hover * {
+  color: #8c8e98 !important;
+}
+
+
 
 
 

@@ -18,34 +18,56 @@
 /* --------------------------------------------------------------------------
    1. Botón Principal Flotante (🎧)
    -------------------------------------------------------------------------- */
+@property --music-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes music-border-rotate {
+  0% {
+    --music-border-angle: 0deg;
+  }
+  100% {
+    --music-border-angle: 360deg;
+  }
+}
+
 .music-fab-btn {
   position: fixed;
   bottom: 24px;
   left: 24px;
   z-index: 995;
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  border: 1px solid rgba(211, 220, 214, 0.85);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 24px rgba(23, 39, 51, 0.12), 0 1px 3px rgba(23, 39, 51, 0.05);
-  color: var(--navy, #172733);
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--navy, #172733), var(--navy, #172733)) padding-box,
+    conic-gradient(
+      from var(--music-border-angle, 0deg),
+      #00d2ff 0%,
+      #0070f3 25%,
+      var(--navy, #172733) 50%,
+      #0d1720 75%,
+      #00d2ff 100%
+    ) border-box;
+  box-shadow: 0 8px 24px rgba(23, 39, 51, 0.22), 0 2px 8px rgba(0, 210, 255, 0.25);
+  color: #e2e8f0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: music-border-rotate 4s linear infinite;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
   user-select: none;
 }
 
 .music-fab-btn:hover {
-  background: #ffffff;
-  border-color: var(--coral, #ed6d5d);
-  box-shadow: 0 12px 28px rgba(237, 109, 93, 0.22), 0 2px 6px rgba(23, 39, 51, 0.08);
   transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 28px rgba(0, 210, 255, 0.35), 0 2px 8px rgba(23, 39, 51, 0.2);
+  animation-duration: 2.2s;
 }
 
 .music-fab-btn:active {
@@ -53,28 +75,26 @@
 }
 
 .music-fab-btn:focus-visible {
-  outline: 2px solid var(--coral, #ed6d5d);
+  outline: 2px solid #00d2ff;
   outline-offset: 3px;
 }
 
 /* Estado: Apagado */
 .music-fab-btn.is-off {
   opacity: 0.82;
-  color: var(--muted, #6c747d);
 }
 
 .music-fab-btn.is-off:hover {
   opacity: 1;
-  color: var(--navy, #172733);
 }
 
 .music-fab-btn .off-slash-badge {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 7px;
-  height: 7px;
-  background: #9aa1a1;
+  bottom: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  background: #64748b;
   border-radius: 50%;
   border: 1.5px solid #ffffff;
   transition: background-color 0.2s ease;
@@ -82,15 +102,15 @@
 
 /* Estado: Encendido y Reproduciendo */
 .music-fab-btn.is-playing {
-  border-color: rgba(237, 109, 93, 0.5);
-  color: var(--coral, #ed6d5d);
+  color: #00d2ff;
 }
 
 .music-fab-btn.is-playing .active-pulse-ring {
   position: absolute;
-  inset: -3px;
+  inset: -4px;
   border-radius: 50%;
-  border: 2px solid rgba(237, 109, 93, 0.45);
+  border: 2px solid rgba(0, 210, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.4);
   animation: musicPulseRing 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
   pointer-events: none;
 }
@@ -99,11 +119,50 @@
   width: 22px;
   height: 22px;
   display: block;
-  transition: transform 0.25s ease;
+  transition: transform 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 0 3px rgba(0, 210, 255, 0.25));
+}
+
+.music-fab-btn:hover .fab-icon {
+  filter: drop-shadow(0 0 6px rgba(0, 210, 255, 0.6));
 }
 
 .music-fab-btn.is-playing:hover .fab-icon {
   transform: rotate(-8deg) scale(1.08);
+}
+
+/* TEMA OSCURO - BOTÓN DE MÚSICA */
+[data-theme="dark"] .music-fab-btn {
+  background:
+    linear-gradient(#222327, #222327) padding-box,
+    conic-gradient(
+      from var(--music-border-angle, 0deg),
+      #00d2ff 0%,
+      #0066ff 25%,
+      #222327 50%,
+      #141518 75%,
+      #00d2ff 100%
+    ) border-box !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 210, 255, 0.25) !important;
+}
+
+[data-theme="dark"] .music-fab-btn:hover {
+  background:
+    linear-gradient(#2a2c32, #2a2c32) padding-box,
+    conic-gradient(
+      from var(--music-border-angle, 0deg),
+      #38bdf8 0%,
+      #00d2ff 30%,
+      #2a2c32 55%,
+      #141518 75%,
+      #38bdf8 100%
+    ) border-box !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 210, 255, 0.45) !important;
+}
+
+[data-theme="dark"] .music-fab-btn .off-slash-badge {
+  border-color: #222327 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -501,14 +560,16 @@
 @keyframes musicPulseRing {
   0% {
     transform: scale(0.95);
-    opacity: 0.8;
+    opacity: 0.9;
+    box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7);
   }
   50% {
-    transform: scale(1.22);
+    transform: scale(1.24);
     opacity: 0;
+    box-shadow: 0 0 16px 4px rgba(0, 210, 255, 0);
   }
   100% {
-    transform: scale(1.22);
+    transform: scale(1.24);
     opacity: 0;
   }
 }

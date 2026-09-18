@@ -833,3 +833,41 @@
     font-size: 11px;
   }
 }
+
+/* ==========================================================================
+   TEMA OSCURO - BOTONES DE AUTENTICACIÓN Y MENÚ DE USUARIO
+   BOTON: #222327 | LETRAS: #6c6d76
+   ========================================================================== */
+[data-theme="dark"] .nav-user-menu-trigger {
+  background: #222327 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #6c6d76 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .nav-user-menu-trigger:hover,
+[data-theme="dark"] .nav-user-menu-trigger.is-active {
+  background: #2a2c32 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #8c8e98 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .nav-user-menu-trigger .nav-user-name-text,
+[data-theme="dark"] .nav-user-menu-trigger .nav-user-chevron {
+  color: #6c6d76 !important;
+}
+
+[data-theme="dark"] .nav-user-menu-trigger:hover .nav-user-name-text,
+[data-theme="dark"] .nav-user-menu-trigger:hover .nav-user-chevron,
+[data-theme="dark"] .nav-user-menu-trigger.is-active .nav-user-name-text,
+[data-theme="dark"] .nav-user-menu-trigger.is-active .nav-user-chevron {
+  color: #8c8e98 !important;
+}
+
+[data-theme="dark"] .nav-user-avatar-pill {
+  background: #191a1e !important;
+  color: #6c6d76 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
