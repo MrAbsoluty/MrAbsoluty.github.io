@@ -538,8 +538,8 @@ export default function FloatingChat() {
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="19" height="19">
               <defs>
                 <linearGradient id="floatingChatIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#a5f3fc" />
-                  <stop offset="100%" stopColor="#00d2ff" />
+                  <stop offset="0%" stopColor="var(--chat-pill-icon-start, #ff8e80)" />
+                  <stop offset="100%" stopColor="var(--chat-pill-icon-end, #ed6d5d)" />
                 </linearGradient>
               </defs>
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="url(#floatingChatIconGrad)" />

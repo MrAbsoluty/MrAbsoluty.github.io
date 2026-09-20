@@ -24,6 +24,22 @@
   --text-tertiary: #899391;
   --card-border: rgba(211, 220, 214, 0.75);
   --shadow-card: 0 15px 35px rgba(23, 39, 51, 0.08);
+
+  /* Tokens semánticos de identidad - Light Mode */
+  --theme-bg: #f7f8f5;
+  --theme-surface: #ffffff;
+  --theme-surface-elevated: #fafbf9;
+  --theme-text: #17212b;
+  --theme-text-secondary: #6c747d;
+  --theme-border: rgba(211, 220, 214, 0.75);
+  --theme-accent: #ed6d5d;
+  --theme-accent-hover: #e05b4b;
+
+  /* Gradientes de iconos flotantes en Light Mode (Coral cálido) */
+  --chat-pill-icon-start: #ff8e80;
+  --chat-pill-icon-end: #ed6d5d;
+  --music-pill-icon-start: #ff8e80;
+  --music-pill-icon-end: #ed6d5d;
 }
 
 [data-theme="dark"] {
@@ -40,8 +56,30 @@
   --card-border: rgba(255, 255, 255, 0.08);
   --shadow-card: 0 16px 36px rgba(0, 0, 0, 0.6);
   --btn-bg: #222327;
-  --btn-color: #6c6d76;
+  --btn-color: #e2e8f0;
   color-scheme: dark;
+
+  /* Tokens semánticos de identidad - Dark Mode */
+  --theme-bg: #0d1017;
+  --theme-surface: #11141d;
+  --theme-surface-elevated: #171a24;
+  --theme-interactive: #1c202b;
+  --theme-hover: #222733;
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-border-strong: rgba(255, 255, 255, 0.12);
+  --theme-text: #e2e8f0;
+  --theme-text-secondary: #9aa4b2;
+  --theme-text-muted: #6b7280;
+  --tech-cyan: #00d2ff;
+  --tech-blue: #0070f3;
+  --theme-accent: #00d2ff;
+  --theme-accent-secondary: #0070f3;
+
+  /* Gradientes de iconos flotantes en Dark Mode (Cyan y Azul Eléctrico) */
+  --chat-pill-icon-start: #a5f3fc;
+  --chat-pill-icon-end: #00d2ff;
+  --music-pill-icon-start: #a5f3fc;
+  --music-pill-icon-end: #00d2ff;
 }
 
 body,
@@ -5071,12 +5109,29 @@ button.pokemon-card:focus-visible,
 }
 
 [data-theme="dark"] .search-bar:focus-within {
-  border-color: var(--coral);
-  box-shadow: 0 15px 35px rgba(242, 125, 111, 0.2);
+  border-color: rgba(0, 210, 255, 0.45);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(0, 210, 255, 0.12);
+}
+
+[data-theme="dark"] .search-icon {
+  color: #00d2ff !important;
 }
 
 [data-theme="dark"] .search-bar input {
-  background-color: transparent;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 none transparent !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 none transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  color-scheme: dark !important;
   color: var(--ink);
 }
 
@@ -5091,9 +5146,9 @@ button.pokemon-card:focus-visible,
 }
 
 [data-theme="dark"] .search-bar .search-random-btn:hover {
-  background: var(--coral);
-  border-color: var(--coral);
-  color: #ffffff;
+  background: #252b3a;
+  border-color: rgba(0, 210, 255, 0.4);
+  color: #00d2ff;
 }
 
 [data-theme="dark"] .suggestions-list {
@@ -5102,13 +5157,16 @@ button.pokemon-card:focus-visible,
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
 }
 
-[data-theme="dark"] .suggestion-item {
-  color: var(--ink);
+[data-theme="dark"] .suggestion-item,
+[data-theme="dark"] .suggestions-list button {
+  color: var(--ink) !important;
 }
 
 [data-theme="dark"] .suggestion-item:hover,
-[data-theme="dark"] .suggestion-item.is-selected {
-  background: rgba(255, 255, 255, 0.08);
+[data-theme="dark"] .suggestion-item.is-selected,
+[data-theme="dark"] .suggestions-list button:hover,
+[data-theme="dark"] .suggestions-list button.active {
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 [data-theme="dark"] .hero-orbit::before {
@@ -5603,22 +5661,49 @@ button.pokemon-card:focus-visible,
 /* BOTONES EN MODO OSCURO (BOTON: #222327 | LETRAS: #6c6d76)                  */
 /* ========================================================================== */
 
-/* 1. Botones principales, buscadores, filtros y disparadores */
-[data-theme="dark"] .search-bar button,
-[data-theme="dark"] .pokedex-search-wrapper .search-bar button,
-[data-theme="dark"] .items-search-submit,
-[data-theme="dark"] .moves-search-submit,
-[data-theme="dark"] .search-bar .search-random-btn,
-[data-theme="dark"] .items-search-clear,
-[data-theme="dark"] .moves-search-clear,
-[data-theme="dark"] .filter-select,
-[data-theme="dark"] .shiny-toggle-btn,
-[data-theme="dark"] .language-picker,
-[data-theme="dark"] .language-picker select,
-[data-theme="dark"] .ai-link,
-[data-theme="dark"] .items-category-select,
-[data-theme="dark"] .moves-filter-field select,
-[data-theme="dark"] .items-filter-pill,
+/* ==========================================================================
+   TEMA OSCURO - BOTONES DE ACCIÓN Y NAVEGACIÓN
+   ========================================================================== */
+/* Botones primarios (Acción tecnológica con acento Cyan/Azul contenido) */
+[data-theme="dark"] .primary-action,
+[data-theme="dark"] button.primary-action,
+[data-theme="dark"] .auth-primary-btn {
+  background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2) !important;
+}
+
+[data-theme="dark"] .primary-action *,
+[data-theme="dark"] button.primary-action *,
+[data-theme="dark"] .auth-primary-btn * {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .primary-action:hover,
+[data-theme="dark"] button.primary-action:hover,
+[data-theme="dark"] .auth-primary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1, #075985) !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Botones secundarios y de interacción estándar */
+[data-theme="dark"] .secondary-action,
+[data-theme="dark"] .nav-auth-btn,
+[data-theme="dark"] .nav-auth-btn.btn-login,
+[data-theme="dark"] .nav-auth-btn.btn-register,
+[data-theme="dark"] .nav-logout-btn,
+[data-theme="dark"] .pokedex-filter-btn,
+[data-theme="dark"] .settings-tab-btn,
+[data-theme="dark"] .unfollow-btn-confirm,
+[data-theme="dark"] .unfollow-btn-cancel,
+[data-theme="dark"] .social-btn-accept,
+[data-theme="dark"] .social-btn-reject,
+[data-theme="dark"] .profile-btn-upload,
+[data-theme="dark"] .crop-zoom-btn,
+[data-theme="dark"] button.back-link,
 [data-theme="dark"] .items-clear-filters-btn,
 [data-theme="dark"] .moves-clear-btn,
 [data-theme="dark"] .pokedex-pagination .load-more,
@@ -5645,49 +5730,79 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .user-btn-avatar-settings,
 [data-theme="dark"] .modal-btn-cancel,
 [data-theme="dark"] .modal-btn-save,
-[data-theme="dark"] .auth-primary-btn,
 [data-theme="dark"] .auth-google-btn,
-[data-theme="dark"] .primary-action,
-[data-theme="dark"] .secondary-action,
-[data-theme="dark"] .nav-auth-btn,
-[data-theme="dark"] .nav-auth-btn.btn-login,
-[data-theme="dark"] .nav-auth-btn.btn-register,
-[data-theme="dark"] .nav-logout-btn,
-[data-theme="dark"] .pokedex-filter-btn,
-[data-theme="dark"] .settings-tab-btn,
-[data-theme="dark"] .unfollow-btn-confirm,
-[data-theme="dark"] .unfollow-btn-cancel,
-[data-theme="dark"] .social-btn-accept,
-[data-theme="dark"] .social-btn-reject,
-[data-theme="dark"] .profile-btn-upload,
-[data-theme="dark"] .crop-zoom-btn,
-[data-theme="dark"] button.back-link,
-[data-theme="dark"] button.primary-action {
-  background-color: #222327 !important;
-  color: #6c6d76 !important;
+[data-theme="dark"] .search-bar button,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button,
+[data-theme="dark"] .search-bar .search-random-btn,
+[data-theme="dark"] .items-search-submit,
+[data-theme="dark"] .items-search-clear,
+[data-theme="dark"] .moves-search-submit,
+[data-theme="dark"] .moves-search-clear,
+[data-theme="dark"] .items-filter-pill,
+[data-theme="dark"] .shiny-toggle-btn,
+[data-theme="dark"] .language-picker,
+[data-theme="dark"] .ai-link,
+[data-theme="dark"] .items-category-select,
+[data-theme="dark"] .moves-filter-field select {
+  background: #1c202b !important;
+  background-color: #1c202b !important;
+  color: #e2e8f0 !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
 }
 
-/* Dropdown select SVG flecha en tema oscuro */
-[data-theme="dark"] .filter-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236c6d76' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+/* Barra de búsqueda - botones específicos en modo oscuro (no brillantes, tono controlado) */
+[data-theme="dark"] .search-bar .search-random-btn {
+  background: #1c202b !important;
+  background-color: #1c202b !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
 }
 
-[data-theme="dark"] .filter-select option,
-[data-theme="dark"] .language-picker select option,
-[data-theme="dark"] .items-category-select option,
-[data-theme="dark"] .moves-filter-field select option {
-  background-color: #222327 !important;
-  color: #6c6d76 !important;
+[data-theme="dark"] .search-bar .search-random-btn svg {
+  color: #94a3b8 !important;
 }
 
-/* 2. Letras, textos e iconos interiores de los botones */
+[data-theme="dark"] .search-bar .search-random-btn:hover {
+  background: #252b3a !important;
+  background-color: #252b3a !important;
+  border-color: rgba(0, 210, 255, 0.4) !important;
+  color: #00d2ff !important;
+  box-shadow: 0 4px 12px rgba(0, 210, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .search-bar .search-random-btn:hover svg {
+  color: #00d2ff !important;
+}
+
+[data-theme="dark"] .search-bar button,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button {
+  background: #1c202b !important;
+  background-color: #1c202b !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .search-bar button span,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button span {
+  color: #00d2ff !important;
+}
+
+[data-theme="dark"] .search-bar button:hover,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar button:hover {
+  background: #252b3a !important;
+  background-color: #252b3a !important;
+  border-color: rgba(0, 210, 255, 0.45) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 210, 255, 0.16) !important;
+}
+
 [data-theme="dark"] .search-bar button *,
 [data-theme="dark"] .pokedex-search-wrapper .search-bar button *,
 [data-theme="dark"] .items-search-submit *,
 [data-theme="dark"] .moves-search-submit *,
-[data-theme="dark"] .shiny-toggle-btn *,
-[data-theme="dark"] .ai-link *,
 [data-theme="dark"] .items-filter-pill *,
 [data-theme="dark"] .pokedex-pagination .load-more *,
 [data-theme="dark"] .moves-pagination-btn *,
@@ -5709,9 +5824,7 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .user-btn-avatar-settings *,
 [data-theme="dark"] .modal-btn-cancel *,
 [data-theme="dark"] .modal-btn-save *,
-[data-theme="dark"] .auth-primary-btn *,
 [data-theme="dark"] .auth-google-btn *,
-[data-theme="dark"] .primary-action *,
 [data-theme="dark"] .secondary-action *,
 [data-theme="dark"] .nav-auth-btn *,
 [data-theme="dark"] .nav-logout-btn *,
@@ -5719,13 +5832,16 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .settings-tab-btn *,
 [data-theme="dark"] .unfollow-btn-confirm *,
 [data-theme="dark"] .unfollow-btn-cancel *,
+[data-theme="dark"] .social-btn-accept *,
+[data-theme="dark"] .social-btn-reject *,
+[data-theme="dark"] .profile-btn-upload *,
 [data-theme="dark"] .crop-zoom-btn * {
-  color: #6c6d76 !important;
+  color: #e2e8f0 !important;
 }
 
-/* Estados específicos activos / destacados */
+/* Estados activos y especiales */
 [data-theme="dark"] .shiny-toggle-btn.is-active {
-  background-color: #222327 !important;
+  background-color: #222733 !important;
   border-color: #eab308 !important;
   color: #eab308 !important;
 }
@@ -5735,28 +5851,23 @@ button.pokemon-card:focus-visible,
 }
 
 [data-theme="dark"] .cry-btn.is-playing {
-  background-color: #222327 !important;
-  border-color: var(--coral) !important;
-  color: var(--coral) !important;
+  background-color: #222733 !important;
+  border-color: #00d2ff !important;
+  color: #00d2ff !important;
 }
 
 [data-theme="dark"] .cry-btn.is-playing * {
-  color: var(--coral) !important;
+  color: #00d2ff !important;
 }
 
-/* 3. Estados Hover */
+/* Estados Hover en botones oscuros (Acento sutil Cyan) */
 [data-theme="dark"] .search-bar button:hover,
 [data-theme="dark"] .pokedex-search-wrapper .search-bar button:hover,
 [data-theme="dark"] .items-search-submit:hover,
 [data-theme="dark"] .moves-search-submit:hover,
 [data-theme="dark"] .search-bar .search-random-btn:hover,
-[data-theme="dark"] .filter-select:hover,
-[data-theme="dark"] .filter-select:focus-visible,
 [data-theme="dark"] .shiny-toggle-btn:hover,
 [data-theme="dark"] .language-picker:hover,
-[data-theme="dark"] .ai-link:hover,
-[data-theme="dark"] .items-category-select:hover,
-[data-theme="dark"] .moves-filter-field select:hover,
 [data-theme="dark"] .items-filter-pill:hover,
 [data-theme="dark"] .items-clear-filters-btn:hover,
 [data-theme="dark"] .moves-clear-btn:hover,
@@ -5778,22 +5889,16 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .user-btn-edit-profile:hover,
 [data-theme="dark"] .user-btn-avatar-settings:hover,
 [data-theme="dark"] .modal-btn-cancel:hover,
-[data-theme="dark"] .auth-primary-btn:hover:not(:disabled),
 [data-theme="dark"] .auth-google-btn:hover:not(:disabled),
-[data-theme="dark"] .primary-action:hover,
 [data-theme="dark"] .secondary-action:hover,
 [data-theme="dark"] .nav-auth-btn:hover,
 [data-theme="dark"] .pokedex-filter-btn:hover,
 [data-theme="dark"] .settings-tab-btn:hover,
 [data-theme="dark"] .unfollow-btn-cancel:hover,
 [data-theme="dark"] .crop-zoom-btn:hover {
-  background-color: #2a2c32 !important;
-  color: #8c8e98 !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
-}
-
-[data-theme="dark"] .filter-select:hover {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238c8e98' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-color: #222733 !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 210, 255, 0.28) !important;
 }
 
 [data-theme="dark"] .search-bar button:hover *,
@@ -5801,7 +5906,6 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .items-search-submit:hover *,
 [data-theme="dark"] .moves-search-submit:hover *,
 [data-theme="dark"] .shiny-toggle-btn:hover *,
-[data-theme="dark"] .ai-link:hover *,
 [data-theme="dark"] .items-filter-pill:hover *,
 [data-theme="dark"] .pokedex-pagination .load-more:hover *,
 [data-theme="dark"] .moves-pagination-btn:hover *,
@@ -5815,14 +5919,160 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .follow-btn:hover *,
 [data-theme="dark"] .profile-back-btn:hover *,
 [data-theme="dark"] .back-link:hover *,
-[data-theme="dark"] .primary-action:hover *,
 [data-theme="dark"] .secondary-action:hover *,
 [data-theme="dark"] .nav-auth-btn:hover *,
 [data-theme="dark"] .pokedex-filter-btn:hover *,
 [data-theme="dark"] .settings-tab-btn:hover *,
-[data-theme="dark"] .modal-btn-cancel:hover *,
-[data-theme="dark"] .auth-primary-btn:hover * {
-  color: #8c8e98 !important;
+[data-theme="dark"] .modal-btn-cancel:hover * {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   TEMA OSCURO - CARDS, INPUTS, SELECTS Y MODALES
+   ========================================================================== */
+/* Cards normales en Dark Mode */
+[data-theme="dark"] .pokemon-card,
+[data-theme="dark"] .category-card,
+[data-theme="dark"] .move-card,
+[data-theme="dark"] .featured-move-card,
+[data-theme="dark"] .item-card,
+[data-theme="dark"] .trainer-card,
+[data-theme="dark"] .trainer-fav-card {
+  background-color: #11141d !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .pokemon-card:hover,
+[data-theme="dark"] .category-card:hover,
+[data-theme="dark"] .move-card:hover,
+[data-theme="dark"] .featured-move-card:hover,
+[data-theme="dark"] .item-card:hover,
+[data-theme="dark"] .trainer-card:hover,
+[data-theme="dark"] .trainer-fav-card:hover {
+  background-color: #171a24 !important;
+  border-color: rgba(0, 210, 255, 0.18) !important;
+}
+
+/* Inputs y Áreas de Búsqueda */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]),
+[data-theme="dark"] textarea,
+[data-theme="dark"] select,
+[data-theme="dark"] .filter-select {
+  background-color: #11141d !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Eliminar totalmente recuadro, borde, fondo y outline en buscadores */
+[data-theme="dark"] .search-bar input,
+[data-theme="dark"] .search-bar input[type="search"],
+[data-theme="dark"] form.search-bar input,
+[data-theme="dark"] form.search-bar input[type="search"],
+[data-theme="dark"] .search-bar input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] .pokedex-search-wrapper .search-bar input,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar input[type="search"],
+[data-theme="dark"] .pokedex-search-wrapper .search-bar input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] .items-search input,
+[data-theme="dark"] .items-search input[type="search"],
+[data-theme="dark"] .items-search input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] .moves-search input,
+[data-theme="dark"] .moves-search input[type="search"],
+[data-theme="dark"] .moves-search input:not([type="checkbox"]):not([type="radio"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 none transparent !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 none transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  color: #e2e8f0 !important;
+  color-scheme: dark !important;
+}
+
+[data-theme="dark"] .search-bar input:focus,
+[data-theme="dark"] .search-bar input[type="search"]:focus,
+[data-theme="dark"] form.search-bar input:focus,
+[data-theme="dark"] form.search-bar input[type="search"]:focus,
+[data-theme="dark"] .search-bar input:not([type="checkbox"]):not([type="radio"]):focus,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar input:focus,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar input[type="search"]:focus,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar input:not([type="checkbox"]):not([type="radio"]):focus,
+[data-theme="dark"] .items-search input:focus,
+[data-theme="dark"] .items-search input[type="search"]:focus,
+[data-theme="dark"] .items-search input:not([type="checkbox"]):not([type="radio"]):focus,
+[data-theme="dark"] .moves-search input:focus,
+[data-theme="dark"] .moves-search input[type="search"]:focus,
+[data-theme="dark"] .moves-search input:not([type="checkbox"]):not([type="radio"]):focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 none transparent !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 none transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]):focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] .search-bar:focus-within,
+[data-theme="dark"] .pokedex-search-wrapper .search-bar:focus-within,
+[data-theme="dark"] .items-search:focus-within,
+[data-theme="dark"] .moves-search:focus-within,
+[data-theme="dark"] .filter-select:focus-visible {
+  border-color: rgba(0, 210, 255, 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.08) !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Dropdowns y Selects */
+[data-theme="dark"] .filter-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300d2ff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+[data-theme="dark"] .filter-select:hover {
+  border-color: rgba(0, 210, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .filter-select option,
+[data-theme="dark"] .language-picker select option,
+[data-theme="dark"] .items-category-select option,
+[data-theme="dark"] .moves-filter-field select option {
+  background-color: #11141d !important;
+  color: #e2e8f0 !important;
+}
+
+/* Modales */
+[data-theme="dark"] .settings-modal-card,
+[data-theme="dark"] .auth-modal-card,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .unfollow-modal-card,
+[data-theme="dark"] .crop-modal-card,
+[data-theme="dark"] .privacy-modal-card,
+[data-theme="dark"] .user-profile-modal-card {
+  background-color: #11141d !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-theme="dark"] .user-profile-topbar {
+  background-color: #171a24 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 

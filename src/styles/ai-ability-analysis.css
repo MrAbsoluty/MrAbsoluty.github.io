@@ -2553,3 +2553,97 @@
   }
 }
 
+/* ==========================================================================
+   TEMA OSCURO - ANÁLISIS DE HABILIDADES CON IA (POKEGUIDE AI)
+   Superficies oscuras + acentos tecnológicos en Cyan / Azul Eléctrico
+   ========================================================================== */
+[data-theme="dark"] .ability-ai-btn.is-loading {
+  background: #1c202b !important;
+  border-color: #00d2ff !important;
+  color: #00d2ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .ability-ai-btn.is-active {
+  background: linear-gradient(135deg, #0070f3, #00d2ff) !important;
+  border-color: #00d2ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 210, 255, 0.4) !important;
+}
+
+[data-theme="dark"] .ai-loading-card {
+  background: #11141d !important;
+  border: 1px solid rgba(0, 210, 255, 0.25) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .ai-loading-card::before {
+  background: linear-gradient(90deg, transparent, #00d2ff, transparent) !important;
+}
+
+[data-theme="dark"] .ai-loading-spinner {
+  border-color: rgba(0, 210, 255, 0.2) !important;
+  border-top-color: #00d2ff !important;
+}
+
+[data-theme="dark"] .ai-loading-eyebrow {
+  color: #00d2ff !important;
+}
+
+[data-theme="dark"] .ai-loading-title {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .ai-loading-subtitle {
+  color: #9aa4b2 !important;
+}
+
+[data-theme="dark"] .ai-skeleton-line {
+  background: #1a1e2b !important;
+}
+
+[data-theme="dark"] .ai-skeleton-line::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 210, 255, 0.15) 50%, transparent 100%) !important;
+}
+
+[data-theme="dark"] .ai-error-card {
+  background: #161214 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-theme="dark"] .ai-analysis-card,
+[data-theme="dark"] .ability-ai-integrated-panel {
+  background: #11141d !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .ai-analysis-card:hover,
+[data-theme="dark"] .ability-ai-integrated-panel:hover {
+  border-color: rgba(0, 210, 255, 0.18) !important;
+}
+
+[data-theme="dark"] .ai-card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .ai-card-title {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .ai-card-eyebrow {
+  color: #00d2ff !important;
+}
+
+[data-theme="dark"] .ability-ai-integrated-close-btn:hover {
+  background: #1c202b !important;
+  color: #00d2ff !important;
+  border-color: rgba(0, 210, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .ability-ai-integrated-footer {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  color: #9aa4b2 !important;
+}
+

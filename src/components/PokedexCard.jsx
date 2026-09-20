@@ -1,6 +1,5 @@
 import { memo } from 'react'
 import { playClickSound } from '../utils/audio'
-import PokemonFavoriteButton from './PokemonFavoriteButton'
 
 const typeColors = {
   bug: '#65a47b',
@@ -61,13 +60,6 @@ function PokedexCard({
       }}
       aria-label={`${name} #${formattedId} - ${typesText}`}
     >
-      <PokemonFavoriteButton
-        pokemon={pokemon}
-        size="small"
-        className="pokedex-card-fav-btn"
-        t={t}
-      />
-
       <div className="pokemon-meta">
         <span>
           #{formattedId}

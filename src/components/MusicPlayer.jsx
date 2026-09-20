@@ -11,8 +11,8 @@ function HeadphoneIcon() {
     <svg className="fab-icon" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <defs>
         <linearGradient id="headphoneIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#a5f3fc" />
-          <stop offset="100%" stopColor="#00d2ff" />
+          <stop offset="0%" stopColor="var(--music-pill-icon-start, #ff8e80)" />
+          <stop offset="100%" stopColor="var(--music-pill-icon-end, #ed6d5d)" />
         </linearGradient>
       </defs>
       <path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke="url(#headphoneIconGrad)" />

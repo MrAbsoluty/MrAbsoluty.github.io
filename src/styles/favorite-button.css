@@ -295,7 +295,7 @@
 }
 
 .pokedex-interactive-card .pokemon-meta {
-  padding-right: 32px;
+  padding-right: 0;
 }
 
 /* Search Suggestions List Inline Star */
