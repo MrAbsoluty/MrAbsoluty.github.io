@@ -4,6 +4,7 @@ import {
   validateUsernameFormat,
 } from '../../context/AuthContext'
 import AvatarEditor, { MAX_FILE_SIZE_BYTES } from './AvatarEditor'
+import { showSuccessToast } from '../common/SuccessPopup'
 
 function ProfileModal() {
   const {
@@ -152,6 +153,7 @@ function ProfileModal() {
       setAvatarImageFile(null)
       setAvatarLoadError(false)
       setStatusMessage('Foto de perfil actualizada correctamente.')
+      showSuccessToast('Foto de perfil actualizada correctamente.', '¡Se guardaron los cambios con éxito!')
     } else {
       setErrorMessage(res.error || 'Error al guardar la foto de perfil.')
     }
@@ -170,6 +172,7 @@ function ProfileModal() {
     if (res.success) {
       setAvatarLoadError(false)
       setStatusMessage('Tu foto de perfil ha sido eliminada.')
+      showSuccessToast('Tu foto de perfil ha sido eliminada.', '¡Se guardaron los cambios con éxito!')
     } else {
       setErrorMessage(res.error || 'Error al eliminar la foto.')
     }
@@ -198,6 +201,7 @@ function ProfileModal() {
 
     if (res.success) {
       setStatusMessage('Nombre de usuario actualizado con éxito.')
+      showSuccessToast('Nombre de usuario actualizado con éxito.', '¡Se guardaron los cambios con éxito!')
     } else {
       setErrorMessage(res.error || 'Error al actualizar el perfil.')
     }

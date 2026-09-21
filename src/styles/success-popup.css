@@ -1,0 +1,196 @@
+/* ================================================================
+   PokeGuide - Ventana Emergente de Éxito (Success Popup)
+   Diseño de alta fidelidad adaptativo para modo claro y modo oscuro
+   ================================================================ */
+
+.success-popup-container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  width: calc(100% - 32px);
+  max-width: 460px;
+}
+
+.success-popup-card {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  width: 100%;
+  box-sizing: border-box;
+  
+  /* Tema claro por defecto */
+  background: #f0fdf4;
+  background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+  border: 1.5px solid #22c55e;
+  color: #14532d;
+  box-shadow: 0 14px 34px rgba(34, 197, 94, 0.22), 0 4px 10px rgba(0, 0, 0, 0.05);
+  
+  animation: successPopupSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.25s ease;
+}
+
+.success-popup-card.is-closing {
+  animation: successPopupSlideOut 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+/* Modo oscuro adaptado */
+[data-theme="dark"] .success-popup-card {
+  background: rgba(6, 44, 30, 0.94);
+  background: linear-gradient(135deg, rgba(8, 52, 36, 0.96) 0%, rgba(4, 32, 22, 0.94) 100%);
+  border: 1.5px solid rgba(52, 211, 153, 0.65);
+  color: #ecfdf5;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(52, 211, 153, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Badge con icono animado de verificación */
+.success-popup-icon-badge {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(34, 197, 94, 0.35);
+  animation: successBadgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+[data-theme="dark"] .success-popup-icon-badge {
+  background: #10b981;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.55);
+}
+
+.success-popup-icon-badge svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Contenido de texto */
+.success-popup-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+
+.success-popup-title {
+  margin: 0;
+  font: 700 13.5px var(--display, system-ui, sans-serif);
+  line-height: 1.3;
+  color: #14532d;
+}
+
+[data-theme="dark"] .success-popup-title {
+  color: #f0fdf4;
+}
+
+.success-popup-message {
+  margin: 2px 0 0;
+  font: 500 12px var(--sans, system-ui, sans-serif);
+  color: #166534;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+}
+
+[data-theme="dark"] .success-popup-message {
+  color: #a7f3d0;
+}
+
+/* Botón de cierre */
+.success-popup-close-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: #15803d;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.success-popup-close-btn:hover {
+  background: rgba(34, 197, 94, 0.15);
+  color: #14532d;
+  transform: scale(1.08);
+}
+
+[data-theme="dark"] .success-popup-close-btn {
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .success-popup-close-btn:hover {
+  background: rgba(52, 211, 153, 0.2);
+  color: #ffffff;
+}
+
+/* Animaciones */
+@keyframes successPopupSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.94);
+  }
+  65% {
+    transform: translateY(3px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes successPopupSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.92);
+  }
+}
+
+@keyframes successBadgePop {
+  0% {
+    transform: scale(0.4) rotate(-30deg);
+  }
+  70% {
+    transform: scale(1.18) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .success-popup-container {
+    top: 14px;
+    width: calc(100% - 24px);
+  }
+
+  .success-popup-card {
+    border-radius: 14px;
+    padding: 10px 14px;
+    gap: 10px;
+  }
+}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { playClickUserSound, playBubbleSound } from '../../utils/audio'
+import { showSuccessToast } from '../common/SuccessPopup'
 
 export default function PrivacySettingsModal({ t }) {
   const {
@@ -13,6 +14,11 @@ export default function PrivacySettingsModal({ t }) {
   const [profileVisibility, setProfileVisibility] = useState('public')
   const [favoritesVisibility, setFavoritesVisibility] = useState('public')
   const [followListVisibility, setFollowListVisibility] = useState('public')
+  const [savedPrivacy, setSavedPrivacy] = useState({
+    profileVisibility: 'public',
+    favoritesVisibility: 'public',
+    followListVisibility: 'public',
+  })
   const [isSaving, setIsSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
@@ -20,9 +26,17 @@ export default function PrivacySettingsModal({ t }) {
 
   useEffect(() => {
     if (isPrivacyModalOpen && profile) {
-      setProfileVisibility(profile.profile_visibility || 'public')
-      setFavoritesVisibility(profile.favorites_visibility || 'public')
-      setFollowListVisibility(profile.follow_list_visibility || 'public')
+      const pVis = profile.profile_visibility || 'public'
+      const fVis = profile.favorites_visibility || 'public'
+      const flVis = profile.follow_list_visibility || 'public'
+      setProfileVisibility(pVis)
+      setFavoritesVisibility(fVis)
+      setFollowListVisibility(flVis)
+      setSavedPrivacy({
+        profileVisibility: pVis,
+        favoritesVisibility: fVis,
+        followListVisibility: flVis,
+      })
       setStatusMessage(null)
       setErrorMessage(null)
     }
@@ -44,8 +58,14 @@ export default function PrivacySettingsModal({ t }) {
 
   const opt = t?.social?.privacyOptions || {}
 
+  const hasPrivacyChanges =
+    profileVisibility !== savedPrivacy.profileVisibility ||
+    favoritesVisibility !== savedPrivacy.favoritesVisibility ||
+    followListVisibility !== savedPrivacy.followListVisibility
+
   async function handleSave(e) {
     e.preventDefault()
+    if (!hasPrivacyChanges) return
     setIsSaving(true)
     setStatusMessage(null)
     setErrorMessage(null)
@@ -60,7 +80,14 @@ export default function PrivacySettingsModal({ t }) {
 
       if (res.success) {
         playBubbleSound()
-        setStatusMessage(opt.savedSuccess || 'Preferencias de privacidad guardadas correctamente.')
+        const successText = opt.savedSuccess || 'Preferencias de privacidad guardadas correctamente.'
+        setStatusMessage(successText)
+        setSavedPrivacy({
+          profileVisibility,
+          favoritesVisibility,
+          followListVisibility,
+        })
+        showSuccessToast(successText, '¡Se guardaron los cambios con éxito!')
       } else {
         setErrorMessage(res.error || 'Error al guardar la privacidad.')
       }
@@ -247,7 +274,7 @@ export default function PrivacySettingsModal({ t }) {
               type="submit"
               className="auth-primary-btn"
               style={{ width: 'auto', padding: '10px 24px', margin: 0 }}
-              disabled={isSaving}
+              disabled={!hasPrivacyChanges || isSaving}
             >
               {isSaving ? (
                 <>

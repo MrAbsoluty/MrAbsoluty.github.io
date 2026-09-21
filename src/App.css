@@ -6013,6 +6013,73 @@ button.pokemon-card:focus-visible,
 }
 
 /* Menú de Usuario (UserMenuDropdown) en Dark Mode */
+[data-theme="dark"] .nav-guest-btn {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .nav-guest-btn:hover,
+[data-theme="dark"] .nav-guest-btn.is-active {
+  background: rgba(242, 125, 111, 0.1);
+  border-color: var(--coral);
+  color: var(--coral);
+  box-shadow: 0 4px 14px rgba(237, 109, 93, 0.25);
+}
+
+[data-theme="dark"] .dropdown-item-icon.icon-login {
+  background: rgba(242, 125, 111, 0.12);
+  color: var(--coral);
+}
+
+[data-theme="dark"] .dropdown-item-icon.icon-register {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .dropdown-user-avatar.guest-avatar {
+  background: var(--surface) !important;
+  color: var(--muted) !important;
+  border-color: var(--line) !important;
+}
+
+/* Selector de Idioma en Dark Mode */
+[data-theme="dark"] .nav-lang-btn {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .nav-lang-btn:hover,
+[data-theme="dark"] .nav-lang-btn.is-active {
+  background: rgba(242, 125, 111, 0.1);
+  border-color: var(--coral);
+  color: var(--coral);
+  box-shadow: 0 4px 14px rgba(237, 109, 93, 0.25);
+}
+
+[data-theme="dark"] .nav-lang-dropdown-panel {
+  background: var(--theme-surface, #121a24);
+  border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="dark"] .nav-lang-option {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .nav-lang-option:hover {
+  background: rgba(242, 125, 111, 0.12);
+  color: var(--coral);
+}
+
+[data-theme="dark"] .nav-lang-option.is-selected {
+  background: rgba(242, 125, 111, 0.18);
+  color: var(--coral);
+}
+
 [data-theme="dark"] .nav-user-dropdown-panel {
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
@@ -6146,6 +6213,7 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .privacy-radio-card {
   background: var(--surface);
   border-color: var(--line);
+  text-align: left;
 }
 
 [data-theme="dark"] .privacy-radio-card:hover {
@@ -6157,12 +6225,24 @@ button.pokemon-card:focus-visible,
   border-color: var(--coral);
 }
 
+[data-theme="dark"] .privacy-radio-content {
+  text-align: left;
+}
+
 [data-theme="dark"] .privacy-radio-content strong {
   color: var(--ink);
+  text-align: left;
 }
 
 [data-theme="dark"] .privacy-radio-content p {
   color: var(--muted);
+  text-align: left;
+}
+
+[data-theme="dark"] .privacy-section-title,
+[data-theme="dark"] .privacy-section h5 {
+  color: var(--ink);
+  text-align: left;
 }
 
 [data-theme="dark"] .settings-danger-box {

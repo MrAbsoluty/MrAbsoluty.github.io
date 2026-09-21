@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth, MIN_PASSWORD_LENGTH } from '../../context/AuthContext'
 import { localeOptions } from '../../locales'
+import { showSuccessToast } from '../common/SuccessPopup'
 
 function SunIcon({ className = 'theme-icon-animated' }) {
   return (
@@ -114,6 +115,11 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
   const [profileVisibility, setProfileVisibility] = useState('public')
   const [favoritesVisibility, setFavoritesVisibility] = useState('public')
   const [followListVisibility, setFollowListVisibility] = useState('public')
+  const [savedPrivacy, setSavedPrivacy] = useState({
+    profileVisibility: 'public',
+    favoritesVisibility: 'public',
+    followListVisibility: 'public',
+  })
   const [isChangingPrivacy, setIsChangingPrivacy] = useState(false)
   const [privacyMessage, setPrivacyMessage] = useState(null)
   const [privacyError, setPrivacyError] = useState(null)
@@ -126,9 +132,17 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
 
   useEffect(() => {
     if (isSettingsOpen && profile) {
-      setProfileVisibility(profile.profile_visibility || 'public')
-      setFavoritesVisibility(profile.favorites_visibility || 'public')
-      setFollowListVisibility(profile.follow_list_visibility || 'public')
+      const pVis = profile.profile_visibility || 'public'
+      const fVis = profile.favorites_visibility || 'public'
+      const flVis = profile.follow_list_visibility || 'public'
+      setProfileVisibility(pVis)
+      setFavoritesVisibility(fVis)
+      setFollowListVisibility(flVis)
+      setSavedPrivacy({
+        profileVisibility: pVis,
+        favoritesVisibility: fVis,
+        followListVisibility: flVis,
+      })
       setPrivacyMessage(null)
       setPrivacyError(null)
     }
@@ -139,6 +153,11 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
       setAiLevelError(null)
     }
   }, [isSettingsOpen, profile])
+
+  const hasPrivacyChanges =
+    profileVisibility !== savedPrivacy.profileVisibility ||
+    favoritesVisibility !== savedPrivacy.favoritesVisibility ||
+    followListVisibility !== savedPrivacy.followListVisibility
 
   const modalRef = useRef(null)
 
@@ -184,6 +203,7 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
     if (res.success) {
       setEmailMessage(res.message)
       setNewEmail('')
+      showSuccessToast('Hemos enviado un enlace de confirmación a tu nuevo correo.', '¡Se guardaron los cambios con éxito!')
     } else {
       setEmailError(res.error)
     }
@@ -213,6 +233,7 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
       setPasswordMessage(res.message)
       setNewPassword('')
       setConfirmPassword('')
+      showSuccessToast('Tu contraseña se ha actualizado correctamente.', '¡Se guardaron los cambios con éxito!')
     } else {
       setPasswordError(res.error)
     }
@@ -498,6 +519,7 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault()
+                    if (!hasPrivacyChanges) return
                     setIsChangingPrivacy(true)
                     setPrivacyMessage(null)
                     setPrivacyError(null)
@@ -508,7 +530,14 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
                         follow_list_visibility: followListVisibility,
                       })
                       if (res.success) {
-                        setPrivacyMessage(t?.social?.privacyOptions?.savedSuccess || 'Preferencias de privacidad guardadas correctamente.')
+                        const successText = t?.social?.privacyOptions?.savedSuccess || 'Preferencias de privacidad guardadas correctamente.'
+                        setPrivacyMessage(successText)
+                        setSavedPrivacy({
+                          profileVisibility,
+                          favoritesVisibility,
+                          followListVisibility,
+                        })
+                        showSuccessToast(successText, '¡Se guardaron los cambios con éxito!')
                       } else {
                         setPrivacyError(res.error || 'Error al guardar privacidad.')
                       }
@@ -518,11 +547,12 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
                       setIsChangingPrivacy(false)
                     }
                   }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}
+                  className="privacy-settings-wrapper"
+                  style={{ display: 'flex', flexDirection: 'column', gap: '18px', textAlign: 'left', width: '100%', maxWidth: '440px', margin: '0 auto' }}
                 >
                   {/* Perfil */}
                   <div className="privacy-section">
-                    <h5 style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
+                    <h5 className="privacy-section-title" style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
                       👤 {t?.social?.privacyOptions?.profileTitle || 'Visibilidad del perfil'}
                     </h5>
                     <div className="privacy-radio-group">
@@ -558,7 +588,7 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
 
                   {/* Favoritos */}
                   <div className="privacy-section">
-                    <h5 style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
+                    <h5 className="privacy-section-title" style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
                       ⭐ {t?.social?.privacyOptions?.favoritesTitle || 'Visibilidad de favoritos'}
                     </h5>
                     <div className="privacy-radio-group">
@@ -608,7 +638,7 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
 
                   {/* Seguidores y Siguiendo */}
                   <div className="privacy-section">
-                    <h5 style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
+                    <h5 className="privacy-section-title" style={{ font: '600 13.5px var(--display)', color: 'var(--navy)', margin: '0 0 8px' }}>
                       👥 {t?.social?.privacyOptions?.followListTitle || 'Seguidores y Siguiendo'}
                     </h5>
                     <div className="privacy-radio-group">
@@ -646,7 +676,7 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
                     type="submit"
                     className="auth-primary-btn"
                     style={{ width: 'auto', alignSelf: 'center', margin: '8px auto 0', padding: '10px 28px' }}
-                    disabled={isChangingPrivacy}
+                    disabled={!hasPrivacyChanges || isChangingPrivacy}
                   >
                     {isChangingPrivacy ? 'Guardando...' : (t?.social?.privacyOptions?.saveChanges || 'Guardar privacidad')}
                   </button>
@@ -808,7 +838,9 @@ function SettingsModal({ locale, onLocaleChange, t, theme: propTheme, onThemeCha
                           try {
                             const res = await updateAiLevel(lvl)
                             if (res?.success) {
-                              setAiLevelMessage(t?.aiLevel?.savedSuccess || 'Nivel de análisis de IA actualizado con éxito.')
+                              const successMsg = t?.aiLevel?.savedSuccess || 'Nivel de análisis de IA actualizado con éxito.'
+                              setAiLevelMessage(successMsg)
+                              showSuccessToast(successMsg, '¡Se guardaron los cambios con éxito!')
                               setTimeout(() => setAiLevelMessage(null), 3000)
                             } else {
                               setCurrentAiLevel(previousLevel)

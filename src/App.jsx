@@ -24,6 +24,7 @@ import FollowingModal from './components/social/FollowingModal'
 import FollowRequestsModal from './components/social/FollowRequestsModal'
 import PrivacySettingsModal from './components/social/PrivacySettingsModal'
 import UserSearchModal from './components/social/UserSearchModal'
+import SuccessPopup from './components/common/SuccessPopup'
 import { useAuth } from './context/AuthContext'
 import { scrollToTop } from './utils/scroll'
 import './styles/profile.css'
@@ -651,6 +652,7 @@ function App() {
       <UserSearchModal t={t} />
       <SocialModal />
       <SocialToast t={t} />
+      <SuccessPopup />
       <FloatingChat />
     </>
   )

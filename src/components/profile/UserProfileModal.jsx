@@ -9,6 +9,7 @@ import {
 } from '../../services/social'
 import FollowButton from '../social/FollowButton'
 import { playHoverBubbleSound } from '../../utils/audio'
+import { showSuccessToast } from '../common/SuccessPopup'
 import {
   cleanPokemonSlug,
   getPokemonDisplayName,
@@ -179,6 +180,7 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
           bio: editBio.trim(),
           featured_pokemon: editFeaturedPokemon.trim().toLowerCase(),
         }))
+        showSuccessToast('Perfil de entrenador actualizado con éxito.', '¡Se guardaron los cambios con éxito!')
       } else {
         setEditError(res.error || 'Error al guardar cambios')
       }
@@ -358,7 +360,11 @@ export default function UserProfileModal({ onPokemonClick, t, locale = 'es' }) {
                       type="submit"
                       className="auth-primary-btn"
                       style={{ width: 'auto', padding: '8px 20px', margin: 0 }}
-                      disabled={isSavingEdit}
+                      disabled={
+                        isSavingEdit ||
+                        (editBio.trim() === (profileData?.bio || '').trim() &&
+                          editFeaturedPokemon.trim().toLowerCase() === (profileData?.featured_pokemon || '').trim().toLowerCase())
+                      }
                     >
                       {isSavingEdit ? (t?.social?.saving || 'Guardando...') : (t?.social?.save || 'Guardar')}
                     </button>

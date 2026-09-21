@@ -1,7 +1,8 @@
-import { localeOptions } from '../locales'
 import { useFavorites } from '../context/FavoritesContext'
 import { useAuth } from '../context/AuthContext'
 import UserMenuDropdown from './auth/UserMenuDropdown'
+import GuestMenuDropdown from './auth/GuestMenuDropdown'
+import LanguageDropdown from './common/LanguageDropdown'
 
 function Navbar({
   t,
@@ -123,31 +124,7 @@ function Navbar({
       </nav>
       <div className="header-actions">
         {!isAuthenticated && (
-          <>
-            <label className="language-picker">
-              <span aria-hidden="true">{localeOptions.find((option) => option.code === locale)?.flag}</span>
-              <select value={locale} onChange={(event) => onLocaleChange(event.target.value)} aria-label="Language">
-                {localeOptions.map((opt) => (
-                  <option key={opt.code} value={opt.code}>
-                    {t.languages[opt.code] || opt.code}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="ai-link"
-              type="button"
-              aria-label={t.nav.ai}
-              onClick={() => {
-                if (onConstructionClick) {
-                  onConstructionClick('PokeGuide AI')
-                }
-              }}
-            >
-              <span className="spark" aria-hidden="true">✦</span>
-              <span>{t.nav.ai}</span>
-            </button>
-          </>
+          <LanguageDropdown locale={locale} onLocaleChange={onLocaleChange} t={t} />
         )}
 
         {!authLoading && (
@@ -179,22 +156,7 @@ function Navbar({
                 )}
               </>
             ) : (
-              <>
-                <button
-                  type="button"
-                  className="nav-auth-btn btn-login"
-                  onClick={() => openAuthModal('login')}
-                >
-                  Iniciar sesión
-                </button>
-                <button
-                  type="button"
-                  className="nav-auth-btn btn-register"
-                  onClick={() => openAuthModal('register')}
-                >
-                  Crear cuenta
-                </button>
-              </>
+              <GuestMenuDropdown t={t} openAuthModal={openAuthModal} />
             )}
           </div>
         )}

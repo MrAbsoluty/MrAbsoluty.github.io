@@ -19,6 +19,7 @@ import {
   playButtonSound,
   playClickUserSound,
 } from '../utils/audio'
+import { showSuccessToast } from '../components/common/SuccessPopup'
 
 function getFeaturedPokemonId(slugOrName) {
   if (!slugOrName) return 6 // Default Charizard (#6)
@@ -195,6 +196,7 @@ export default function Profile({
           bio: editBio.trim(),
           featured_pokemon: cleanFeatured || 'charizard',
         }))
+        showSuccessToast('Perfil de entrenador actualizado con éxito.', '¡Se guardaron los cambios con éxito!')
       } else {
         setEditError(res.error || 'Error al guardar cambios')
       }
@@ -432,7 +434,11 @@ export default function Profile({
                         <button
                           type="submit"
                           className="trainer-btn-save"
-                          disabled={isSavingEdit}
+                          disabled={
+                            isSavingEdit ||
+                            (editBio.trim() === (profileData?.bio || '').trim() &&
+                              editFeaturedPokemon.trim().toLowerCase() === (profileData?.featured_pokemon || '').trim().toLowerCase())
+                          }
                           onMouseEnter={playHoverBubbleSound}
                         >
                           {isSavingEdit ? (t?.social?.saving || 'Guardando...') : (t?.social?.save || 'Guardar')}

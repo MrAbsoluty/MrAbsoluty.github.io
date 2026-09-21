@@ -538,6 +538,56 @@
   text-align: center;
 }
 
+/* Ajustes de Privacidad dentro de settings-tab-body */
+.settings-tab-body .privacy-settings-wrapper,
+.settings-tab-body .privacy-section {
+  text-align: left;
+  width: 100%;
+}
+
+.settings-tab-body .privacy-section-title,
+.settings-tab-body .privacy-section h5 {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.settings-tab-body .privacy-radio-card {
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settings-tab-body .privacy-radio-card input[type='radio'] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.settings-tab-body .privacy-radio-content {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-tab-body .privacy-radio-content strong {
+  display: block;
+  text-align: left;
+  width: 100%;
+}
+
+.settings-tab-body .privacy-radio-content p {
+  text-align: left;
+  width: 100%;
+}
+
 /* Zona de peligro / Datos */
 .settings-danger-box {
   background: #fff5f5;
