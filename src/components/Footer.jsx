@@ -1,4 +1,5 @@
 import { scrollToTop } from '../utils/scroll'
+import logoImg from '../assets/logo.png'
 
 function Footer({ t }) {
   function handleBrandClick(event) {
@@ -13,7 +14,7 @@ function Footer({ t }) {
   return (
     <footer className="site-footer">
       <a className="brand" href="#top" onClick={handleBrandClick}>
-        <span className="brand-mark" aria-hidden="true"><span /></span>
+        <img src={logoImg} alt="PokeGuide" className="brand-logo-img" />
         <span>PokéGuide</span>
       </a>
       <p>{t.footer.tagline}</p>

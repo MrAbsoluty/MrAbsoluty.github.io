@@ -4,6 +4,8 @@ import UserMenuDropdown from './auth/UserMenuDropdown'
 import GuestMenuDropdown from './auth/GuestMenuDropdown'
 import LanguageDropdown from './common/LanguageDropdown'
 
+import logoImg from '../assets/logo.png'
+
 function Navbar({
   t,
   locale,
@@ -60,7 +62,7 @@ function Navbar({
   return (
     <header className="site-header">
       <a className="brand" href="#top" aria-label={t.nav.homeAria} onClick={handleBrandClick}>
-        <span className="brand-mark" aria-hidden="true"><span /></span>
+        <img src={logoImg} alt="PokeGuide" className="brand-logo-img" />
         <span>PokéGuide</span>
       </a>
       <nav className="main-nav" aria-label={t.nav.aria}>

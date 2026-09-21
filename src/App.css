@@ -120,6 +120,8 @@ a { color: inherit; text-decoration: none; } button, input { font: inherit; }
 .page-shell { width: 100%; max-width: 100%; margin: 0 auto; overflow: hidden; background: var(--paper); }
 .site-header { align-items: center; display: flex; gap: 16px; height: 84px; justify-content: space-between; padding: 0 clamp(24px, 6vw, 92px); }
 .brand { align-items: center; display: inline-flex; flex-shrink: 0; font: 700 20px var(--display); gap: 10px; letter-spacing: -.04em; }
+.brand-logo-img { width: 26px; height: 26px; object-fit: contain; display: inline-block; vertical-align: middle; flex-shrink: 0; transition: transform .25s ease; }
+.brand:hover .brand-logo-img { transform: rotate(20deg) scale(1.08); }
 .brand-mark { background: var(--ink); border: 2px solid var(--ink); border-radius: 50%; display: inline-block; height: 22px; overflow: hidden; position: relative; width: 22px; }
 .brand-mark::before, .brand-mark::after, .brand-mark span { content: ''; position: absolute; }
 .brand-mark::before { background: var(--coral); height: 50%; inset: 0; }.brand-mark::after { background: var(--paper); height: 3px; left: 0; right: 0; top: 9px; }.brand-mark span { background: var(--paper); border: 2px solid var(--ink); border-radius: 50%; height: 8px; left: 5px; top: 5px; width: 8px; z-index: 1; }
