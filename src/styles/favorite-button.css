@@ -494,3 +494,81 @@
   }
 }
 
+/* ==========================================================================
+   DARK MODE - FAVORITE BUTTON & FAVORITES PAGE
+   ========================================================================== */
+
+/* Inactive Favorite Button in Dark Mode */
+[data-theme="dark"] .pokemon-favorite-btn:not(.is-favorite) {
+  background: var(--theme-surface-elevated);
+  border-color: var(--theme-border);
+  color: #6b7280;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .pokemon-favorite-btn:not(.is-favorite):hover {
+  background: var(--theme-interactive);
+  border-color: var(--theme-border-strong);
+  color: #9ca3af;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .pokemon-favorite-btn:not(.is-favorite):active {
+  background: var(--theme-hover);
+}
+
+/* Active Favorite State in Dark Mode (Yellow Identity Preserved) */
+[data-theme="dark"] .pokemon-favorite-btn.is-favorite {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: #f59e0b;
+  color: #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .pokemon-favorite-btn.is-favorite .fav-star-icon {
+  fill: #f59e0b;
+  stroke: #f59e0b;
+  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.5));
+}
+
+[data-theme="dark"] .pokemon-favorite-btn.is-favorite:hover {
+  background: rgba(245, 158, 11, 0.24);
+  border-color: #fbbf24;
+  box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+}
+
+[data-theme="dark"] .pokemon-favorite-btn.is-favorite::before {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+}
+
+/* Favorites Page View in Dark Mode */
+[data-theme="dark"] .favorites-empty-card {
+  background: var(--theme-surface);
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .favorites-empty-icon-wrap {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.08) 70%, transparent 100%);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.18);
+}
+
+[data-theme="dark"] .favorites-empty-card h3 {
+  color: var(--theme-text);
+}
+
+[data-theme="dark"] .favorites-empty-card p {
+  color: var(--theme-text-secondary);
+}
+
+[data-theme="dark"] .favorites-subtitle {
+  color: var(--theme-text-secondary);
+}
+
+[data-theme="dark"] .favorites-count-pill {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+

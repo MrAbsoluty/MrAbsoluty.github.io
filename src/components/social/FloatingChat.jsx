@@ -738,9 +738,15 @@ export default function FloatingChat() {
                 <span>⌕</span>
                 <input
                   type="text"
+                  className="floating-chat-search-input"
                   placeholder="Buscar entre tus amigos…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                  }}
                 />
               </label>
 

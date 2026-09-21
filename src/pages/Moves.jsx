@@ -257,10 +257,13 @@ function Moves({
         <section className="moves-filters-section" aria-label={t?.moves?.filterToggle}>
           <div className="moves-filter-groups">
             {/* Tipo */}
-            <div className="moves-filter-field">
-              <label htmlFor="move-filter-type">{t?.moves?.filterType || 'Tipo'}</label>
+            <div className="filter-field moves-filter-field">
+              <label htmlFor="move-filter-type" className="filter-label">
+                {t?.moves?.filterType || 'Tipo'}
+              </label>
               <select
                 id="move-filter-type"
+                className="filter-select"
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
               >
@@ -274,10 +277,13 @@ function Moves({
             </div>
 
             {/* Categoría */}
-            <div className="moves-filter-field">
-              <label htmlFor="move-filter-category">{t?.moves?.filterCategory || 'Categoría'}</label>
+            <div className="filter-field moves-filter-field">
+              <label htmlFor="move-filter-category" className="filter-label">
+                {t?.moves?.filterCategory || 'Categoría'}
+              </label>
               <select
                 id="move-filter-category"
+                className="filter-select"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
@@ -291,10 +297,13 @@ function Moves({
             </div>
 
             {/* Potencia */}
-            <div className="moves-filter-field">
-              <label htmlFor="move-filter-power">{t?.moves?.filterPower || 'Potencia'}</label>
+            <div className="filter-field moves-filter-field">
+              <label htmlFor="move-filter-power" className="filter-label">
+                {t?.moves?.filterPower || 'Potencia'}
+              </label>
               <select
                 id="move-filter-power"
+                className="filter-select"
                 value={selectedPower}
                 onChange={(e) => setSelectedPower(e.target.value)}
               >
@@ -307,10 +316,13 @@ function Moves({
             </div>
 
             {/* Prioridad */}
-            <div className="moves-filter-field">
-              <label htmlFor="move-filter-priority">{t?.moves?.filterPriority || 'Prioridad'}</label>
+            <div className="filter-field moves-filter-field">
+              <label htmlFor="move-filter-priority" className="filter-label">
+                {t?.moves?.filterPriority || 'Prioridad'}
+              </label>
               <select
                 id="move-filter-priority"
+                className="filter-select"
                 value={selectedPriority}
                 onChange={(e) => setSelectedPriority(e.target.value)}
               >

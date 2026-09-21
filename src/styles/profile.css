@@ -469,6 +469,14 @@
   padding: 0 16px;
   gap: 6px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.settings-tabs-header::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .settings-tab-btn {
@@ -1526,10 +1534,18 @@
 /* TEMA OSCURO - PERFILES & BOTONES (BOTON: #222327 | LETRAS: #6c6d76)        */
 /* ========================================================================== */
 
-[data-theme="dark"] .trainer-card {
+[data-theme="dark"] .trainer-card,
+[data-theme="dark"] .trainer-card-skeleton {
   background: var(--surface, #11141d);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .trainer-card-skeleton .skeleton-avatar,
+[data-theme="dark"] .trainer-card-skeleton .skeleton-badge,
+[data-theme="dark"] .trainer-card-skeleton .skeleton-stat-box,
+[data-theme="dark"] .trainer-card-skeleton .skeleton-line {
+  background: rgba(255, 255, 255, 0.07);
 }
 
 [data-theme="dark"] .trainer-card-ribbon {
@@ -1583,7 +1599,6 @@
 [data-theme="dark"] .trainer-btn-cancel,
 [data-theme="dark"] .trainer-btn-save,
 [data-theme="dark"] .trainer-explore-btn,
-[data-theme="dark"] .profile-back-btn,
 [data-theme="dark"] .profile-btn-upload,
 [data-theme="dark"] .crop-zoom-btn {
   background-color: #222327 !important;
@@ -1600,7 +1615,6 @@
 [data-theme="dark"] .trainer-btn-cancel *,
 [data-theme="dark"] .trainer-btn-save *,
 [data-theme="dark"] .trainer-explore-btn *,
-[data-theme="dark"] .profile-back-btn *,
 [data-theme="dark"] .crop-zoom-btn * {
   color: #6c6d76 !important;
 }
@@ -1613,7 +1627,6 @@
 [data-theme="dark"] .trainer-btn-cancel:hover,
 [data-theme="dark"] .trainer-btn-save:hover,
 [data-theme="dark"] .trainer-explore-btn:hover,
-[data-theme="dark"] .profile-back-btn:hover,
 [data-theme="dark"] .crop-zoom-btn:hover {
   background-color: #2b2c32 !important;
   color: #8c8e98 !important;
@@ -1624,7 +1637,6 @@
 [data-theme="dark"] .btn-edit-profile:hover *,
 [data-theme="dark"] .btn-privacy-settings:hover *,
 [data-theme="dark"] .btn-message-profile:hover *,
-[data-theme="dark"] .trainer-avatar-edit-chip:hover *,
-[data-theme="dark"] .profile-back-btn:hover * {
+[data-theme="dark"] .trainer-avatar-edit-chip:hover * {
   color: #8c8e98 !important;
 }
