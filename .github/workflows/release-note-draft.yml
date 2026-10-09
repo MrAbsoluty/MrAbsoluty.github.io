@@ -1,0 +1,47 @@
+name: Generate release note draft
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - labeled
+      - unlabeled
+      - synchronize
+      - reopened
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  generate-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted base revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate eligible draft
+        id: draft
+        run: node scripts/generate-release-note-draft.mjs "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/release-note-drafts"
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Upload draft artifact
+        if: steps.draft.outputs.eligible == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-note-draft-pr-${{ steps.draft.outputs.pull_request_number }}-run-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.draft.outputs.draft_path }}
+          if-no-files-found: error
+          retention-days: 30
