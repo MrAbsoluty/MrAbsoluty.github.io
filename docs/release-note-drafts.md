@@ -2,6 +2,24 @@
 
 Este flujo prepara un archivo JSON descargable para revisión humana. No actualiza el catálogo público `src/data/updates.js`, no publica novedades y no comenta ni modifica Pull Requests.
 
+## Borradores desde pushes a `main`
+
+El workflow independiente `.github/workflows/release-note-push-draft.yml` se ejecuta después de cada push a `main`. Compara los árboles de `before` y `after` y obtiene los mensajes de los commits del rango desde el checkout local con historial completo. No consulta la API de GitHub ni usa IA, secretos o servicios externos de generación.
+
+Solo se consideran cambios bajo `src/` y `public/`, excluyendo `src/data/updates.js`, rutas de pruebas y directorios temporales/de dependencias. Documentación, scripts y workflows quedan fuera. Si no hay archivos de producto elegibles, la ejecución termina correctamente sin artefacto. El primer push sin SHA base comparable también se omite de forma segura.
+
+Cuando hay cambios relevantes, el artefacto se llama `release-note-draft-push-run-<run_id>-<run_attempt>` y contiene `release-note-draft-push-<commit-after>.json`. Incluye los SHA `before`/`after`, mensajes de commits y rutas relevantes como referencias de origen. El texto bilingüe, la categoría y la fecha quedan explícitamente pendientes: mensajes y nombres de archivo no prueban qué funcionalidad existe ni su impacto público.
+
+Para descargarlo, abre **Actions → Generate push release note draft**, elige el run correspondiente al push y descarga el artefacto con su número de ejecución e intento. Los artefactos se conservan 30 días. Los pushes que solo cambian el workflow, scripts, documentación o el propio catálogo no generan artefacto, por lo que el workflow no crea una cadena de ejecuciones recursivas. Cada push con cambios de producto genera un borrador independiente; no existe deduplicación entre runs.
+
+La ruta de push conserva los mismos estados de seguridad que el flujo PR (`incomplete-not-approved` y `not-published`) pero tiene su propio origen `source.push`; no es un borrador con PR ni debe copiarse directamente al catálogo. La revisión, incorporación a `src/data/updates.js`, decisión de publicar y despliegue siguen siendo manuales.
+
+Pruebas locales de esta ruta:
+
+```sh
+node --test scripts/test-push-release-note-draft.mjs
+```
+
 ## Etiquetas editoriales
 
 Configura manualmente estas etiquetas en **Settings → Labels** del repositorio. Los nombres deben coincidir exactamente:
