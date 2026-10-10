@@ -30,17 +30,46 @@ El script comprueba el repositorio, la rama base `main`, el estado, la acción y
 
 ## Descargar y revisar
 
-1. Abre **Actions → Generate release note draft** y selecciona la ejecución asociada al evento del PR.
-2. Si el PR es elegible, descarga el artefacto `release-note-draft-pr-<número>-run-<run>-<intento>`.
-3. Revisa el JSON. El ID determinista `pr-<número>` y `source.pullRequest.url` identifican el origen; la fecha de generación solo es metadato técnico.
-4. Completa `date` con una fecha editorial confirmada, redacta y revisa `content.es` y `content.en`, confirma las categorías propuestas y decide si merece publicarse.
-5. Solo después de esa revisión una persona puede incorporar manualmente el contenido aprobado al catálogo existente.
+1. Abre **Actions → Generate release note draft** en el repositorio `MrAbsoluty/MrAbsoluty.github.io` y localiza el run del evento del PR que se pretende revisar. Comprueba el repositorio y el PR de origen antes de descargar.
+2. En el run correcto, selecciona el artefacto cuyo nombre coincide exactamente con `release-note-draft-pr-<número>-run-<run_id>-<run_attempt>`. Comprueba que el número corresponde al PR y que `run_id` y `run_attempt` corresponden a esa ejecución e intento. No uses un artefacto de un run anterior ni un intento anterior aunque tenga el mismo número de PR.
+3. Abre el JSON y verifica antes de evaluar su contenido editorial:
+   - `source.repository` identifica el repositorio esperado.
+   - `source.pullRequest.number` y `source.pullRequest.url` identifican el PR correcto; abre la URL y confirma el número.
+   - `source.pullRequest.baseBranch` es `main`.
+   - `source.pullRequest.labels` contiene exactamente una etiqueta de inclusión (`release-note:feature`, `release-note:improvement`, `release-note:fix` o `release-note:maintenance`) y no contiene `release-note:skip`.
+   - `draftStatus` es `incomplete-not-approved` y `publicationStatus` es `not-published`.
+   - El artefacto procede de la ejecución e intento que se quiere revisar, no de una ejecución anterior. `generatedAt` solo es metadato técnico de generación: no es una fecha de publicación ni una fecha editorial.
+4. El título, la descripción y las etiquetas del PR en `source.pullRequest` son referencias de origen, no contenido público verificado. Contrasta cada afirmación con los cambios reales del producto. No inventes funcionalidades, beneficios, compatibilidad, resultados ni promesas.
+5. Redacta y revisa `content.es` y `content.en`. Ambos textos deben ser semánticamente equivalentes y conservar los mismos hechos, condiciones, límites y advertencias. No dejes marcadores de posición, frases provisionales ni campos editoriales pendientes. Revisa la claridad y corrección de ambos idiomas antes de aprobar la novedad.
+6. La etiqueta orienta la clasificación, pero no demuestra por sí sola que el cambio deba publicarse:
+   - `feature`: confirma que es una funcionalidad nueva y que está realmente disponible o es pertinente para anunciar.
+   - `improvement`: comprueba que existe una mejora concreta y describible.
+   - `fix`: confirma qué problema se corrigió y no prometas más de lo que soluciona.
+   - `maintenance`: excluye los cambios puramente internos que no tengan un impacto público significativo.
+   Si no puedes confirmar el impacto, la categoría o la veracidad, no incorpores el borrador al catálogo.
+7. Determina una fecha editorial confirmada de forma independiente. `generatedAt` no es una fecha editorial, y ni la fecha de creación ni la de cierre del PR prueban la fecha de publicación. El campo `date` del catálogo utiliza el formato `YYYY-MM-DD`, como las entradas existentes. Comprueba si ya existe una novedad equivalente. El `id` debe ser único y seguir las convenciones de las entradas existentes; el ID técnico `pr-<número>` del borrador no establece la convención del catálogo ni debe copiarse automáticamente.
+8. Solo después de completar las comprobaciones, una persona puede trasladar al catálogo la información editorial revisada: la fecha confirmada, el ID validado y los textos localizados de título, resumen, categoría y detalles. El JSON descargado es un borrador técnico, no una entrada lista para copiar. No copies `schemaVersion`, `generatedAt`, `editorialLabel`, `editorialType`, `publicationStatus`, `draftStatus`, `source` (incluidos los metadatos del PR) ni `editorialReviewRequired`; tampoco traslades marcadores de posición o estados del borrador.
 
-El borrador se genera deliberadamente incompleto: el título, la descripción y las etiquetas del PR se guardan como fuente, pero no se convierten automáticamente en afirmaciones editoriales ni traducciones. El artefacto no equivale a aprobación. La etiqueta `maintenance` incluye una advertencia adicional para confirmar impacto público.
+El catálogo actual organiza cada novedad en `id`, `date` y `content`, con las versiones `content.es` y `content.en`; cada versión contiene `title`, `summary`, `category` y `details` (una lista). Conserva esta estructura y las convenciones de las entradas existentes en `src/data/updates.js`; no añadas una estructura alternativa ni copies los campos técnicos del artefacto.
+
+### Comprobación final antes de incorporar una entrada
+
+- [ ] Veracidad de cada afirmación confirmada con los cambios reales del producto.
+- [ ] Impacto público justificado.
+- [ ] Categoría correcta para el cambio.
+- [ ] Textos en español e inglés equivalentes y revisados.
+- [ ] Fecha editorial confirmada y válida en formato `YYYY-MM-DD`.
+- [ ] ID único y acorde con las convenciones existentes.
+- [ ] Duplicados comprobados.
+- [ ] Estructura compatible con `src/data/updates.js`.
+- [ ] No se incorpora ningún marcador de posición ni estado de borrador.
+- [ ] Cambios del catálogo revisados manualmente.
+
+La modificación de `src/data/updates.js`, la decisión de publicar y el despliegue son procesos manuales e independientes. La generación del artefacto no aprueba ni publica contenido.
 
 ## Regenerar y duplicados
 
-Editar título o descripción, actualizar el contenido del PR, cambiar etiquetas o volver a abrirlo activa otra evaluación. También se puede volver a ejecutar una ejecución anterior desde Actions; cada intento obtiene un nombre de artefacto distinto. El ID del borrador permanece como `pr-<número>`, mientras que el contenido refleja los metadatos del evento más reciente.
+Editar título o descripción, actualizar el contenido del PR, cambiar etiquetas o volver a abrirlo activa otra evaluación. También se puede volver a ejecutar una ejecución anterior desde Actions; cada intento obtiene un nombre de artefacto distinto. El ID técnico del borrador permanece como `pr-<número>`. Volver a ejecutar un run anterior reutiliza el evento de ese run; para revisar datos actualizados, selecciona el run asociado al evento más reciente del PR.
 
 No se mantiene un registro global de borradores o publicaciones y, por ello, el flujo no detecta duplicados globales ni prueba si un borrador fue aprobado o publicado. Los artefactos caducan a los 30 días.
 

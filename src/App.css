@@ -7,6 +7,7 @@
 @import './styles/ai-ability-analysis.css';
 @import './styles/under-construction.css';
 @import './styles/moves.css';
+@import './styles/guide.css';
 
 :root {
   --ink: #17212b;
@@ -6754,7 +6755,7 @@ button.pokemon-card:focus-visible,
 }
 
 /* Inputs y Áreas de Búsqueda */
-[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]),
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]):not(.guide-dict-search-input):not(.social-search-input):not(.floating-chat-search-input),
 [data-theme="dark"] textarea,
 [data-theme="dark"] select,
 [data-theme="dark"] .filter-select {
@@ -6781,7 +6782,11 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .floating-chat-search-bar input,
 [data-theme="dark"] .floating-chat-search-bar input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="dark"] .social-search-input,
-[data-theme="dark"] .social-search-input-wrap input {
+[data-theme="dark"] .social-search-input-wrap input,
+[data-theme="dark"] .guide-dict-search-input,
+[data-theme="dark"] input.guide-dict-search-input,
+[data-theme="dark"] .guide-dict-search-bar input,
+[data-theme="dark"] .guide-dict-search-bar input:not([type="checkbox"]):not([type="radio"]) {
   background: transparent !important;
   background-color: transparent !important;
   border: 0 none transparent !important;
@@ -6816,7 +6821,9 @@ button.pokemon-card:focus-visible,
 [data-theme="dark"] .floating-chat-search-bar input:focus,
 [data-theme="dark"] .floating-chat-search-bar input:not([type="checkbox"]):not([type="radio"]):focus,
 [data-theme="dark"] .social-search-input:focus,
-[data-theme="dark"] .social-search-input-wrap input:focus {
+[data-theme="dark"] .social-search-input-wrap input:focus,
+[data-theme="dark"] .guide-dict-search-input:focus,
+[data-theme="dark"] .guide-dict-search-bar input:focus {
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
@@ -6825,13 +6832,14 @@ button.pokemon-card:focus-visible,
   -webkit-box-shadow: none !important;
 }
 
-[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]):not(.social-search-input):not(.floating-chat-search-input):focus,
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]):not(.social-search-input):not(.floating-chat-search-input):not(.guide-dict-search-input):focus,
 [data-theme="dark"] textarea:focus,
 [data-theme="dark"] select:focus,
 [data-theme="dark"] .search-bar:focus-within,
 [data-theme="dark"] .pokedex-search-wrapper .search-bar:focus-within,
 [data-theme="dark"] .items-search:focus-within,
 [data-theme="dark"] .moves-search:focus-within,
+[data-theme="dark"] .guide-dict-search-bar:focus-within,
 [data-theme="dark"] .filter-select:focus-visible {
   border-color: rgba(0, 210, 255, 0.35) !important;
   box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.08) !important;

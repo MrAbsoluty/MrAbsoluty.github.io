@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useFavorites } from '../context/FavoritesContext'
+import { useAuth } from '../context/AuthContext'
 import { playButtonSound, playFavoritoSound } from '../utils/audio'
 
 export default function PokemonFavoriteButton({
@@ -9,6 +10,7 @@ export default function PokemonFavoriteButton({
   t,
 }) {
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { isAuthenticated, openAuthModal } = useAuth()
   const [animating, setAnimating] = useState(null)
   const timerRef = useRef(null)
 
@@ -27,6 +29,13 @@ export default function PokemonFavoriteButton({
   const handleClick = (e) => {
     e.preventDefault()
     e.stopPropagation()
+
+    if (!isAuthenticated) {
+      if (openAuthModal) {
+        openAuthModal('login')
+      }
+      return
+    }
 
     if (timerRef.current) {
       clearTimeout(timerRef.current)

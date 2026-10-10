@@ -141,6 +141,31 @@ test('acentos y saltos de línea se conservan en el JSON del borrador', () => {
   assert.deepEqual(validateReleaseNoteDraft(roundTrip), [])
 })
 
+test('los textos editoriales y de validación en español conservan sus acentos', () => {
+  const pr = makePullRequest({ labels: [{ name: 'release-note:fix' }] })
+  const draft = createReleaseNoteDraft(pr, evaluate(pr))
+  const generatedSpanishText = JSON.stringify({
+    content: draft.content.es,
+    editorialReviewRequired: draft.editorialReviewRequired,
+  })
+
+  assert.equal(draft.content.es.category, 'Corrección')
+  for (const expectedText of ['redacción', 'español', 'únicamente', 'categoría', 'clasificación', 'público']) {
+    assert.ok(generatedSpanishText.includes(expectedText), `Falta el texto acentuado: ${expectedText}`)
+  }
+  assert.doesNotMatch(generatedSpanishText, /Ã[óñá]/)
+
+  const invalidTitle = makePullRequest({ title: '  ' })
+  assert.throws(
+    () => createReleaseNoteDraft(invalidTitle, evaluate(invalidTitle)),
+    (error) => {
+      assert.match(error.message, /válido/)
+      assert.doesNotMatch(error.message, /Ã[óñá]/)
+      return true
+    },
+  )
+})
+
 test('evento o repositorio inesperado falla de forma segura', () => {
   assert.throws(
     () => evaluatePullRequestEvent({

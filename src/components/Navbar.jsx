@@ -15,6 +15,7 @@ function Navbar({
   onHomeClick,
   onFavoritesClick,
   onProfileClick,
+  onGuideClick,
   onConstructionClick,
   activeNav = 'home',
 }) {
@@ -51,14 +52,6 @@ function Navbar({
     }
   }
 
-  function handleFavoritesNavClick(event) {
-    markFavoritesAsSeen?.()
-    if (onFavoritesClick) {
-      event.preventDefault()
-      onFavoritesClick()
-    }
-  }
-
   return (
     <header className="site-header">
       <a className="brand" href="#top" aria-label={t.nav.homeAria} onClick={handleBrandClick}>
@@ -87,20 +80,6 @@ function Navbar({
         >
           {t?.nav?.moves || 'Movimientos'}
         </a>
-        {!isAuthenticated && (
-          <a
-            className={activeNav === 'favorites' ? 'active' : ''}
-            href="#favorites"
-            onClick={handleFavoritesNavClick}
-          >
-            {t?.nav?.favorites || 'Favoritos'}
-            {unseenCount > 0 && activeNav !== 'favorites' && (
-              <span className="nav-fav-badge" aria-label={`${unseenCount} nuevos favoritos`}>
-                {unseenCount}
-              </span>
-            )}
-          </a>
-        )}
         <a
           href="#construction"
           onClick={(e) => {
@@ -113,11 +92,12 @@ function Navbar({
           {t.nav.competitive}
         </a>
         <a
-          href="#construction"
+          className={activeNav === 'guide' ? 'active' : ''}
+          href="#guide"
           onClick={(e) => {
-            if (onConstructionClick) {
+            if (onGuideClick) {
               e.preventDefault()
-              onConstructionClick(t?.nav?.guide)
+              onGuideClick()
             }
           }}
         >

@@ -8,6 +8,7 @@ import Moves from './pages/Moves'
 import Pokedex from './pages/Pokedex'
 import PokemonDetail from './pages/PokemonDetail'
 import UnderConstruction from './pages/UnderConstruction'
+import Guide from './pages/Guide'
 import { defaultLocale, getTranslations, SUPPORTED_LOCALES } from './locales'
 import { getItem, getMove, getPokemon } from './services/pokeapi'
 import MusicPlayer from './components/MusicPlayer'
@@ -25,6 +26,7 @@ import FollowRequestsModal from './components/social/FollowRequestsModal'
 import PrivacySettingsModal from './components/social/PrivacySettingsModal'
 import UserSearchModal from './components/social/UserSearchModal'
 import SuccessPopup from './components/common/SuccessPopup'
+import FloatingUpdates from './components/common/FloatingUpdates'
 import { useAuth } from './context/AuthContext'
 import { scrollToTop } from './utils/scroll'
 import './styles/profile.css'
@@ -55,10 +57,12 @@ function getInitialTheme() {
 }
 
 function App() {
-  const { openUserProfile } = useAuth()
+  const { openUserProfile, isAuthenticated, openAuthModal, loading: authLoading } = useAuth()
   const [view, setView] = useState('home')
   const [profileUsername, setProfileUsername] = useState(null)
   const [constructionFeature, setConstructionFeature] = useState(null)
+  const [guideSectionId, setGuideSectionId] = useState(null)
+  const [guideObjectiveId, setGuideObjectiveId] = useState(null)
   const [pokemon, setPokemon] = useState(null)
   const [item, setItem] = useState(null)
   const [move, setMove] = useState(null)
@@ -188,6 +192,8 @@ function App() {
     move?.id,
     move?.name,
     constructionFeature,
+    guideSectionId,
+    guideObjectiveId,
   ])
 
   useEffect(() => {
@@ -245,13 +251,42 @@ function App() {
           return
         }
       }
-      if (hash === '#pokedex') {
+      if (hash.startsWith('#guide/')) {
+        const guidePath = decodeURIComponent(hash.slice('#guide/'.length).trim())
+        const pathParts = guidePath.split('/').filter(Boolean)
+        const section = pathParts[0] || null
+        const objective = pathParts[1] || null
+        if (section) {
+          setView('guide')
+          setGuideSectionId(section)
+          setGuideObjectiveId(objective)
+          setPokemon(null)
+          setItem(null)
+          setMove(null)
+          setError(null)
+          return
+        }
+      }
+      if (hash === '#guide') {
+        setView('guide')
+        setGuideSectionId(null)
+        setGuideObjectiveId(null)
+        setPokemon(null)
+        setItem(null)
+        setMove(null)
+        setError(null)
+      } else if (hash === '#pokedex') {
         setView('pokedex')
         setPokemon(null)
         setItem(null)
         setMove(null)
         setError(null)
       } else if (hash === '#favorites') {
+        if (!isAuthenticated) {
+          setView('home')
+          openAuthModal?.('login')
+          return
+        }
         setView('favorites')
         setPokemon(null)
         setItem(null)
@@ -336,6 +371,10 @@ function App() {
   }
 
   function handleFavoritesOpen() {
+    if (!isAuthenticated) {
+      openAuthModal?.('login')
+      return
+    }
     scrollToTop('instant')
     setView('favorites')
     setPokemon(null)
@@ -344,10 +383,50 @@ function App() {
     window.history.pushState({}, '', '/#favorites')
   }
 
+  // Redirigir fuera de favoritos si no hay sesión iniciada
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated && view === 'favorites') {
+      setView('home')
+      openAuthModal?.('login')
+    }
+  }, [authLoading, isAuthenticated, view, openAuthModal])
+
+  function handleGuideOpen(sectionId = null, objectiveId = null) {
+    scrollToTop('instant')
+    setView('guide')
+    setGuideSectionId(sectionId)
+    setGuideObjectiveId(objectiveId)
+    setPokemon(null)
+    setItem(null)
+    setMove(null)
+    setError(null)
+    if (sectionId && objectiveId) {
+      window.history.pushState(
+        {},
+        '',
+        `/#guide/${encodeURIComponent(sectionId)}/${encodeURIComponent(objectiveId)}`,
+      )
+    } else if (sectionId) {
+      window.history.pushState({}, '', `/#guide/${encodeURIComponent(sectionId)}`)
+    } else {
+      window.history.pushState({}, '', '/#guide')
+    }
+  }
+
+  function handleBackToGuide() {
+    handleGuideOpen(null, null)
+  }
+
+  function handleBackToSection(sectionId) {
+    handleGuideOpen(sectionId, null)
+  }
+
   function handleHome() {
     scrollToTop('instant')
     setView('home')
     setConstructionFeature(null)
+    setGuideSectionId(null)
+    setGuideObjectiveId(null)
     setPokemon(null)
     setItem(null)
     setError(null)
@@ -434,7 +513,15 @@ function App() {
 
   function handleBack() {
     scrollToTop('instant')
-    if (view === 'profile' || view === 'construction') {
+    if (view === 'guide' && guideObjectiveId) {
+      handleBackToSection(guideSectionId)
+      return
+    }
+    if (view === 'guide' && guideSectionId) {
+      handleBackToGuide()
+      return
+    }
+    if (view === 'profile' || view === 'construction' || view === 'guide') {
       handleHome()
       return
     }
@@ -598,6 +685,25 @@ function App() {
         onLocaleChange={handleLocaleChange}
       />
     )
+  } else if (view === 'guide') {
+    currentView = (
+      <Guide
+        sectionId={guideSectionId}
+        objectiveId={guideObjectiveId}
+        onSectionSelect={(secId) => handleGuideOpen(secId, null)}
+        onObjectiveSelect={(secId, objId) => handleGuideOpen(secId, objId)}
+        onBackToSection={(secId) => handleGuideOpen(secId, null)}
+        onBackToGuide={handleBackToGuide}
+        onBack={handleBack}
+        onHomeClick={handleHome}
+        onPokedexClick={handlePokedexOpen}
+        onMovesClick={handleMovesOpen}
+        onFavoritesClick={handleFavoritesOpen}
+        t={t}
+        locale={locale}
+        onLocaleChange={handleLocaleChange}
+      />
+    )
   } else if (view === 'construction') {
     currentView = (
       <UnderConstruction
@@ -623,6 +729,7 @@ function App() {
         onMovesClick={handleMovesOpen}
         onPokedexClick={handlePokedexOpen}
         onFavoritesClick={handleFavoritesOpen}
+        onGuideClick={() => handleGuideOpen()}
         onConstructionClick={handleConstructionOpen}
         isLoading={isLoading}
         t={t}
@@ -654,6 +761,7 @@ function App() {
       <SocialToast t={t} />
       <SuccessPopup />
       <FloatingChat />
+      <FloatingUpdates locale={locale} t={t} />
     </>
   )
 }

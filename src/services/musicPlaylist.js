@@ -4,19 +4,19 @@
 
 export const musicPlaylist = [
   {
-    title: 'Pokemon Center (lofi) with ‪@TanoshiSan‬',
-    artist: 'Less Gravity',
-    youtubeId: 'RE-duhpRvI8',
+    title: 'Title Screen',
+    artist: 'Mikel',
+    youtubeId: 'zxDFu0C7IWQ',
   },
   {
-    title: 'Pokémon Rojo/Azul - "Pueblo Paleta" (Relajante, Lofi Hiphop Remix)',
-    artist: 'Franz Fritz',
-    youtubeId: 'aFaY8VcXVn8',
+    title: 'Rustboro City – Pokémon LoFi Remix [Poké & Chill 2]',
+    artist: 'Mikel',
+    youtubeId: 'x0mcDAAiLe0',
   },
   {
-    title: 'Pokémon – Littleroot Town | Chill Hip-Hop Remix',
-    artist: 'LonelyLofi',
-    youtubeId: 'g9kVGJ7_pDk',
+    title: 'Littleroot Town – Pokémon LoFi Remix [Poké & Chill 2]',
+    artist: 'Mikel',
+    youtubeId: 'uVTDmtba5fM',
   },
   {
     title: 'National Park',
@@ -24,8 +24,8 @@ export const musicPlaylist = [
     youtubeId: '0eu7URQWWvc',
   },
   {
-    title: 'Driftveil City Theme',
-    artist: 'Pokémon Soundtrack',
-    youtubeId: 'PLACEHOLDER_DRIFTVEIL',
+    title: 'Lake Verity – Pokémon LoFi Remix [Poké & Chill 2]',
+    artist: 'Mikel',
+    youtubeId: 'w8irJ4oul6Y',
   },
 ]
