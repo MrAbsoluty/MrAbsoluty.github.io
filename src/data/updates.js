@@ -1,4 +1,30 @@
 const updates = [
+    {
+    id: 'guide-readability-content',
+    date: '2026-10-10',
+    content: {
+      es: {
+        title: 'Guía más legible y detallada',
+        summary: 'La sección Guía presenta su contenido de forma más clara y con explicaciones más detalladas.',
+        category: 'Guía',
+        details: [
+          'La Guía reúne siete secciones: fundamentos, combate, estadísticas, armado de equipos, roles, estrategias y glosario.',
+          'Las lecciones incluyen explicaciones más detalladas.',
+          'El diseño de la sección facilita la lectura del contenido.',
+        ],
+      },
+      en: {
+        title: 'More readable and detailed Guide',
+        summary: 'The Guide section presents its content more clearly and with more detailed explanations.',
+        category: 'Guide',
+        details: [
+          'The Guide brings together seven sections: fundamentals, combat, stats, team building, roles, strategies, and glossary.',
+          'Lessons include more detailed explanations.',
+          'The section layout makes the content easier to read.',
+        ],
+      },
+    },
+  },
   {
     id: 'learning-path',
     date: '2026-10-09',
@@ -53,6 +79,7 @@ const updates = [
       },
     },
   },
+  
 ]
 
 const overview = {
